@@ -45,8 +45,9 @@ import java.util.concurrent.Executors;
 
 /**
  * Android-native MarketMarney application shell.
- * Home, Markets, Headlines, Social launcher and Account are Android views.
- * Complex existing features are opened in an internal WebView, never as the landing screen.
+ * The Beranda tab renders the responsive MarketMarney website homepage in an
+ * internal WebView; the other tabs retain their existing Android UI.
+ * Users are never redirected to Chrome to open Beranda.
  * No account data, client secrets or market prices are stored in this app.
  */
 public final class MainActivity extends Activity {
@@ -66,6 +67,8 @@ public final class MainActivity extends Activity {
     private LinearLayout root;
     private FrameLayout content;
     private LinearLayout bottomBar;
+    private LinearLayout appHeader;
+    private View appHeaderDivider;
     private WebView browser;
     private ValueCallback<Uri[]> fileCallback;
     private int tab = NAV_HOME;
@@ -181,6 +184,7 @@ public final class MainActivity extends Activity {
         top.setPadding(dp(17), dp(8), dp(15), dp(8));
         top.setBackground(gradient(Color.rgb(6,24,43),Color.rgb(3,14,28),0));
         root.addView(top, lp(-1, 76));
+        appHeader = top;
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.mipmap.ic_launcher);
         logo.setContentDescription("MarketMarney");
@@ -201,6 +205,7 @@ public final class MainActivity extends Activity {
         View line = new View(this);
         line.setBackgroundColor(OUTLINE);
         root.addView(line, lp(-1, 1));
+        appHeaderDivider = line;
     }
 
     private void drawBottomBar() {
@@ -250,6 +255,11 @@ public final class MainActivity extends Activity {
     private void navigate(int index) {
         tab = index;
         clearContent();
+        // The website has its own mobile logo/header. Avoid showing two headers
+        // on Beranda; keep the native bottom navigation available at all times.
+        boolean websiteHome = index == NAV_HOME;
+        if (appHeader != null) appHeader.setVisibility(websiteHome ? View.GONE : View.VISIBLE);
+        if (appHeaderDivider != null) appHeaderDivider.setVisibility(websiteHome ? View.GONE : View.VISIBLE);
         drawBottomBar();
         switch (index) {
             case NAV_HOME: home(); break;
@@ -309,58 +319,9 @@ public final class MainActivity extends Activity {
     }
 
     private void home() {
-        LinearLayout page = page("MARKETMARNEY  /  FINANCIAL HUB", "Selamat datang.",
-                "Pantau informasi pasar, berita, dan komunitas trader dalam satu tempat.");
-
-        LinearLayout hero = card(page);
-        hero.setBackground(gradient(Color.rgb(28, 59, 76), Color.rgb(6, 28, 50), 23));
-        LinearLayout overline = horizontal();
-        TextView dot = text("●  MARKET WATCH", 11, GREEN, true);
-        overline.addView(dot, new LinearLayout.LayoutParams(0,-2,1));
-        TextView mark = text("MM / 04", 11, GOLD, true);
-        overline.addView(mark);
-        hero.addView(overline);
-        space(hero, 13);
-        TextView headline = text("Informasi yang membantu\nAnda membaca pasar.", 23, WHITE, true);
-        headline.setLineSpacing(dp(3),1.0f);
-        hero.addView(headline);
-        space(hero, 10);
-        addLabel(hero,"Emas · Forex · Saham · Kripto",13,MUTED,false);
-        space(hero, 21);
-        hero.addView(button("Jelajahi Pasar  →", true, () -> navigate(NAV_MARKET)), lp(-1,48));
-        space(hero, 7);
-        addLabel(hero, "Harga dan grafik mengikuti sumber data yang tersedia.", 11, MUTED, false);
-
-        sectionTitle(page,"Pantauan pilihan");
-        LinearLayout m1=horizontal();
-        LinearLayout.LayoutParams m1a=new LinearLayout.LayoutParams(0,-2,1);m1a.rightMargin=dp(6);
-        LinearLayout.LayoutParams m1b=new LinearLayout.LayoutParams(0,-2,1);m1b.leftMargin=dp(6);
-        m1.addView(marketTile("XAU/USD","EMAS","Grafik & analisa",()->showWeb("Gold / USD","/index.html#marketlive")),m1a);
-        m1.addView(marketTile("BTC/USD","KRIPTO","Grafik & berita",()->showWeb("Bitcoin / USD","/index.html#marketlive")),m1b);
-        page.addView(m1);
-        space(page,10);
-        LinearLayout m2=horizontal();
-        LinearLayout.LayoutParams m2a=new LinearLayout.LayoutParams(0,-2,1);m2a.rightMargin=dp(6);
-        LinearLayout.LayoutParams m2b=new LinearLayout.LayoutParams(0,-2,1);m2b.leftMargin=dp(6);
-        m2.addView(marketTile("EUR/USD","FOREX","Grafik & analisa",()->showWeb("EUR / USD","/index.html#marketlive")),m2a);
-        m2.addView(marketTile("NASDAQ","SAHAM","Indeks pasar",()->showWeb("Nasdaq","/index.html#marketlive")),m2b);
-        page.addView(m2);
-
-        sectionTitle(page, "Akses cepat");
-        LinearLayout actions=horizontal();
-        LinearLayout.LayoutParams one=new LinearLayout.LayoutParams(0,dp(54),1);one.rightMargin=dp(7);
-        actions.addView(button("◈  Market Live", false, () -> navigate(NAV_MARKET)), one);
-        LinearLayout.LayoutParams two=new LinearLayout.LayoutParams(0,dp(54),1);two.leftMargin=dp(7);
-        actions.addView(button("◎  Social Marney", false, () -> navigate(NAV_SOCIAL)), two);
-        page.addView(actions);
-        sectionTitle(page,"Berita terbaru");
-        LinearLayout latest=vertical();page.addView(latest);loading(latest);
-        loadNews(latest,true,NAV_HOME);
-        page.addView(button("Baca semua berita   →",false,()->navigate(NAV_NEWS)),lp(-1,50));
-        sectionTitle(page,"Komunitas MarketMarney");
-        linkCard(page,"SOCIAL MARNEY","Ide, diskusi, dan cerita pasar",
-                "Jelajahi Story, Reels, grup, dan percakapan komunitas.",
-                "Masuk Social Marney",()->navigate(NAV_SOCIAL));
+        // Exactly the same homepage HTML, banners, news, ticker and theme as
+        // https://marketmarney.com/index.html. This stays *inside* the APK.
+        showWeb("Beranda", "/index.html", true);
     }
 
     private LinearLayout marketTile(String symbol,String category,String description,Runnable action){
@@ -573,6 +534,10 @@ public final class MainActivity extends Activity {
 
     /** Opens a MarketMarney page inside the app, never opening Chrome automatically. */
     private void showWeb(String title, String path) {
+        showWeb(title, path, false);
+    }
+
+    private void showWeb(String title, String path, boolean homepage) {
         clearContent();
         webMode = true;
         LinearLayout panel = vertical();
@@ -581,7 +546,9 @@ public final class MainActivity extends Activity {
         LinearLayout toolbar = horizontal();
         toolbar.setPadding(dp(10), dp(5), dp(15), dp(5));
         toolbar.setBackgroundColor(CARD);
-        panel.addView(toolbar, lp(-1, 48));
+        // For Beranda, display the website's own responsive mobile header.
+        // Other in-app web screens keep their familiar Back / Reload toolbar.
+        if (!homepage) panel.addView(toolbar, lp(-1, 48));
         TextView back = text("‹", 30, GOLD, true);
         back.setGravity(Gravity.CENTER);
         toolbar.addView(back, lp(44, 42));
@@ -646,6 +613,11 @@ public final class MainActivity extends Activity {
                     "https".equalsIgnoreCase(Uri.parse(url).getScheme())) {
                     // Signals app context to MarketMarney web code; no untrusted JS bridge exposed.
                     view.evaluateJavascript("try{window.MarketMarneyApp={platform:'android',version:'4.1'};localStorage.setItem('mm_app_client','android-native-v4.1')}catch(e){}", null);
+                    if (homepage) {
+                        // APK is already installed, so don't show the web PWA
+                        // install prompt over the Android bottom navigation.
+                        view.evaluateJavascript("try{var s=document.createElement('style');s.textContent='#mmInstall{display:none!important}';document.head.appendChild(s)}catch(e){}", null);
+                    }
                     if ("Kalender Ekonomi".equals(title)) {
                         view.evaluateJavascript("try{if(typeof go==='function')go('Kalender Ekonomi')}catch(e){}", null);
                     } else if ("MarketMarney TV".equals(title)) {
@@ -695,7 +667,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onBackPressed() {
         if (webMode && browser != null && browser.canGoBack()) browser.goBack();
-        else if (webMode || tab != NAV_HOME) navigate(NAV_HOME);
+        else if (tab != NAV_HOME) navigate(NAV_HOME);
         else super.onBackPressed();
     }
 
