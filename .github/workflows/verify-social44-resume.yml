@@ -1,0 +1,121 @@
+name: Verify Social Marney 4.4 Resumed
+on:
+  push:
+    branches: [android-v4.4-social-reference]
+    paths: ['.github/workflows/verify-social44-resume.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney44-Beta-APK
+          run-id: 42129199413
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Prepare read-only verification
+        shell: bash
+        run: |
+          mkdir -p device44
+          python3 - <<'PY'
+          import urllib.request,json
+          out=[]
+          for path in ['/index.html','/beranda-trader.html','/api/auth/android/config']:
+              try:
+                  req=urllib.request.Request('https://marketmarney.com'+path,headers={'User-Agent':'MarketMarneyReadOnlyCheck/4.4'})
+                  with urllib.request.urlopen(req,timeout=25) as r:
+                      out.append({'path':path,'status':r.status,'type':r.headers.get('Content-Type')})
+                      r.read(1000)
+              except Exception as e:out.append({'path':path,'error':str(e)})
+          open('device44/network.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out))
+          PY
+          cat > check44.py <<'PY'
+          from pathlib import Path
+          import subprocess,time,xml.etree.ElementTree as ET,json,re
+          out=Path('device44');out.mkdir(exist_ok=True)
+          pkg='com.marketmarney.mobile.beta44'
+          labels={'Beranda','Berita','Market Live','Social Marney'}
+          results=[]
+          def adb(*args,timeout=45,check=True):
+              p=subprocess.run(['adb',*args],capture_output=True,timeout=timeout)
+              if check and p.returncode:raise RuntimeError(p.stderr.decode(errors='replace')+p.stdout.decode(errors='replace'))
+              return p.stdout
+          def record(name,ok):
+              results.append({'name':name,'passed':bool(ok)})
+              print(('PASS: ' if ok else 'FAIL: ')+name,flush=True)
+          def dump(tab):
+              adb('shell','uiautomator','dump','/sdcard/window44.xml')
+              raw=adb('exec-out','cat','/sdcard/window44.xml')
+              (out/f'tab-{tab}.xml').write_bytes(raw)
+              tree=ET.fromstring(raw)
+              text='\n'.join(n.attrib.get('text','')+' '+n.attrib.get('content-desc','') for n in tree.iter())
+              return tree,text
+          def ready(tab,text):
+              if 'Belum terhubung' in text or 'Koneksi aman belum' in text:return False
+              if tab==0:return ('MarketMarney' in text or 'Market Intelligence' in text) and 'Beranda' in text
+              if tab==1:return 'NEWSROOM' in text and 'artikel' in text.lower()
+              if tab==2:return 'Market Intelligence Desk' in text or 'TRADINGVIEW / CHART TERMINAL' in text
+              return 'Cerita pasar.' in text and 'Linimasa' in text
+          adb('install','-r','apk/Marney44.apk',timeout=90)
+          adb('shell','wm','size','480x900');adb('shell','wm','density','180')
+          (out/'webview.txt').write_bytes(adb('shell','dumpsys','webviewupdate'))
+          # Boot and network initialization can lag behind sys.boot_completed.
+          time.sleep(15)
+          try:
+              for tab in range(4):
+                  adb('shell','am','force-stop',pkg);adb('logcat','-c')
+                  adb('shell','am','start','-W','-n',pkg+'/com.marketmarney.mobile.MainActivity','--ei','startTab',str(tab))
+                  time.sleep(7);tree=None;text='';loaded=False
+                  for attempt in range(10):
+                      tree,text=dump(tab);loaded=ready(tab,text)
+                      if loaded:break
+                      # Exercise the real retry button, rather than assuming a failed
+                      # initial request will reload itself after connectivity returns.
+                      for n in tree.iter():
+                          if n.attrib.get('text')=='Coba lagi':
+                              xy=list(map(int,re.findall(r'\d+',n.attrib.get('bounds',''))))
+                              if len(xy)==4:adb('shell','input','tap',str((xy[0]+xy[2])//2),str((xy[1]+xy[3])//2))
+                              break
+                      time.sleep(4)
+                  (out/f'tab-{tab}.png').write_bytes(adb('exec-out','screencap','-p'))
+                  record(f'Tab {tab}: process running',bool(adb('shell','pidof',pkg,check=False).strip()))
+                  record(f'Tab {tab}: four native destinations',tree is not None and labels.issubset({n.attrib.get('content-desc','') for n in tree.iter()}))
+                  record(f'Tab {tab}: expected page content',loaded)
+                  record(f'Tab {tab}: no not-found page','Halaman ini tidak ditemukan.' not in text and 'MARKETMARNEY / 404' not in text)
+                  logs=adb('logcat','-d','-s','AndroidRuntime:E',check=False);(out/f'errors-{tab}.txt').write_bytes(logs)
+                  record(f'Tab {tab}: no fatal crash',('Process: '+pkg).encode() not in logs)
+                  (out/f'web-errors-{tab}.txt').write_bytes(adb('logcat','-d','-s','chromium:E',check=False))
+                  if tab==3 and loaded:
+                      record('Social: five internal sections',all(x in text for x in ['Linimasa','Reels','Pesan','Jelajah','Profil']))
+                      record('Social: guest requires login','Masuk dengan email' in text)
+          finally:
+              report={'checks':results,'passed':sum(x['passed'] for x in results),'failed':sum(not x['passed'] for x in results),'real_google_login_tested':False,'authenticated_feed_tested':False,'production_content_changed':False}
+              (out/'results.json').write_text(json.dumps(report,indent=2))
+          if any(not x['passed'] for x in results):raise SystemExit('One or more device checks failed; see evidence.')
+          PY
+      - name: Enable emulator acceleration
+        run: if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Verify same APK on Android 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 check44.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney44-Resumed-Device-Evidence
+          path: device44/
