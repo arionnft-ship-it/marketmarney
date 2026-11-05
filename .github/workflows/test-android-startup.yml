@@ -1,0 +1,42 @@
+name: Test MarketMarney APK v2 startup
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/test-android-startup.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  android-startup-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney-APK-v2-Perbaikan
+          run-id: 42039983975
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Install and launch in Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          profile: pixel_5
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r apk/app-debug.apk
+            adb logcat -c
+            adb shell am start -W -n com.marketmarney.mobile/.MainActivity
+            sleep 4
+            adb shell pidof com.marketmarney.mobile
+            adb logcat -d -s AndroidRuntime:E > startup-errors.txt
+            if grep -E 'FATAL EXCEPTION|Process: com.marketmarney.mobile' startup-errors.txt; then
+              echo "CRASH DETECTED"
+              exit 1
+            fi
+            echo "LULUS: Activity terbuka tanpa fatal crash."
