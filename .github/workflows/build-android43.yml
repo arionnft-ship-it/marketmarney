@@ -9,7 +9,7 @@ permissions:
   actions: read
 concurrency:
   group: marketmarney-beta43
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   ui:
     runs-on: ubuntu-latest
@@ -19,7 +19,9 @@ jobs:
       - name: Install browser test library
         run: python3 -m pip install playwright==1.56.0
       - name: Run responsive news and social tests
-        run: python3 mobile43/test_ui.py
+        run: |
+          python3 mobile43/prepare.py --ui
+          python3 mobile43/test_ui.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -48,29 +50,7 @@ jobs:
       - name: Assemble isolated beta source
         run: |
           set -euo pipefail
-          cp -a android-v4 android43
-          cp mobile43/MainActivity.java android43/app/src/main/java/com/marketmarney/mobile/MainActivity.java
-          mkdir -p android43/app/src/main/assets
-          cp mobile43/assets/* android43/app/src/main/assets/
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('android43/app/build.gradle');s=p.read_text()
-          assert "applicationId 'com.marketmarney.mobile'" in s
-          s=s.replace("applicationId 'com.marketmarney.mobile'", "applicationId 'com.marketmarney.mobile.beta43'")
-          import re
-          s=re.sub(r'versionCode \d+', 'versionCode 7', s)
-          s=re.sub(r"versionName '[^']+'", "versionName '4.3.0-beta'", s)
-          p.write_text(s)
-          p=Path('android43/app/src/main/res/values/strings.xml')
-          p.write_text(p.read_text().replace('>MarketMarney<','>MarketMarney 4.3 Beta<'))
-          main=Path('mobile43/MainActivity.java').read_text()
-          assert 'labels={"Beranda","Berita","Market Live","Social Marney"}' in main
-          assert 'i<4' in main
-          assert 'addJavascriptInterface' not in main
-          assert 'handler.cancel()' in main
-          assert 'MIXED_CONTENT_NEVER_ALLOW' in main
-          print('PASS: four tabs; strict origin; SSL fail-closed; no JS bridge')
-          PY
+          python3 mobile43/prepare.py
           mkdir -p android43/app/src/main/res/mipmap-xxxhdpi
           curl --fail --location --retry 2 --connect-timeout 10 --max-time 45 https://marketmarney.com/icons/icon-512.png -o android43/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
       - name: Build and lint Android beta
@@ -89,6 +69,7 @@ jobs:
           sha256sum "$APK" > deliver43/SHA256.txt
           cp mobile43/README.md deliver43/BACA-DULU.md
           cp android43/app/build/reports/lint-results-debug.html deliver43/LINT.html
+          cp android43/app/build/reports/lint-results-debug.xml deliver43/LINT.xml
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
@@ -103,6 +84,11 @@ jobs:
           name: MarketMarney43-Beta-APK
           path: deliver43/
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: MarketMarney43-Build-Diagnostics
+          path: android43/app/build/reports/
   android-smoke:
     needs: build
     runs-on: ubuntu-latest
