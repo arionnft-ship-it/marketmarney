@@ -1,0 +1,42 @@
+name: MarketMarney43 Device Page Verification
+on:
+  push:
+    branches: [android-v4.3-social-news]
+    paths: ['qa43/**', '.github/workflows/check-device43.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney43-Beta-APK
+          run-id: 42092176226
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Enable KVM
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Verify pages on Android 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 qa43/check_device.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney43-Device-Verification
+          path: device43/
