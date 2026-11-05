@@ -1,0 +1,18 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.marketmarney.mobile'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.marketmarney.mobile'
+        minSdk 24
+        targetSdk 36
+        versionCode 3
+        versionName '3.0.0-beta'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
