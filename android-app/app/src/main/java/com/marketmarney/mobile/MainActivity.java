@@ -551,6 +551,11 @@ public final class MainActivity extends Activity {
                 if (url != null && url.startsWith(BASE)) {
                     // Signals app context to MarketMarney web code; no untrusted JS bridge exposed.
                     view.evaluateJavascript("try{window.MarketMarneyApp={platform:'android',version:'3.0'};localStorage.setItem('mm_app_client','android-native-v3')}catch(e){}", null);
+                    if ("Kalender Ekonomi".equals(title)) {
+                        view.evaluateJavascript("try{if(typeof go==='function')go('Kalender Ekonomi')}catch(e){}", null);
+                    } else if ("MarketMarney TV".equals(title)) {
+                        view.evaluateJavascript("try{if(typeof go==='function')go('MarketMarney TV')}catch(e){}", null);
+                    }
                 }
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
