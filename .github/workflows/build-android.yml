@@ -59,8 +59,8 @@ jobs:
               applicationId 'com.marketmarney.mobile'
               minSdk 24
               targetSdk 36
-              versionCode 1
-              versionName '1.0.0'
+              versionCode 2
+              versionName '1.0.1'
             }
             buildTypes {
               release { minifyEnabled false }
@@ -70,7 +70,7 @@ jobs:
               targetCompatibility JavaVersion.VERSION_17
             }
           }
-          dependencies { implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4' }
+          dependencies { implementation 'androidx.browser:browser:1.10.0' }
           END_APP_BUILD
           cat > app/src/main/AndroidManifest.xml <<'END_MANIFEST'
           <?xml version="1.0" encoding="utf-8"?>
@@ -78,32 +78,18 @@ jobs:
             <uses-permission android:name="android.permission.INTERNET"/>
             <application android:allowBackup="false" android:icon="@mipmap/ic_launcher"
               android:roundIcon="@mipmap/ic_launcher" android:label="@string/app_name"
-              android:theme="@android:style/Theme.Material.Light.NoActionBar">
-              <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
-              <activity android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+              android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+              <activity android:name="com.marketmarney.mobile.MainActivity"
                 android:exported="true" android:label="@string/app_name">
-                <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                  android:value="https://marketmarney.com/index.html" />
-                <meta-data android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
-                  android:resource="@mipmap/ic_launcher" />
-                <meta-data android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
-                  android:resource="@color/brand_navy" />
                 <intent-filter>
                   <action android:name="android.intent.action.MAIN"/>
                   <category android:name="android.intent.category.LAUNCHER"/>
                 </intent-filter>
-                <intent-filter android:autoVerify="true">
-                  <action android:name="android.intent.action.VIEW" />
-                  <category android:name="android.intent.category.DEFAULT" />
-                  <category android:name="android.intent.category.BROWSABLE" />
-                  <data android:scheme="https" android:host="marketmarney.com"/>
-                </intent-filter>
               </activity>
-              <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"
-                android:exported="false"/>
             </application>
           </manifest>
           END_MANIFEST
+
           cat > app/src/main/res/values/strings.xml <<'END_STRINGS'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -115,6 +101,105 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <resources><color name="brand_navy">#041121</color></resources>
           END_COLORS
+          mkdir -p app/src/main/java/com/marketmarney/mobile
+          cat > app/src/main/java/com/marketmarney/mobile/MainActivity.java <<'END_JAVA'
+          package com.marketmarney.mobile;
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.view.Gravity;
+          import android.widget.Button;
+          import android.widget.ImageView;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import androidx.browser.customtabs.CustomTabsIntent;
+          import androidx.browser.customtabs.CustomTabColorSchemeParams;
+          
+          public final class MainActivity extends Activity {
+            private static final String SITE = "https://marketmarney.com/";
+            private TextView status;
+          
+            private int dp(float v) {
+              return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+            }
+            private TextView label(String value, int size, int color) {
+              TextView v = new TextView(this);
+              v.setText(value);
+              v.setTextSize(size);
+              v.setTextColor(color);
+              v.setGravity(Gravity.CENTER);
+              return v;
+            }
+            @Override public void onCreate(Bundle state) {
+              super.onCreate(state);
+              getWindow().setStatusBarColor(Color.rgb(5,19,36));
+              getWindow().setNavigationBarColor(Color.rgb(5,19,36));
+              LinearLayout root = new LinearLayout(this);
+              root.setOrientation(LinearLayout.VERTICAL);
+              root.setGravity(Gravity.CENTER);
+              root.setPadding(dp(24),dp(24),dp(24),dp(24));
+              root.setBackgroundColor(Color.rgb(4,15,31));
+              ImageView logo = new ImageView(this);
+              logo.setImageResource(R.mipmap.ic_launcher);
+              logo.setContentDescription("Logo MarketMarney");
+              LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(dp(116),dp(116));
+              imageParams.gravity = Gravity.CENTER;
+              imageParams.bottomMargin = dp(18);
+              root.addView(logo,imageParams);
+              TextView title = label("MarketMarney",28,Color.WHITE);
+              title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+              root.addView(title);
+              TextView subtitle=label("Berita  •  Analisa  •  Social Marney",14,Color.rgb(194,210,229));
+              LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(-1,-2);
+              subParams.topMargin=dp(12); subParams.bottomMargin=dp(28);
+              root.addView(subtitle,subParams);
+              Button open = new Button(this);
+              open.setText("Buka MarketMarney");
+              open.setAllCaps(false);
+              open.setTextColor(Color.BLACK);
+              open.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(255,193,57)));
+              root.addView(open,new LinearLayout.LayoutParams(-1,dp(54)));
+              open.setOnClickListener(v -> openMarketMarney());
+              Button browser = new Button(this);
+              browser.setText("Buka di Browser");
+              browser.setAllCaps(false);
+              LinearLayout.LayoutParams browserParams=new LinearLayout.LayoutParams(-1,dp(50));
+              browserParams.topMargin=dp(12);
+              root.addView(browser,browserParams);
+              browser.setOnClickListener(v -> openInBrowser());
+              status=label("Memerlukan koneksi internet dan browser Android.",13,Color.rgb(189,202,222));
+              LinearLayout.LayoutParams statusParams=new LinearLayout.LayoutParams(-1,-2);
+              statusParams.topMargin=dp(26);
+              root.addView(status,statusParams);
+              setContentView(root);
+              if(state==null)root.postDelayed(() -> openMarketMarney(),350);
+            }
+            private void openMarketMarney(){
+              try {
+                CustomTabColorSchemeParams colors = new CustomTabColorSchemeParams.Builder()
+                  .setToolbarColor(Color.rgb(5,19,36)).build();
+                CustomTabsIntent intent = new CustomTabsIntent.Builder()
+                  .setShowTitle(true).setDefaultColorSchemeParams(colors).build();
+                intent.launchUrl(this,Uri.parse(SITE));
+                status.setText("Website dibuka. Jika tertutup, ketuk Buka MarketMarney.");
+              } catch(Exception e) {
+                status.setText("Browser belum siap. Gunakan tombol Buka di Browser atau perbarui Chrome.");
+              }
+            }
+            private void openInBrowser(){
+              try {
+                Intent intent = new Intent(Intent.ACTION_VIEW,Uri.parse(SITE));
+                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                startActivity(intent);
+              } catch(Exception e) {
+                status.setText("Browser tidak ditemukan. Instal atau aktifkan Google Chrome.");
+              }
+            }
+          }
+          END_JAVA
           curl --fail --location --retry 3 --connect-timeout 15 --max-time 120 \
             https://marketmarney.com/icons/icon-512.png \
             --output app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
@@ -124,6 +209,6 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: MarketMarney-APK-Debug
+          name: MarketMarney-APK-v2-Perbaikan
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
