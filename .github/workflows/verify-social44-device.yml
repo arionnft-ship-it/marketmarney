@@ -1,0 +1,74 @@
+name: Social Marney 4.4 Device Verification
+on:
+  push:
+    branches: [android-v4.4-social-reference]
+    paths: ['.github/workflows/verify-social44-device.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney44-Beta-APK
+          run-id: 42129199413
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Prepare robust read-only device test
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile44/test_native44.py');s=p.read_text()
+          a=s.index('def dump(tab):');b=s.index('\ndef check(',a)
+          s=s[:a]+'''def dump(tab):
+              raw=b''
+              for retry in range(5):
+                  adb('shell','uiautomator','dump','--compressed','/sdcard/window44.xml',check=False)
+                  raw=adb('exec-out','cat','/sdcard/window44.xml',check=False)
+                  if raw.lstrip().startswith(b'<?xml'):
+                      break
+                  time.sleep(3)
+              (OUT/f'tab-{tab}.xml').write_bytes(raw)
+              if not raw.lstrip().startswith(b'<?xml'):
+                  (OUT/f'tab-{tab}.png').write_bytes(adb('exec-out','screencap','-p'))
+                  raise RuntimeError('Android UI hierarchy unavailable after five attempts')
+              root=E.fromstring(raw)
+              texts=[n.attrib.get('text','') for n in root.iter()]+[n.attrib.get('content-desc','') for n in root.iter()]
+              return root,'\\n'.join(texts)
+          '''+s[b:]
+          s=s.replace('import subprocess,time,xml.etree.ElementTree as E,json','import subprocess,time,xml.etree.ElementTree as E,json,re')
+          s=s.replace('time.sleep(7);last=', 'time.sleep(12);last=')
+          s=s.replace('if ready:break\n            time.sleep(4)', '''if ready:break
+                      for n in root.iter():
+                          if n.attrib.get('text')=='Coba lagi':
+                              xy=list(map(int,re.findall(r'\\d+',n.attrib.get('bounds',''))))
+                              if len(xy)==4:adb('shell','input','tap',str((xy[0]+xy[2])//2),str((xy[1]+xy[3])//2))
+                              break
+                      time.sleep(4)''')
+          p.write_text(s)
+          compile(s,str(p),'exec')
+          PY
+      - name: Enable hardware acceleration
+        run: if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile44/test_native44.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney44-Device-Final
+          path: device44/
