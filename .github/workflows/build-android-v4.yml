@@ -51,16 +51,7 @@ jobs:
           test -n "$AAPT"
           "$AAPT" dump badging "$APK" | grep -E 'package:|launchable-activity:|sdkVersion:|targetSdkVersion:'
           "$AAPT" dump badging "$APK" | grep -F 'com.marketmarney.mobile.MainActivity'
-          test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex
-          sha256sum "$APK" > MARKETMARNEY-APK-SHA256.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MarketMarney-Android-v4-Premium-Beta
-          path: |
-            android-v4/app/build/outputs/apk/debug/app-debug.apk
-            MARKETMARNEY-APK-SHA1.txt
-            MARKETMARNEY-APK-SHA256.txt
-          if-no-files-found: error)" -gt 0
+          test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0
           APKSIGNER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -type f -name apksigner -print -quit)"
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --print-certs "$APK" > MARKETMARNEY-APK-SHA1.txt
