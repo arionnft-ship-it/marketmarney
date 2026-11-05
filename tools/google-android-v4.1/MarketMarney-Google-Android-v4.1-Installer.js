@@ -66,7 +66,7 @@ function verifyFreshBackup(){
   }
   throw Error('Tidak ditemukan backup lengkap dan terverifikasi dalam enam jam terakhir. Website belum diubah.');
 }
-function atomic(filename,data){const target=path.join(SRC,filename),temp=target+'.android-v4-1-'+process.pid+'-'+crypto.randomBytes(4).toString('hex');fs.writeFileSync(temp,data,{mode:0o600,flag:'wx'});fs.renameSync(temp,target)}
+function atomic(filename,data){const target=path.join(SRC,filename),temp=target+'.android-v4-1-'+process.pid+'-'+crypto.randomBytes(4).toString('hex');fs.writeFileSync(temp,data,{mode:0o600,flag:'wx'});try{fs.chmodSync(temp,0o644);fs.renameSync(temp,target)}catch(e){try{fs.rmSync(temp,{force:true})}catch{};throw e}}
 function apply(){
   const plan=readPlan();verifyRelease();
   if(plan.version==='v4.1'){console.log('LULUS: Android Google v4.1 telah terpasang. Tidak mengubah source.');return}
