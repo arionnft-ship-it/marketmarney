@@ -1,0 +1,54 @@
+name: Check MarketMarney Android Google backend
+on:
+  push:
+    branches: [android-v4-premium]
+    paths: ['.github/workflows/check-android-google-backend.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-android-login:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify Android Google config and nonce endpoint
+        env:
+          BASE_URL: https://marketmarney.com
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, time
+          base = os.environ['BASE_URL']
+          def request(path, body=None):
+              headers={'Accept':'application/json','User-Agent':'MarketMarneyAndroidAudit/4.1'}
+              if body is not None: headers['Content-Type']='application/json'
+              req=urllib.request.Request(base+path, data=body, headers=headers)
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  if resp.status!=200: raise RuntimeError(f'{path}: HTTP {resp.status}')
+                  c=resp.headers.get('Content-Type','')
+                  if 'application/json' not in c: raise RuntimeError(f'{path}: unexpected content type {c}')
+                  data=resp.read(12000)
+              return json.loads(data)
+          last=None
+          for i in range(3):
+              try:
+                  config=request('/api/auth/android/config')
+                  break
+              except Exception as ex:
+                  last=ex
+                  if i==2: raise
+                  time.sleep(3)
+          if config.get('enabled') is not True:
+              raise RuntimeError('Android login config not enabled')
+          if config.get('androidOAuthClientsConfigured') is not True:
+              raise RuntimeError('Android OAuth client allowlist missing')
+          webid=config.get('webClientId')
+          if not isinstance(webid,str) or not webid.endswith('.apps.googleusercontent.com'):
+              raise RuntimeError('Web OAuth client ID missing')
+          print('PASS: Android Google config enabled; registered Android client allowlist present.')
+          challenge=request('/api/auth/android/challenge', b'{}')
+          nonce=challenge.get('nonce','')
+          if not isinstance(nonce,str) or len(nonce)!=43:
+              raise RuntimeError('Google login challenge nonce missing or invalid')
+          print('PASS: Android login challenge endpoint returns valid one-time nonce.')
+          print('LIMITATION: Real device Google account selection and token exchange not tested.')
+          PY
