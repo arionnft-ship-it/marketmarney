@@ -1,0 +1,144 @@
+name: MarketMarney 4.3 Four Tabs and Social Feed
+on:
+  push:
+    branches: [android-v4.3-social-news]
+    paths: ['mobile43/**', '.github/workflows/build-android43.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marketmarney-beta43
+  cancel-in-progress: false
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser test library
+        run: python3 -m pip install playwright==1.56.0
+      - name: Run responsive news and social tests
+        run: python3 mobile43/test_ui.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarketMarney43-UI-Tests
+          path: quality43/
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Assemble isolated beta source
+        run: |
+          set -euo pipefail
+          cp -a android-v4 android43
+          cp mobile43/MainActivity.java android43/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          mkdir -p android43/app/src/main/assets
+          cp mobile43/assets/* android43/app/src/main/assets/
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android43/app/build.gradle');s=p.read_text()
+          assert "applicationId 'com.marketmarney.mobile'" in s
+          s=s.replace("applicationId 'com.marketmarney.mobile'", "applicationId 'com.marketmarney.mobile.beta43'")
+          import re
+          s=re.sub(r'versionCode \d+', 'versionCode 7', s)
+          s=re.sub(r"versionName '[^']+'", "versionName '4.3.0-beta'", s)
+          p.write_text(s)
+          p=Path('android43/app/src/main/res/values/strings.xml')
+          p.write_text(p.read_text().replace('>MarketMarney<','>MarketMarney 4.3 Beta<'))
+          main=Path('mobile43/MainActivity.java').read_text()
+          assert 'labels={"Beranda","Berita","Market Live","Social Marney"}' in main
+          assert 'i<4' in main
+          assert 'addJavascriptInterface' not in main
+          assert 'handler.cancel()' in main
+          assert 'MIXED_CONTENT_NEVER_ALLOW' in main
+          print('PASS: four tabs; strict origin; SSL fail-closed; no JS bridge')
+          PY
+          mkdir -p android43/app/src/main/res/mipmap-xxxhdpi
+          curl --fail --location --retry 2 --connect-timeout 10 --max-time 45 https://marketmarney.com/icons/icon-512.png -o android43/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - name: Build and lint Android beta
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:lintDebug
+      - name: Verify APK and package deliverables
+        run: |
+          set -euo pipefail
+          mkdir -p deliver43
+          cp android43/app/build/outputs/apk/debug/app-debug.apk deliver43/Marney43.apk
+          APK=deliver43/Marney43.apk
+          AAPT="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -type f -name aapt -print -quit)"
+          APKSIGNER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -type f -name apksigner -print -quit)"
+          "$AAPT" dump badging "$APK" > deliver43/APK-IDENTITY.txt
+          grep -F "com.marketmarney.mobile.beta43" deliver43/APK-IDENTITY.txt
+          "$APKSIGNER" verify --print-certs "$APK" > deliver43/APK-CERTIFICATE.txt
+          sha256sum "$APK" > deliver43/SHA256.txt
+          cp mobile43/README.md deliver43/BACA-DULU.md
+          cp android43/app/build/reports/lint-results-debug.html deliver43/LINT.html
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          with zipfile.ZipFile('deliver43/Source43.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in Path('android43').rglob('*'):
+                  if p.is_file() and not any(x in p.parts for x in ['build','.gradle','.git']):z.write(p,p.as_posix())
+              for p in Path('mobile43').rglob('*'):
+                  if p.is_file():z.write(p,p.as_posix())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney43-Beta-APK
+          path: deliver43/
+          if-no-files-found: error
+  android-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney43-Beta-APK
+          path: apk
+      - name: Enable Android emulator hardware acceleration
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+          fi
+      - name: Install and open four tabs on Android 11
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none
+          script: |
+            mkdir -p android-smoke43
+            adb install -r apk/Marney43.apk
+            adb shell wm size 480x900
+            adb shell wm density 180
+            for TAB in 0 1 2 3; do adb shell am force-stop com.marketmarney.mobile.beta43; adb logcat -c; adb shell am start -W -n com.marketmarney.mobile.beta43/com.marketmarney.mobile.MainActivity --ei startTab $TAB; sleep 10; adb shell pidof com.marketmarney.mobile.beta43 || exit 1; adb exec-out screencap -p > android-smoke43/tab-$TAB.png; adb shell uiautomator dump /sdcard/window.xml; adb pull /sdcard/window.xml android-smoke43/tab-$TAB.xml; adb logcat -d -s AndroidRuntime:E > android-smoke43/errors-$TAB.txt; if grep -q 'Process: com.marketmarney.mobile.beta43' android-smoke43/errors-$TAB.txt; then exit 1; fi; done
+            python3 -c "import pathlib,xml.etree.ElementTree as E; labels={'Beranda','Berita','Market Live','Social Marney'}; files=list(pathlib.Path('android-smoke43').glob('tab-*.xml')); assert len(files)==4; [(__import__('builtins').print('PASS tabs',f.name),labels.issubset({n.attrib.get('content-desc','') for n in E.parse(f).iter()}) or __import__('sys').exit(1)) for f in files]; pathlib.Path('android-smoke43/RESULT.txt').write_text('PASS: install and startup of four tabs on Android 11 emulator. Real Google login and authenticated posting not tested.')"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarketMarney43-Android-Smoke
+          path: android-smoke43/
