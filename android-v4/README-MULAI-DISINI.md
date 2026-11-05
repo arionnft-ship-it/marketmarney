@@ -48,3 +48,8 @@ Di Google Cloud Console → Google Auth platform → Clients, buat **Android OAu
 ### Catatan
 
 Aplikasi v4 masih beta hybrid. Uji Google Login nyata dengan akun Google, perangkat Android, sesi WebView, logout, Reels, Story, grup privat, upload, dan izin moderasi sebelum publikasi. Google Login native **tidak sama** dengan login OAuth Google di WebView.
+## Perbaikan Android v4.1
+- Penanda versi WebView diselaraskan dengan APK untuk membedakan aplikasi Android dari browser website.
+- Sinyal aplikasi WebView hanya diberikan pada origin HTTPS MarketMarney yang tepat.
+- Server login Android mendukung allowlist ID klien Android pada klaim `azp` tanpa mengurangi pemeriksaan `aud` Web Client ID.
+- Endpoint baru masih memerlukan aktivasi backend Railway serta pendaftaran OAuth Android di Google Cloud; build APK saja tidak mengaktifkan login.

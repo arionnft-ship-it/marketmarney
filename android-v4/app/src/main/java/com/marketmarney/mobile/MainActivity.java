@@ -568,7 +568,7 @@ public final class MainActivity extends Activity {
         linkCard(page,"SECURITY","Pengaturan Akun","Kelola akun, kata sandi, dan pengaturan keamanan.","Pengaturan",()->showWeb("Akun MarketMarney","/akun.html"));
         linkCard(page,"ABOUT","Tentang MarketMarney","Info aplikasi, kebijakan dan disclaimer finansial.","Selengkapnya",()->showWeb("Tentang MarketMarney","/about.html"));
         space(page,9);
-        addLabel(page,"MarketMarney Android 4.0 beta • Dashboard native • Google Credential Manager",11,MUTED,false);
+        addLabel(page,"MarketMarney Android 4.1 beta • Dashboard native • Google Credential Manager",11,MUTED,false);
     }
 
     /** Opens a MarketMarney page inside the app, never opening Chrome automatically. */
@@ -611,7 +611,7 @@ public final class MainActivity extends Activity {
         setting.setAllowContentAccess(false);
         setting.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         setting.setSupportMultipleWindows(false);
-        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/3.0 AppShell");
+        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/4.1 AppShell");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(browser, false);
         browser.setWebViewClient(new WebViewClient() {
@@ -641,9 +641,11 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 progress.setVisibility(View.GONE);
-                if (url != null && url.startsWith(BASE)) {
+                if (url != null && Uri.parse(url).getHost() != null &&
+                    "marketmarney.com".equalsIgnoreCase(Uri.parse(url).getHost()) &&
+                    "https".equalsIgnoreCase(Uri.parse(url).getScheme())) {
                     // Signals app context to MarketMarney web code; no untrusted JS bridge exposed.
-                    view.evaluateJavascript("try{window.MarketMarneyApp={platform:'android',version:'3.0'};localStorage.setItem('mm_app_client','android-native-v3')}catch(e){}", null);
+                    view.evaluateJavascript("try{window.MarketMarneyApp={platform:'android',version:'4.1'};localStorage.setItem('mm_app_client','android-native-v4.1')}catch(e){}", null);
                     if ("Kalender Ekonomi".equals(title)) {
                         view.evaluateJavascript("try{if(typeof go==='function')go('Kalender Ekonomi')}catch(e){}", null);
                     } else if ("MarketMarney TV".equals(title)) {
