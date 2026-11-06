@@ -59,8 +59,9 @@ final class StartupOverlay extends FrameLayout {
         try{
             PowerManager power=(PowerManager)context.getSystemService(Context.POWER_SERVICE);
             if(power!=null&&power.isPowerSaveMode())return false;
-            if(Build.VERSION.SDK_INT>=26)return ValueAnimator.areAnimatorsEnabled();
-            return Settings.Global.getFloat(context.getContentResolver(),Settings.Global.ANIMATOR_DURATION_SCALE,1f)>0f;
+            // Also read the setting: ValueAnimator's process cache may update asynchronously.
+            if(Settings.Global.getFloat(context.getContentResolver(),Settings.Global.ANIMATOR_DURATION_SCALE,1f)<=0f)return false;
+            return Build.VERSION.SDK_INT<26||ValueAnimator.areAnimatorsEnabled();
         }catch(RuntimeException ignored){return false;}
     }
     void finish(boolean fade,String reason){
@@ -119,7 +120,7 @@ final class StartupOverlay extends FrameLayout {
             paint.setColor(0x0d7996b1);paint.setStrokeWidth(d(.6f));
             float step=d(42);for(float x=w/2%step;x<w;x+=step)canvas.drawLine(x,0,x,h,paint);
             for(float y=h*.39f%step;y<h;y+=step)canvas.drawLine(0,y,w,y,paint);
-            float cx=w/2,cy=h*(compact?.33f:.37f),r=d(compact?44:64);
+            float cx=compact?w*.25f:w/2,cy=h*(compact?.34f:.37f),r=d(compact?32:64);
             float entrance=animator==null?1f:Math.min(1f,(SystemClock.uptimeMillis()-startedAt)/650f);
             float scale=.94f+.06f*(1-(float)Math.pow(1-entrance,3));
             float orbit=r+d(15);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(d(1));paint.setColor(0x306e8ba7);canvas.drawCircle(cx,cy,orbit,paint);
@@ -130,9 +131,9 @@ final class StartupOverlay extends FrameLayout {
             canvas.save();canvas.scale(scale,scale,cx,cy);clip.reset();clip.addCircle(cx,cy,r,Path.Direction.CW);canvas.clipPath(clip);
             logoRect.set(cx-r,cy-r,cx+r,cy+r);paint.setColor(0xffffffff);if(logo!=null)canvas.drawBitmap(logo,null,logoRect,paint);canvas.restore();
             paint.setStyle(Paint.Style.STROKE);paint.setColor(0x65efc56e);paint.setStrokeWidth(d(.8f));canvas.drawCircle(cx,cy,r*scale,paint);
-            float titleY=cy+r+d(compact?40:56);
-            text.setTypeface(bold);text.setTextSize(Math.min(w*.083f,30*scaled));text.setColor(0xfff3f6fa);canvas.drawText("MarketMarney",cx,titleY,text);
-            text.setTypeface(medium);text.setTextSize(10*scaled);text.setColor(GOLD);canvas.drawText("KENALI PASARNYA.",cx,titleY+d(26),text);
+            float titleY=compact?cy+d(7):cy+r+d(56),titleX=compact?w*.64f:cx;
+            text.setTypeface(bold);text.setTextSize(compact?Math.min(w*.035f,24*scaled):Math.min(w*.083f,30*scaled));text.setColor(0xfff3f6fa);canvas.drawText("MarketMarney",titleX,titleY,text);
+            text.setTypeface(medium);text.setTextSize(10*scaled);text.setColor(GOLD);canvas.drawText("KENALI PASARNYA.",titleX,titleY+d(26),text);
             if(!compact){
                 float chartY=titleY+d(91),width=Math.min(w-d(90),d(254)),left=(w-width)/2,gap=width/11;marketLine.reset();
                 for(int i=0;i<12;i++){
@@ -143,10 +144,10 @@ final class StartupOverlay extends FrameLayout {
                 }
                 paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(d(.8f));paint.setColor(0x29efc56e);canvas.drawPath(marketLine,paint);
                 text.setTypeface(regular);text.setTextSize(10*scaled);text.setColor(0xff8198ae);canvas.drawText("BERITA  ·  PASAR  ·  KOMUNITAS",cx,chartY+d(43),text);
+                // Indeterminate dots, not invented percentages or market prices.
+                float dotsY=h-d(160);paint.setStyle(Paint.Style.FILL);
+                for(int i=0;i<3;i++){float pulse=animator==null?.65f:.35f+.65f*(.5f+.5f*(float)Math.cos(phase*Math.PI*2-i*.9));paint.setColor(GOLD);paint.setAlpha((int)(90+140*pulse));canvas.drawCircle(cx+d((i-1)*11),dotsY,d(2.2f),paint);}paint.setAlpha(255);
             }
-            // Indeterminate dots, not invented percentages or market prices.
-            float dotsY=h-d(compact?134:160);paint.setStyle(Paint.Style.FILL);
-            for(int i=0;i<3;i++){float pulse=animator==null?.65f:.35f+.65f*(.5f+.5f*(float)Math.cos(phase*Math.PI*2-i*.9));paint.setColor(GOLD);paint.setAlpha((int)(90+140*pulse));canvas.drawCircle(cx+d((i-1)*11),dotsY,d(2.2f),paint);}paint.setAlpha(255);
         }
     }
 }
