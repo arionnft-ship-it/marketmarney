@@ -1,0 +1,150 @@
+name: Marney 4.6 Premium Reels
+on:
+  push:
+    branches: [android-v4.6-reels-premium]
+    paths: ['mobile46/**', '.github/workflows/build-android46.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney46-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Assemble scoped APK changes
+        run: |
+          set -euo pipefail
+          python3 mobile43/prepare.py
+          python3 mobile44/prepare44.py android43
+          python3 mobile45/prepare45.py android43
+          python3 mobile45/polish45.py android43
+          python3 mobile46/prepare46.py android43
+          node --check android43/app/src/main/assets/social44.js
+          node --check android43/app/src/main/assets/reels46.js
+          mkdir -p android43/app/src/main/res/mipmap-xxxhdpi
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 90 https://marketmarney.com/icons/icon-512.png -o android43/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - name: Build and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:lintDebug
+      - name: Verify APK and package readable source
+        run: |
+          set -euo pipefail
+          mkdir -p deliver
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney46-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney46-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta46'" deliver/Marney46-Package.txt
+          grep -F "versionName='4.6.0-beta'" deliver/Marney46-Package.txt
+          cp "$APK" deliver/Marney46.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney46-Lint.html
+          sha256sum deliver/Marney46.apk > deliver/Marney46-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          with ZipFile('deliver/Marney46-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile46')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney46-Panduan.md').write_text('''# Marney 4.6 Reels Beta
+          Reels vertikal penuh di dalam APK; geser satu video per layar; kontrol di kanan; caption ringkas dan panel komentar bawah.
+          Video aktif diputar tanpa suara terlebih dahulu. Ketuk Suara untuk mengaktifkan suara. Ketuk video untuk jeda/putar.
+          Pengaturan Reels menyediakan Hemat data (tanpa autoplay/prefetch) dan Video utuh/Isi layar.
+          Maksimal satu video bermain. Hanya video aktif dan metadata video berikutnya dipersiapkan pada mode biasa. Video lain dilepas.
+          Layar belakang, komentar, pengaturan dan formulir unggah menghentikan pemutaran. Angka dan izin tetap milik backend asli.
+          Empat menu utama: Beranda, Berita, Market Live, Social Marney. Ikon pesan/notifikasi khas Marney dipertahankan.
+          Package uji com.marketmarney.mobile.beta46. Instal berdampingan tanpa menghapus aplikasi utama. Ini bukan pembaruan bertanda tangan yang sama.
+          Native Google Login belum terdaftar untuk paket beta46. Login email hanya untuk akun yang sudah memiliki kata sandi.
+          Website, Railway, database, Google Cloud tidak diubah. Tidak dipublikasikan ke Play Store.
+          Tidak ada algoritme rekomendasi personal atau transcoding baru. Kelancaran nyata bergantung pada HP, koneksi dan video sumber.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney46-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney46-Build-Diagnostics
+          path: android43/app/build/reports/
+  media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble identical media assets
+        run: |
+          python3 mobile43/prepare.py
+          python3 mobile44/prepare44.py android43
+          python3 mobile45/prepare45.py android43
+          python3 mobile45/polish45.py android43
+          python3 mobile46/prepare46.py android43
+          python3 -m pip install playwright
+          python3 -m playwright install chromium --with-deps
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0x10283e:s=360x640:r=12' -f lavfi -i 'sine=frequency=400:sample_rate=22050' -t 4 -c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -c:a aac -b:a 32k test-video.mp4
+      - name: Test actual MP4 and original UI handlers with synthetic accounts
+        run: python3 mobile46/test_media46.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney46-Media-Tests
+          path: quality46/
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney46-Beta-APK
+          path: apk
+      - name: Prepare read-only device verification
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile45/test_native45.py');s=p.read_text().replace('com.marketmarney.mobile.beta45','com.marketmarney.mobile.beta46').replace('apk/Marney45.apk','apk/Marney46.apk').replace("Path('device45')","Path('device46')")
+          s=s.replace('for tab in range(4):','for tab in [1,3]:').replace('time.sleep(9);tree,text,ok=wait','time.sleep(15);tree,text,ok=wait')
+          p.write_text(s)
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Android 15 install, News/Social and warm navigation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile45/test_native45.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney46-Device-Tests
+          path: device46/
