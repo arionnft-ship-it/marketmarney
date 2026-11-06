@@ -1,0 +1,48 @@
+name: Marney 4.8 First Render Comparison
+on:
+  push:
+    branches: [android-v4.8-fast-groups]
+    paths: ['.github/workflows/compare-groups48.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney48-Static-Test-Inputs
+          run-id: 42148964654
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .
+      - name: Use in-page first-frame timestamp
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile48/test48.py');s=p.read_text()
+          anchor="  t=time.monotonic();await self.page.goto"
+          insert="""  await self.page.add_init_script(\"\"\"(()=>{const observer=new MutationObserver(()=>{if(!window.__mm48Seen&&document.querySelector('#gmMessages .gm-msg')){window.__mm48Seen=true;requestAnimationFrame(()=>{window.__mm48FirstFrame=performance.now();observer.disconnect()});}});observer.observe(document,{childList:true,subtree:true});})();\"\"\")
+          """
+          assert anchor in s;s=s.replace(anchor,insert+anchor,1)
+          old="  return round((time.monotonic()-t)*1000,1)"
+          new="""  if self.user and not self.deny:
+             await self.page.wait_for_function('Number.isFinite(window.__mm48FirstFrame)')
+             return round(await self.page.evaluate('window.__mm48FirstFrame'),1)
+            return round((time.monotonic()-t)*1000,1)"""
+          assert old in s;s=s.replace(old,new)
+          s=s.replace('after<before','before-after>=70')
+          p.write_text(s);compile(s,str(p),'exec')
+          PY
+          python3 -m pip install playwright
+          python3 -m playwright install chromium
+      - name: Compare exact bundled runtime under equal synthetic API latency
+        run: python3 mobile48/test48.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney48-First-Frame-Results
+          path: quality48/
