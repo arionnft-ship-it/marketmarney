@@ -1,0 +1,217 @@
+name: Marney 4.14 Stability
+on:
+  push:
+    branches: [android-v4.14-stability]
+    paths: ['mobile414/**', '.github/workflows/build-android414.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney414-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney413-Beta-APK
+          run-id: 42227818318
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base413
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Verify pinned base and patch recovery only
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base413/Marney413.apk').read_bytes()).hexdigest()=='659d33dd52c0bb523683adf5723c3a19f51258e9ef9a729e859969a6ebe922e7'
+          with ZipFile('base413/Marney413-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 mobile414/prepare414.py android43
+          cp mobile414/Stability414Test.java android43/app/src/androidTest/java/com/marketmarney/mobile/
+      - name: Compile app, tests and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify and package
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney414-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney414-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta414'" deliver/Marney414-Package.txt
+          grep -F "versionName='4.14.0-beta'" deliver/Marney414-Package.txt
+          cp "$APK" deliver/Marney414.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney414-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney414-Lint.html
+          cp preserved414.json deliver/
+          sha256sum deliver/Marney414.apk > deliver/Marney414-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import hashlib,json
+          for n,h in json.loads(Path('preserved414.json').read_text()).items():assert hashlib.sha256((Path('android43')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('deliver/Marney414-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile414')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney414-Panduan.md').write_text('''# Marney 4.14 Stabilitas
+          Lima menu dan desain sebelumnya tetap dipertahankan. 86 aset, animasi pembuka, helper autentikasi dan resolver aset tidak diubah.
+          Tahan salah satu menu bawah untuk Muat ulang halaman, Kembali ke menu, Status aplikasi, atau Pengaturan tanggal & waktu.
+          Menekan kembali menu aktif ketika berada di halaman anak mengembalikan ke halaman utama bagian tersebut; saat sudah di halaman utama hanya scroll ke atas.
+          Kegagalan DNS, timeout, TLS, HTTP 401/403/404/5xx dibedakan. Tidak menerobos TLS atau izin grup. Tidak mengirim ulang POST/login secara otomatis.
+          Petunjuk koneksi lambat muncul setelah 20 detik tanpa frame halaman, bukan waktu tunggu wajib. Halaman yang siap langsung ditampilkan.
+          Pemuatan ganda saat restore riwayat dikurangi. Refresh native Google yang tak dipakai pada beta ditiadakan; halaman Social tetap memeriksa sesinya sendiri.
+          Status aplikasi bisa disalin tanpa URL/token/nama pengguna/isi pesan. Pada XAUWar, kode status feed diterjemahkan; tidak membuat harga simulasi dan tidak mengubah sumber harga.
+          Instal paket terpisah com.marketmarney.mobile.beta414 bernama Marney 4.14 Stabilitas. Jangan hapus aplikasi utama/stabil. Sesi login tidak dipindahkan otomatis.
+          Google Login native paket beta belum terdaftar. Akun Google-only tidak otomatis mempunyai password. Tidak menjanjikan login nyata atau feed LIVE sudah selesai.
+          Website, Railway, database, Google Cloud dan izin grup tidak diubah. Tidak dipublikasikan ke Play Store. Tidak menjamin nol lag pada semua perangkat/jaringan.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          path: deliver/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney414-Test-APK
+          path: testapk/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney414-Build-Diagnostics
+          path: android43/app/build/reports/
+  native:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Test-APK
+          path: testapk
+      - name: Prepare native tests
+        run: |
+          cat > native414.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality414-native
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney414.apk
+          adb install -r testapk/Marney414-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test com.marketmarney.mobile.beta414.test/androidx.test.runner.AndroidJUnitRunner | tee quality414-native/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta414/files/stability-tests quality414-native/ || true
+          adb logcat -d -s AndroidRuntime:E > quality414-native/runtime.log
+          grep -Eq 'OK \(20 tests\)' quality414-native/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash native414.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Native-Evidence
+          path: quality414-native/
+  regression:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          path: apk
+      - name: Prepare unchanged group/profile regression with mocked account data
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality414-regression')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta414').replace('apk/Marney49.apk','apk/Marney414.apk')
+          p.write_text(s)
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Group-Profile-Evidence
+          path: quality414-regression/
+  feed-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check public endpoints once without accounts or writes
+        run: |
+          mkdir -p diagnostic414
+          python3 - <<'PY'
+          import urllib.request,json,time,datetime
+          from pathlib import Path
+          out=[]
+          for u in ['https://marketmarney.com/_railway/health','https://api.gold-api.com/price/XAU']:
+              started=time.monotonic();x={'url':u}
+              try:
+                  r=urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'MarneyReadOnlyDiagnostic/4.14','Accept':'application/json'}),timeout=18)
+                  x.update(status=r.status,date=r.headers.get('Date'),cors=r.headers.get('Access-Control-Allow-Origin'),cache=r.headers.get('Cache-Control'))
+                  data=json.loads(r.read(16000))
+                  if 'gold-api.com' in u:x.update(symbol=data.get('symbol'),currency=data.get('currency'),updatedAt=data.get('updatedAt'),hasPositivePrice=isinstance(data.get('price'),(int,float)) and data['price']>0)
+              except Exception as e:x['error']=str(e)
+              x['ms']=round((time.monotonic()-started)*1000);out.append(x)
+          Path('diagnostic414/endpoints.json').write_text(json.dumps({'checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'observations':out,'scope':'runner HTTP observations only, not a guarantee of Android CORS or a fresh live quote'},indent=2))
+          print(json.dumps(out))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Public-Diagnostic
+          path: diagnostic414/
