@@ -1,0 +1,61 @@
+name: Check public WarXAU LIVE deployment
+on:
+  push:
+    branches: [warxau-hd-daily-v7-6-release]
+    paths: ['.github/workflows/check-warxau-public-live.yml']
+permissions:
+  contents: write
+jobs:
+  public-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-hd-daily-v7-6-release
+      - name: Install Chromium verification tools
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install chromium --with-deps
+      - name: Verify public HTTPS and actual data in browser
+        run: |
+          python3 - <<'PY'
+          from playwright.sync_api import sync_playwright
+          from pathlib import Path
+          import urllib.request,hashlib,json,datetime
+          out={'ok':False,'checks':{},'routes':[],'samples':[],'errors':[],'method':'Public HTTPS and actual Gold API CORS requests. Rendering stopped for feed verification; not a GPU performance test.'}
+          try:
+            for path in ['/','/assets/xau-war-3d.html?v=7.7','/_railway/health','/akun.html','/api/auth/android/config','/api/content']:
+              with urllib.request.urlopen('https://marketmarney.com'+path,timeout=25) as r:
+                body=r.read(6291456);item={'path':path,'status':r.status,'ok':r.status==200}
+                if path.startswith('/assets/xau-war'):
+                  item['sha256']=hashlib.sha256(body).hexdigest();item['ok']=item['ok'] and item['sha256']=='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212'
+                if path=='/':item['ok']=item['ok'] and b'/assets/xau-war-3d.html?v=7.7' in body
+                out['routes'].append(item)
+            assert all(x['ok'] for x in out['routes']), 'Public route or artifact check failed'
+            with sync_playwright() as p:
+              b=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+              pg=b.new_page(viewport={'width':540,'height':760})
+              pg.add_init_script('window.requestAnimationFrame=()=>0;window.cancelAnimationFrame=()=>{};')
+              pg.on('pageerror',lambda e:out['errors'].append(str(e)))
+              pg.goto('https://marketmarney.com/assets/xau-war-3d.html?v=7.7',wait_until='load',timeout=60000)
+              pg.wait_for_function('window.MM_WAR?.ready && MM_WAR.getSnapshot().state==="live"',polling=250,timeout=45000)
+              snapshot='()=>{const s=MM_WAR.getSnapshot();return {version:s.version,mode:s.mode,state:s.state,price:s.price,timestamp:s.timestamp,provider:s.provider,points:s.points,session:s.daily.session,liveFeed:s.liveFeed,quality:s.quality,earned:s.battle.buy.added,totals:s.destruction.totals,triggered:s.destruction.triggered}}'
+              first=pg.evaluate(snapshot);out['samples'].append(first)
+              pg.wait_for_function('MM_WAR.getSnapshot().liveFeed.received>=2',polling=250,timeout=75000)
+              second=pg.evaluate(snapshot);out['samples'].append(second)
+              out['checks']={'deployedVersion':second['version']=='7.7-hd-live','liveMode':second['mode']=='live' and second['state']=='live','realSource':second['provider']=='Gold API · XAU/USD spot','timestampsAdvance':second['timestamp']>first['timestamp'],'noSyntheticStartingArmy':first['earned']['tank']==0,'hdOnly':second['quality']=='hd' and pg.locator('#quality').count()==0,'syntheticControlsDisabled':pg.locator('#round-reset').is_disabled(),'calendarTransparent':'bukan broker' in pg.locator('#daily-source').inner_text(),'noJavascriptErrors':not out['errors']}
+              out['ok']=all(out['checks'].values());b.close()
+          except Exception as e:out['error']=str(e)
+          out['checkedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          Path('warxau-live/production-check.json').write_text(json.dumps(out,indent=2)+'\n');print(json.dumps(out))
+          if not out['ok']:raise SystemExit(1)
+          PY
+      - name: Store public verification result
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-live/production-check.json
+          git diff --cached --quiet || git commit -m 'Record production real-data WarXAU check'
+          git push origin HEAD:warxau-hd-daily-v7-6-release
