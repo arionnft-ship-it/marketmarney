@@ -1,0 +1,49 @@
+name: Marney 4.10 Existing Features Verification
+on:
+  push:
+    branches: [android-v4.10-launch-animation]
+    paths: ['.github/workflows/check-410-regression.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney410-Beta-APK
+          run-id: 42157864989
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Prepare isolated regression on identical APK
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          assert hashlib.sha256(Path('apk/Marney410.apk').read_bytes()).hexdigest()=='eb0a6399d0dd059d68cd371a9ac82051d16b9c43c7356ecba671ee2976314d3c'
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality410-regression')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta410').replace('apk/Marney49.apk','apk/Marney410.apk');p.write_text(s)
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Android 15 actual worker and group/profile regression
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney410-Regression-Final
+          path: quality410-regression/
