@@ -1,0 +1,148 @@
+name: Marney 4.7 Persistent Social Navigation
+on:
+  push:
+    branches: [android-v4.7-social-navigation]
+    paths: ['mobile47/**', '.github/workflows/build-android47.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney47-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Assemble navigation-only changes
+        run: |
+          set -euo pipefail
+          python3 mobile43/prepare.py
+          python3 mobile44/prepare44.py android43
+          python3 mobile45/prepare45.py android43
+          python3 mobile45/polish45.py android43
+          python3 mobile46/prepare46.py android43
+          python3 mobile47/prepare47.py android43
+          node --check android43/app/src/main/assets/social44.js
+          node --check android43/app/src/main/assets/reels46.js
+          node --check android43/app/src/main/assets/navigation47.js
+          mkdir -p android43/app/src/main/res/mipmap-xxxhdpi
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 90 https://marketmarney.com/icons/icon-512.png -o android43/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - name: Compile and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:lintDebug
+      - name: Verify package and collect APK and source
+        run: |
+          set -euo pipefail
+          mkdir -p deliver
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney47-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney47-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta47'" deliver/Marney47-Package.txt
+          grep -F "versionName='4.7.0-beta'" deliver/Marney47-Package.txt
+          cp "$APK" deliver/Marney47.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney47-Lint.html
+          sha256sum deliver/Marney47.apk > deliver/Marney47-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          with ZipFile('deliver/Marney47-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile47')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney47-Panduan.md').write_text('''# Marney 4.7 Navigasi Beta
+          Perbaikan khusus menu Social: Linimasa, Reels, Pesan, Jelajah, Profil tetap di atas ketika membuka Reels dan ruang grup.
+          Video dan chat ditempatkan di bawah header, bukan di belakang tombol. Tinggi dihitung ulang saat viewport berubah.
+          Menu bawah tetap Beranda, Berita, Market Live, Social Marney. Ikon khas Marney dan optimasi pemutaran 4.6 tetap dipertahankan.
+          Package terpisah com.marketmarney.mobile.beta47, versionCode 11. Jangan hapus APK utama; ini tidak menimpa aplikasi sebelumnya.
+          Native Google Login belum terdaftar untuk paket beta47. Login email hanya untuk akun yang sudah memiliki kata sandi.
+          Tidak mengubah website, Railway, database, Google Cloud, pesan atau keanggotaan grup. Tidak dipublikasikan ke Play Store.
+          Tata letak diuji menggunakan akun/pesan simulasi. Pengiriman pesan dan login akun asli perlu diuji pada HP pengguna.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney47-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney47-Build-Diagnostics
+          path: android43/app/build/reports/
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble identical assets
+        run: |
+          python3 mobile43/prepare.py
+          python3 mobile44/prepare44.py android43
+          python3 mobile45/prepare45.py android43
+          python3 mobile45/polish45.py android43
+          python3 mobile46/prepare46.py android43
+          python3 mobile47/prepare47.py android43
+          python3 -m pip install playwright
+      - name: Verify tabs and remaining viewport with mocked account state
+        run: python3 mobile47/test47.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney47-Navigation-UI
+          path: quality47/
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney47-Beta-APK
+          path: apk
+      - name: Prepare read-only Android guest verification
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile45/test_native45.py');s=p.read_text().replace('com.marketmarney.mobile.beta45','com.marketmarney.mobile.beta47').replace('apk/Marney45.apk','apk/Marney47.apk').replace("Path('device45')","Path('device47')")
+          s=s.replace('for tab in range(4):','for tab in [1,3]:').replace('time.sleep(9);tree,text,ok=wait','time.sleep(15);tree,text,ok=wait')
+          p.write_text(s)
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Android 15 install and warm News/Social navigation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile45/test_native45.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney47-Android-Verification
+          path: device47/
