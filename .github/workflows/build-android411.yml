@@ -1,0 +1,191 @@
+name: Marney 4.11 Premium Responsive
+on:
+  push:
+    branches: [android-v4.11-premium-responsive]
+    paths: ['mobile411/**', '.github/workflows/build-android411.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney411-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney410-Beta-APK
+          run-id: 42157864989
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base410
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney49-Public-Source
+          run-id: 42152730344
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: public49
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Apply premium and redundant-work fixes to pinned source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib,json
+          assert hashlib.sha256(Path('base410/Marney410.apk').read_bytes()).hexdigest()=='eb0a6399d0dd059d68cd371a9ac82051d16b9c43c7356ecba671ee2976314d3c'
+          with zipfile.ZipFile('base410/Marney410-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          paths=['app/src/main/java/com/marketmarney/mobile/StartupOverlay.java','app/src/main/java/com/marketmarney/mobile/AndroidGoogleLogin.java','app/src/main/assets/reels46.js','app/src/main/assets/profile49.js','app/src/main/assets/navigation47.js']
+          Path('preserved411.json').write_text(json.dumps({p:hashlib.sha256((Path('android43')/p).read_bytes()).hexdigest() for p in paths}))
+          PY
+          python3 mobile411/prepare411.py android43 public49/sources.json
+          node --check android43/app/src/main/assets/social411/app.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          for p,h in json.loads(Path('preserved411.json').read_text()).items():assert hashlib.sha256((Path('android43')/p).read_bytes()).hexdigest()==h,p
+          print('PASS: startup, authentication helper, Reels and profile routing unchanged')
+          PY
+      - name: Compile and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:lintDebug
+      - name: Verify and package
+        run: |
+          set -euo pipefail
+          mkdir -p deliver
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney411-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney411-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta411'" deliver/Marney411-Package.txt
+          grep -F "versionName='4.11.0-beta'" deliver/Marney411-Package.txt
+          cp "$APK" deliver/Marney411.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney411-Lint.html
+          cp prepare411-report.json preserved411.json deliver/
+          sha256sum deliver/Marney411.apk > deliver/Marney411-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          with ZipFile('deliver/Marney411-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile411')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney411-Panduan.md').write_text('''# Marney 4.11 Premium
+          Navigasi bawah dengan penanda aktif membulat, Berita editorial navy/emas, Social putih gading dan aksen amber. Ikon Marney, Reels dan menu tetap.
+          Social membaca 30 aset publik dari APK lewat WebViewClient dan ServiceWorkerClient. Empat modul widget desktop yang tidak terlihat tidak dijalankan di Social. Market Live tidak diubah.
+          Data akun, izin grup, pesan, media dan berita tetap dari server. Tidak menyalin pesan privat ke cache.
+          Pencarian Berita memakai indeks sekali muat, debounce 110 ms dan batch rendering. Kartu di luar bagian awal menunda rendering jika browser mendukung.
+          Animasi pembuka 4.10 tidak diperpanjang. Tidak menambahkan video, blur berat atau animasi terus-menerus.
+          Package beta terpisah com.marketmarney.mobile.beta411, versionCode 15. Jangan hapus APK utama. Sesi login tidak berpindah otomatis.
+          Google Login native belum terdaftar untuk beta411. Login email hanya untuk akun yang sudah mempunyai kata sandi.
+          Website, Railway, database, Google Cloud dan keanggotaan tidak diubah. Tidak dipublikasikan ke toko aplikasi.
+          Performa pada HP/jaringan pengguna belum diukur. Tidak menjamin nol lag. Buka aplikasi bernama Marney 4.11 Premium untuk menguji.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney411-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney411-Build-Diagnostics
+          path: android43/app/build/reports/
+  ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney411-Beta-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney49-Public-Source
+          run-id: 42152730344
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: public49
+      - name: Verify identical packaged source UI
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('apk/Marney411-Source.zip') as z:z.extractall('.')
+          PY
+          python3 -m pip install playwright
+          python3 mobile411/test_ui411.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney411-UI-Results
+          path: quality411/
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney411-Beta-APK
+          path: apk
+      - name: Prepare real-worker regression with synthetic accounts only
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality411-device')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta411').replace('apk/Marney49.apk','apk/Marney411.apk')
+          anchor=" command('Page.navigate',{'url':'https://marketmarney.com/grup-trader.html?group=11111111-1111-4111-8111-111111111111'})"
+          assert anchor in s
+          extra=''' command('Page.navigate',{'url':'https://marketmarney.com/beranda-trader.html'})
+          wait("window.__mm411BundledReady===true && !!document.getElementById('mm44-social-header')")
+          record('Bundled Social mounts with actual website worker',ev('!!navigator.serviceWorker.controller'))
+          record('Social helper served by worker-safe local resolver',ev("fetch('/__android411/social/app.js').then(r=>r.status===200&&r.headers.get('X-Marney-Asset')==='49')"))
+          record('Five Social destinations still visible',ev("document.querySelectorAll('.mm44-nav-button').length===5"))
+          record('No invisible market iframe initialized',ev("document.querySelectorAll('#mmDesk iframe[src]').length===0"))
+          record('No hidden market news request',ev("!__fixture49.calls.some(x=>x.path==='/api/trader/market-news')"))
+          screenshot('social-bundled')
+          '''
+          extra='\n'.join(' '+line if line and not line.startswith(' ') else line for line in extra.splitlines())+'\n'
+          s=s.replace(anchor,extra+anchor,1)
+          p.write_text(s);compile(s,str(p),'exec')
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Android 15 Social, group, profile and privacy regression
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney411-Android-Results
+          path: quality411-device/
