@@ -1,0 +1,63 @@
+name: Marney 4.14 XAUWar Observation
+on:
+  push:
+    branches: [android-v4.14-stability]
+    paths: ['.github/workflows/probe-414-xauwar.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          run-id: 42314973932
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Prepare observation without changing runtime or provider
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('mobile412/test_public412.py').read_text().replace("Path('quality412')","Path('quality414-xau')").replace('com.marketmarney.mobile.beta412','com.marketmarney.mobile.beta414').replace("=='7.6'","=='7.7'").replace('Existing 7.6 destination selected','Existing 7.7 destination selected')
+          anchor=" time.sleep(1)\n (O/'xauwar-in-app.png')"
+          extra=''' for _ in range(20):
+              d=ev("window.MMGold&&window.MMGold.diagnostics?window.MMGold.diagnostics():null")
+              if d and (d.get('error') or d.get('received',0)>0):break
+              time.sleep(.5)
+          (O/'feed-observation.json').write_text(json.dumps({'diagnostics':d,'deviceTime':ev('new Date().toISOString()'),'realProvider':True,'pricesOrResponsesModified':False,'note':'Observation, not a fresh-feed assertion or GPU benchmark'},indent=2))
+          print('FEED_OBSERVATION '+json.dumps(d),flush=True)
+          '''
+          extra='\n'.join(' '+line if line and not line.startswith(' ') else line for line in extra.splitlines())+'\n'
+          assert anchor in s;s=s.replace(anchor,extra+anchor,1)
+          Path('probe414.py').write_text(s);compile(s,'probe414.py','exec')
+          PY
+          cat > probe414.sh <<'SH'
+          set -euo pipefail
+          adb shell wm size 480x960
+          adb shell wm density 200
+          adb install -r apk/Marney414.apk
+          python3 probe414.py
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash probe414.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-XAUWar-Observation
+          path: quality414-xau/
