@@ -20,6 +20,16 @@ once('@Override protected void onPause(){if(web!=null){web.onPause();if(own(web.
         super.onPause();
     }''')
 once('@Override protected void onResume(){super.onResume();if(web!=null)web.onResume();}', '@Override protected void onResume(){super.onResume();if(web!=null)resumePage(web);}')
+# Match native chrome to the Reels route, without exposing a JS-to-native bridge.
+once('    private boolean destroyed=false;', '    private boolean destroyed=false;\n    private boolean reelsChrome=false;\n    private boolean lightSocial(){return tab==SOCIAL&&!reelsChrome;}')
+once('        tab=selected;updateSocialChrome();drawTabs();', '        tab=selected;reelsChrome=tab==SOCIAL&&cached!=null&&cached.getUrl()!=null&&cached.getUrl().endsWith("#mm44-reels");updateSocialChrome();drawTabs();')
+s=s.replace('boolean light=tab==SOCIAL;', 'boolean light=lightSocial();').replace('tab==SOCIAL?Color.', 'lightSocial()?Color.')
+once('            @Override public void onPageCommitVisible(WebView v,String url){adapt(v,url);}', '''            @Override public void doUpdateVisitedHistory(WebView v,String url,boolean reload){
+                if(v!=web||!own(url))return;
+                boolean next=tab==SOCIAL&&"mm44-reels".equals(Uri.parse(url).getFragment());
+                if(next!=reelsChrome){reelsChrome=next;updateSocialChrome();drawTabs();}
+            }
+            @Override public void onPageCommitVisible(WebView v,String url){adapt(v,url);}''')
 s=s.replace('MarketMarneyAndroid/4.5 AppShell','MarketMarneyAndroid/4.6 AppShell').replace("version:'4.5'","version:'4.6'").replace("dataset.mmAndroid='45'","dataset.mmAndroid='46'").replace("s.dataset.revision!=='45'","s.dataset.revision!=='46'").replace("s.dataset.revision='45'","s.dataset.revision='46'")
 main.write_text(s)
 p=assets/'social44.js';j=p.read_text();a="media.forEach(function(m){if(watched.has(m))return;watched.add(m);";assert j.count(a)==1
