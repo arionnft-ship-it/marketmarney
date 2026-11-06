@@ -1,0 +1,85 @@
+name: Verify Fast Group Screen Android 4.8
+on:
+  push:
+    branches: [android-v4.8-fast-groups]
+    paths: ['.github/workflows/check-groups48.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  group-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney48-Beta-APK
+          run-id: 42148964654
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Prepare public guest route check
+        run: |
+          cat > group48.py <<'PY'
+          import subprocess,time,json,re,xml.etree.ElementTree as E
+          from pathlib import Path
+          O=Path('group48-device');O.mkdir(exist_ok=True);pkg='com.marketmarney.mobile.beta48';checks=[]
+          def adb(*a,check=True):
+              r=subprocess.run(['adb',*a],capture_output=True,timeout=65)
+              if check and r.returncode:raise RuntimeError(r.stderr.decode(errors='replace'))
+              return r.stdout
+          def dump():
+              raw=b''
+              for _ in range(5):
+                  adb('shell','rm','-f','/sdcard/group48.xml',check=False)
+                  adb('shell','uiautomator','dump','--compressed','/sdcard/group48.xml',check=False)
+                  raw=adb('exec-out','cat','/sdcard/group48.xml',check=False)
+                  if raw.lstrip().startswith(b'<?xml'):break
+                  time.sleep(3)
+              (O/'screen.xml').write_bytes(raw)
+              return E.fromstring(raw)
+          def click(label):
+              for _ in range(5):
+                  root=dump()
+                  for n in root.iter():
+                      if label in [n.get('text'),n.get('content-desc')]:
+                          a=list(map(int,re.findall(r'\d+',n.get('bounds',''))))
+                          if len(a)==4 and a[2]>a[0] and a[3]>a[1]:
+                              adb('shell','input','tap',str((a[0]+a[2])//2),str((a[1]+a[3])//2));return
+                  time.sleep(3)
+              raise RuntimeError('Control missing: '+label)
+          def record(name,ok):checks.append({'name':name,'passed':bool(ok)});print(('PASS: ' if ok else 'FAIL: ')+name,flush=True)
+          try:
+              adb('install','-r','apk/Marney48.apk');adb('shell','wm','size','480x900');adb('shell','wm','density','180');adb('logcat','-c')
+              adb('shell','am','start','-W','-n',pkg+'/com.marketmarney.mobile.MainActivity','--ei','startTab','3');time.sleep(14)
+              click('Menu Social Marney');click('Grup publik & privat');time.sleep(6)
+              root=dump();text='\n'.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter())
+              record('Group guest page loads inside APK','Masuk untuk bergabung dalam Grup Trader' in text)
+              record('Five Social destinations remain visible',all(x in text for x in ['Linimasa','Reels','Pesan','Jelajah','Profil']))
+              record('Four native destinations remain visible',{'Beranda','Berita','Market Live','Social Marney'}.issubset({n.get('content-desc','') for n in root.iter()}))
+              record('Process alive',bool(adb('shell','pidof',pkg,check=False).strip()))
+              (O/'group-guest.png').write_bytes(adb('exec-out','screencap','-p'))
+              logs=adb('logcat','-d','-s','AndroidRuntime:E',check=False);(O/'fatal.txt').write_bytes(logs);record('No fatal application exception',('Process: '+pkg).encode() not in logs)
+              record('No page-not-found error','MARKETMARNEY / 404' not in text)
+          finally:
+              (O/'results.json').write_text(json.dumps({'checks':checks,'passed':sum(x['passed'] for x in checks),'failed':sum(not x['passed'] for x in checks),'logged_in_group_tested':False,'real_messages_sent':False},indent=2))
+          if any(not x['passed'] for x in checks):raise SystemExit('Guest group check failed')
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 group48.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney48-Group-Screen-Android
+          path: group48-device/
