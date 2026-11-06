@@ -1,0 +1,32 @@
+/* Marney 4.11: quiet premium surfaces, no blur layers, no additional motion. */
+html[data-mm44-social]:not([data-mm46-reels]){--mm44-base:#fffefa;--mm44-surface:#f5f5f0;--mm44-ink:#172331;--mm44-muted:#647180;--mm44-border:#e7e8e2;--amber:#b77e20}
+html[data-mm44-social] .mm44-social-header{border-bottom:1px solid #e3e6e4!important;box-shadow:none!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow{background:#fffefa!important;padding:9px 15px!important;min-height:62px!important}
+html[data-mm44-social] .mm44-wordmark{font-size:22px!important;letter-spacing:-.7px!important;font-weight:800!important}
+html[data-mm44-social] .mm44-wordmark strong{font-weight:800!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-wordmark span{color:#a8731c!important}
+html[data-mm44-social] .mm44-nav{gap:4px!important;padding:4px 10px 8px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button{border:0!important;border-radius:13px!important;color:#697482!important;min-height:49px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button[aria-pressed=true]{color:#855b14!important;background:#f6edd9!important;border:0!important}
+html[data-mm44-social] .mm44-nav-button span{font-size:10px!important;font-weight:650!important;letter-spacing:.1px}
+html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell{border:1px solid #ece6d8!important;background:#fbf6e9!important;border-radius:13px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow>.mm44-icon{border:1px solid #e6e8e2!important;border-radius:13px!important;background:#f7f7f3!important}
+html[data-mm44-social] .sh-story-section{padding-top:15px!important;padding-bottom:9px!important}
+html[data-mm44-social] .sh-compose-open{border:1px solid #e8e9e2!important;border-radius:14px!important}
+html[data-mm44-social] .sh-post-header>.sh-avatar{border-radius:13px!important;border:1px solid #e1e5df!important}
+html[data-mm44-social] .sh-post-meta a{font-weight:750!important;font-size:13px!important;letter-spacing:.05px}
+html[data-mm44-social] .sh-post-body{line-height:1.7!important;font-size:14px!important}
+html[data-mm44-social] .sh-post{border-bottom:5px solid #f2f3ee!important;margin-bottom:0!important}
+html[data-mm44-social] .sh-guest{border:1px solid #e4e6de!important;background:linear-gradient(145deg,#fffdf5,#eef3f1)!important;border-radius:24px!important;padding:30px 23px!important}
+html[data-mm44-social] .sh-guest h1{font-size:28px!important;line-height:1.25!important}
+html[data-mm44-social] .mm44-login{border-radius:14px!important;min-height:48px!important}
+html[data-mm44-social] .sh-msg-titlebar,html[data-mm44-social] .sh-notice-head{padding:18px!important;border-bottom:1px solid #e8eae5!important}
+html[data-mm44-social] .sh-msg-titlebar h2,html[data-mm44-social] .sh-notice-head h2{font-size:23px!important;letter-spacing:-.5px!important}
+html[data-mm47-group] .gm-room-head{border-bottom:1px solid #e5e8e5!important;box-shadow:none!important}
+html[data-mm47-group] .gm-messages{background:#f3f5f1!important}
+html[data-mm47-group] .gm-compose{padding:10px 12px!important;border-top:1px solid #e5e8e3!important;background:#fffefa!important}
+html[data-mm47-group] .gm-compose input,html[data-mm47-group] .gm-compose textarea{border-radius:14px!important;border-color:#dfe5dd!important}
+html[data-mm44-page=profile] .mm44-profile-header{border-bottom:1px solid #e3e8e1!important;box-shadow:none!important;background:#fffefa!important}
+html[data-mm44-page=profile] .mm44-profile-tabs button[aria-pressed=true]{color:#94671e!important;border-bottom-color:#b77e20!important}
+html[data-mm44-social] button,html[data-mm44-social] a{touch-action:manipulation}
+@media(prefers-reduced-motion:reduce){html[data-mm44-social] *{scroll-behavior:auto!important}}
