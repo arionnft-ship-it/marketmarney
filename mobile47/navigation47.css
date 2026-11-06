@@ -1,0 +1,28 @@
+/* Persistent Social navigation: content stays below the five destinations. */
+html[data-mm47-nav]{--mm47-top:110px;--mm47-vh:100dvh;scroll-padding-top:var(--mm47-top)}
+html[data-mm47-nav] .mm44-social-header{display:block!important;position:fixed!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:80!important;margin:0!important;transform:none!important;box-sizing:border-box!important}
+html[data-mm47-nav] .mm44-headrow,html[data-mm47-nav] .mm44-nav{box-sizing:border-box!important}
+html[data-mm47-nav] body{padding-top:var(--mm47-top)!important;box-sizing:border-box!important}
+html[data-mm47-nav] .mm44-nav-button{touch-action:manipulation;text-decoration:none!important}
+html[data-mm47-nav] .sh-msg-pane{inset:var(--mm47-top) 0 0!important;top:var(--mm47-top)!important;height:calc(var(--mm47-vh) - var(--mm47-top))!important;max-height:none!important;z-index:70!important}
+html[data-mm47-nav][data-mm46-reels] body{height:var(--mm47-vh)!important}
+html[data-mm47-nav][data-mm46-reels] .mm44-social-header{display:block!important;background:#080b10!important;border-bottom:1px solid #ffffff20!important}
+html[data-mm47-nav][data-mm46-reels] #shReelsPanel{inset:var(--mm47-top) 0 0!important;top:var(--mm47-top)!important;height:var(--mm46-height)!important}
+html[data-mm47-nav][data-mm46-reels] #shReelFeed,html[data-mm47-nav][data-mm46-reels] .sh-reel-card{height:var(--mm46-height)!important}
+html[data-mm47-nav][data-mm46-reels] .mm44-nav-button[aria-pressed=true]{color:#f1c675!important;border-bottom-color:#f1c675!important}
+html[data-mm47-nav][data-mm46-reels] #shNotificationBell{color:#f1c675!important;background:#201d13!important}
+html[data-mm47-nav][data-mm46-reels] .mm46-toolbar{padding-top:8px;padding-bottom:12px}
+html[data-mm47-group] body{margin:0!important;height:var(--mm47-vh)!important;overflow:hidden!important;background:#f5f6f8!important}
+html[data-mm47-group] .gm-top{display:none!important}
+html[data-mm47-group] .mm47-group-header .mm44-headrow{min-height:52px!important}
+html[data-mm47-group] .mm47-group-header .mm44-wordmark{font-size:22px!important}
+html[data-mm47-group] #gmApp:not([hidden]){position:fixed!important;top:var(--mm47-top)!important;left:0!important;right:0!important;bottom:0!important;margin:0!important;width:100%!important;max-width:none!important;height:calc(var(--mm47-vh) - var(--mm47-top))!important;min-height:0!important;box-sizing:border-box!important}
+html[data-mm47-group] .gm-aside,html[data-mm47-group] .gm-room{min-height:0!important;max-height:100%!important}
+html[data-mm47-group] .gm-room-inner:not([hidden]){display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important}
+html[data-mm47-group] .gm-room-head{position:relative!important;top:auto!important;flex-shrink:0!important}
+html[data-mm47-group] .gm-messages{flex:1 1 0!important;min-height:0!important;height:auto!important;overflow-y:auto!important;overscroll-behavior:contain}
+html[data-mm47-group] .gm-compose{position:relative!important;inset:auto!important;flex-shrink:0!important;margin-bottom:0!important}
+html[data-mm47-group] .gm-pin,html[data-mm47-group] .gm-chat-search,html[data-mm47-group] .gm-join{flex-shrink:0!important}
+html[data-mm47-group] .gm-info-panel{top:var(--mm47-top)!important;max-height:calc(var(--mm47-vh) - var(--mm47-top))!important;z-index:90!important}
+html[data-mm47-group] #gmGuest{position:relative!important;top:auto!important;max-height:calc(var(--mm47-vh) - var(--mm47-top));overflow:auto}
+@media(max-height:440px){html[data-mm47-nav] .mm44-headrow{min-height:40px!important;padding-top:0!important;padding-bottom:0!important}html[data-mm47-nav] .mm44-headrow .mm44-icon,html[data-mm47-nav] #shNotificationBell{height:38px!important;min-height:38px!important}html[data-mm47-nav] .mm44-nav{min-height:48px!important}}
