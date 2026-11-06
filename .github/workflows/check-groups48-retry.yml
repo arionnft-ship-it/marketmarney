@@ -1,0 +1,70 @@
+name: Marney 4.8 Group Screen Verified
+on:
+  push:
+    branches: [android-v4.8-fast-groups]
+    paths: ['.github/workflows/check-groups48-retry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  group-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney48-Beta-APK
+          run-id: 42148964654
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Reuse exact group test with emulator-launcher recovery
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+          w=Path('.github/workflows/check-groups48.yml').read_text()
+          s=textwrap.dedent(w.split("cat > group48.py <<'PY'\n",1)[1].split('\n          PY\n',1)[0])
+          s=s.replace('for _ in range(5):','for _ in range(8):')
+          old='        root=dump()\n        for n in root.iter():'
+          new='''        root=dump()
+                  screen=' '.join(n.get('text','') for n in root.iter())
+                  if "Pixel Launcher isn't responding" in screen:
+                      for n in root.iter():
+                          if n.get('text')=='Close app':
+                              a=list(map(int,re.findall(r'\\d+',n.get('bounds',''))))
+                              if len(a)==4:adb('shell','input','tap',str((a[0]+a[2])//2),str((a[1]+a[3])//2))
+                      adb('shell','am','start','-W','-n',pkg+'/com.marketmarney.mobile.MainActivity','--ei','startTab','3')
+                      time.sleep(8)
+                      continue
+                  for n in root.iter():'''
+          # Align the injected block with the existing function indentation.
+          new=textwrap.dedent(new)
+          new='\n'.join(('        '+l if i>0 else l) for i,l in enumerate(new.splitlines()))
+          # Use explicit block construction for predictable Python indentation.
+          new="        root=dump()\n        screen=' '.join(n.get('text','') for n in root.iter())\n        if \"Pixel Launcher isn't responding\" in screen:\n            for n in root.iter():\n                if n.get('text')=='Close app':\n                    a=list(map(int,re.findall(r'\\d+',n.get('bounds',''))))\n                    if len(a)==4:adb('shell','input','tap',str((a[0]+a[2])//2),str((a[1]+a[3])//2))\n            adb('shell','am','start','-W','-n',pkg+'/com.marketmarney/mobile/MainActivity'.replace('marketmarney/mobile','marketmarney.mobile'),'--ei','startTab','3')\n            time.sleep(8)\n            continue\n        for n in root.iter():"
+          assert old in s;s=s.replace(old,new,1)
+          s=s.replace('time.sleep(14)','time.sleep(20)')
+          s=s.replace("click('Menu Social Marney');click('Grup publik & privat');time.sleep(6)","click('Menu Social Marney');click('Grup publik & privat');time.sleep(8)")
+          s=s.replace("finally:\n    (O/'results.json')", "finally:\n    (O/'final-screen.png').write_bytes(adb('exec-out','screencap','-p',check=False))\n    (O/'results.json')")
+          compile(s,'group48.py','exec');Path('group48.py').write_text(s)
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 group48.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney48-Group-Device-Final
+          path: group48-device/
