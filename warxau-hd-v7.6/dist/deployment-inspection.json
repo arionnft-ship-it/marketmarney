@@ -1,0 +1,75 @@
+{
+  "mode": "DEMO",
+  "version": "7.6",
+  "outputSha256": "5b242984dc0cfc8180d964a4cece6ee0fdbdb302d6463325888a0b867ad0ab44",
+  "outputBytes": 3205695,
+  "sourceCommit": "283953d56fcd81ee31ec26c425dd50c1184e3c1d",
+  "existingPublicSite": [
+    {
+      "path": "/assets/brand-logo.webp",
+      "status": 200,
+      "bytes": 161748,
+      "sha256": "e188ff178829e294e72b266a5ab1ac68bb8e93d413e90b3db5f438eeed2e4fca",
+      "contentType": "image/webp",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 129537,
+      "sha256": "2c2b8444a2d40d9d2b384728b09171c78a13c0a2423ec657fd3709559e920fd2",
+      "contentType": "text/html; charset=utf-8",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store",
+      "menuCount": 1,
+      "navCount": 1
+    },
+    {
+      "path": "/assets/xau-war-3d.html",
+      "status": 200,
+      "bytes": 79292,
+      "sha256": "6aa582e9dd5cf330e45980b18c9542957fa7565a05dc7acd6171e78d9f96719e",
+      "contentType": "text/html; charset=utf-8",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "path": "/akun.html",
+      "status": 200,
+      "bytes": 19090,
+      "sha256": "1c699032dcdfcb08c6a8d0bea365b757af199d73cbe69181efba93f8f7c4fe29",
+      "contentType": "text/html; charset=utf-8",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "path": "/api/auth/android/config",
+      "status": 200,
+      "bytes": 199,
+      "sha256": "c1f8a153ff0a4cd4f4fd7577a3c3bc6e4cce41af1fdaa4b73b3afc363eb44240",
+      "contentType": "application/json; charset=utf-8",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "path": "/api/content",
+      "status": 200,
+      "bytes": 134880,
+      "sha256": "e16b4559abaa164ce095ae6861f55caa595f9f20ad2cafdd0309511bd8f21b09",
+      "contentType": "application/json",
+      "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "path": "/_railway/health",
+      "status": 200,
+      "bytes": 30,
+      "sha256": "9223df39cc12dae8250c480305e62dab52bcd8fb69de886be0cd82472ad28161",
+      "contentType": "application/json; charset=utf-8",
+      "csp": "",
+      "cacheControl": "no-store"
+    }
+  ],
+  "note": "Read-only pre-deployment inspection. No live files, credentials or data altered."
+}
