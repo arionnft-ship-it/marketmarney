@@ -1,0 +1,65 @@
+name: Build and test WarXAU LIVE
+on:
+  push:
+    branches: [warxau-hd-daily-v7-6-release]
+    paths: ['.github/workflows/build-warxau-live.yml', 'warxau-live/live-gold.js', 'warxau-live/patch_live.py']
+permissions:
+  contents: write
+concurrency:
+  group: warxau-live-release
+  cancel-in-progress: false
+jobs:
+  build-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-hd-daily-v7-6-release
+      - name: Build exact tested LIVE page
+        run: |
+          python3 warxau-live/patch_live.py warxau-hd-v7.6/dist/WEB-DEMO.html warxau-live/dist/WEB-LIVE.html
+          echo 'b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212  warxau-live/dist/WEB-LIVE.html' | sha256sum -c -
+          node --check warxau-live/live-gold.js
+      - name: Install browser test runner
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install chromium --with-deps
+      - name: Browser reads two real upstream snapshots
+        run: |
+          mkdir -p warxau-live/dist/_railway
+          echo '{"ok":true}' > warxau-live/dist/_railway/health
+          python3 -m http.server 8977 --bind 127.0.0.1 --directory warxau-live/dist >/tmp/warxau-http.log 2>&1 &
+          python3 - <<'PY'
+          from playwright.sync_api import sync_playwright
+          import json,pathlib,datetime
+          out={'ok':False,'checks':{},'errors':[], 'samples':[], 'test':'Real Gold API requests and browser CORS; renderer loop intentionally stopped, feed timers unchanged.'}
+          try:
+            with sync_playwright() as p:
+              b=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+              pg=b.new_page(viewport={'width':540,'height':760})
+              pg.add_init_script('window.requestAnimationFrame=()=>0;window.cancelAnimationFrame=()=>{};')
+              pg.on('pageerror',lambda e:out['errors'].append(str(e)))
+              pg.goto('http://127.0.0.1:8977/WEB-LIVE.html',wait_until='load',timeout=60000)
+              pg.wait_for_function('window.MM_WAR?.ready && MM_WAR.getSnapshot().state==="live"',polling=250,timeout=45000)
+              snapshot='()=>{const s=MM_WAR.getSnapshot();return {mode:s.mode,state:s.state,version:s.version,price:s.price,provider:s.provider,timestamp:s.timestamp,points:s.points,daily:s.daily,feed:s.liveFeed,quality:s.quality,earned:s.battle.buy.added}}'
+              first=pg.evaluate(snapshot);out['samples'].append(first)
+              pg.wait_for_function('MM_WAR.getSnapshot().liveFeed.received>=2',polling=250,timeout=75000)
+              second=pg.evaluate(snapshot);out['samples'].append(second)
+              out['checks']={'realMode':second['mode']=='live','correctProvider':second['provider']=='Gold API · XAU/USD spot','timestampsAdvance':second['timestamp']>first['timestamp'],'noFakeInitialTank':first['earned']['tank']==0,'hdOnly':second['quality']=='hd' and pg.locator('#quality').count()==0,'demoControlsDisabled':pg.locator('#round-reset').is_disabled(),'utcCalendarExplicit':'bukan broker' in pg.locator('#daily-source').inner_text(),'noErrors':not out['errors']}
+              out['ok']=all(out['checks'].values());out['checkedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+              b.close()
+          except Exception as e:out['error']=str(e)
+          pathlib.Path('warxau-live/dist/browser-real-feed.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out))
+          if not out['ok']:raise SystemExit(1)
+          PY
+      - name: Record release and verification
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-live/dist/WEB-LIVE.html warxau-live/dist/WEB-LIVE.json
+          test ! -f warxau-live/dist/browser-real-feed.json || git add warxau-live/dist/browser-real-feed.json
+          git diff --cached --quiet || git commit -m 'Build LIVE spot page and record real-feed browser verification'
+          git push origin HEAD:warxau-hd-daily-v7-6-release
