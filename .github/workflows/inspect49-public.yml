@@ -1,0 +1,40 @@
+name: Diagnose 4.9 public runtime
+on:
+  push:
+    branches: [android-v4.9-group-profile-fix]
+    paths: ['.github/workflows/inspect49-public.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Read public source only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.request import Request,urlopen
+          import re,json,hashlib
+          from concurrent.futures import ThreadPoolExecutor
+          base='https://marketmarney.com';out=Path('public49');out.mkdir();paths=['/profil.html','/akun.html','/beranda-trader.html','/sw.js'];items={}
+          def read(p):
+              with urlopen(Request(base+p,headers={'User-Agent':'MarneyPublicRegressionCheck/4.9'}),timeout=20) as r:
+                  if r.status!=200 or not r.url.startswith(base+'/'):raise RuntimeError(p)
+                  b=r.read(1600001)
+                  if len(b)>1600000:raise RuntimeError('Too large')
+                  return b.decode('utf8')
+          for p in paths:items[p]=read(p)
+          more=set()
+          for p in paths[:3]:
+              more.update(re.findall(r'(?:src|href)="(/assets/[^"<>]+\.(?:js|css)(?:\?[^"<>]*)?)"',items[p]))
+          with ThreadPoolExecutor(max_workers=4) as pool:
+              for p,t in zip(sorted(more),pool.map(read,sorted(more))):items[p]=t
+          (out/'sources.json').write_text(json.dumps(items))
+          (out/'hashes.json').write_text(json.dumps({k:hashlib.sha256(v.encode()).hexdigest() for k,v in items.items()},indent=2))
+          print('Read',len(items),'public source files; no authenticated data')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney49-Public-Source
+          path: public49/
