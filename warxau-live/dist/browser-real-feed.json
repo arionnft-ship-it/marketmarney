@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "checks": {
+    "realMode": true,
+    "correctProvider": true,
+    "timestampsAdvance": true,
+    "noFakeInitialTank": true,
+    "hdOnly": true,
+    "demoControlsDisabled": true,
+    "utcCalendarExplicit": true,
+    "noErrors": true
+  },
+  "errors": [],
+  "samples": [
+    {
+      "mode": "live",
+      "state": "live",
+      "version": "7.7-hd-live",
+      "price": 4059.399902,
+      "provider": "Gold API \u00b7 XAU/USD spot",
+      "timestamp": 1793970905000,
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "mm-gold-utc-2026-11-06",
+          "symbol": "XAU/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Gold API \u00b7 XAU/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1793923200000,
+          "closesAt": 1794009600000,
+          "serverTime": 1793970906318,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 38693119.5
+      },
+      "feed": {
+        "state": "live",
+        "source": "https://api.gold-api.com/price/XAU",
+        "provider": "Gold API \u00b7 XAU/USD spot",
+        "intervalMs": 30000,
+        "calendar": "MarketMarney D1 UTC \u2014 bukan kalender broker",
+        "requests": 1,
+        "received": 1,
+        "error": null,
+        "lastPrice": 4059.399902,
+        "lastTimestamp": 1793970905000,
+        "receivedAt": 1793970906318,
+        "sessionId": "mm-gold-utc-2026-11-06"
+      },
+      "quality": "hd",
+      "earned": {
+        "infantry": 0,
+        "tank": 0
+      }
+    },
+    {
+      "mode": "live",
+      "state": "live",
+      "version": "7.7-hd-live",
+      "price": 4058.800049,
+      "provider": "Gold API \u00b7 XAU/USD spot",
+      "timestamp": 1793970934000,
+      "points": 2,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "mm-gold-utc-2026-11-06",
+          "symbol": "XAU/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Gold API \u00b7 XAU/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1793923200000,
+          "closesAt": 1794009600000,
+          "serverTime": 1793970936442,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 38663346.69995117
+      },
+      "feed": {
+        "state": "live",
+        "source": "https://api.gold-api.com/price/XAU",
+        "provider": "Gold API \u00b7 XAU/USD spot",
+        "intervalMs": 30000,
+        "calendar": "MarketMarney D1 UTC \u2014 bukan kalender broker",
+        "requests": 2,
+        "received": 2,
+        "error": null,
+        "lastPrice": 4058.800049,
+        "lastTimestamp": 1793970934000,
+        "receivedAt": 1793970936442,
+        "sessionId": "mm-gold-utc-2026-11-06"
+      },
+      "quality": "hd",
+      "earned": {
+        "infantry": 0,
+        "tank": 0
+      }
+    }
+  ],
+  "test": "Real Gold API requests and browser CORS; renderer loop intentionally stopped, feed timers unchanged.",
+  "checkedAt": "2026-11-06T13:15:36.961304+00:00"
+}

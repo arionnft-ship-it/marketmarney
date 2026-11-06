@@ -1,0 +1,10 @@
+{
+  "sha256": "b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212",
+  "bytes": 3209753,
+  "baseSha256": "5b242984dc0cfc8180d964a4cece6ee0fdbdb302d6463325888a0b867ad0ab44",
+  "mode": "live-spot",
+  "provider": "Gold API",
+  "intervalMs": 30000,
+  "calendar": "MarketMarney D1 UTC; not broker calendar",
+  "version": "7.7-hd-live"
+}
