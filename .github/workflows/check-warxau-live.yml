@@ -1,0 +1,44 @@
+name: Verify WarXAU live feed
+on:
+  push:
+    branches: [warxau-hd-daily-v7-6-release]
+    paths: ['.github/workflows/check-warxau-live.yml']
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-hd-daily-v7-6-release
+      - name: Read public feed twice without credentials
+        run: |
+          mkdir -p warxau-live
+          python3 - <<'PY'
+          import urllib.request,json,time,datetime,hashlib,pathlib
+          samples=[]
+          for i in range(2):
+            req=urllib.request.Request('https://api.gold-api.com/price/XAU',headers={'User-Agent':'MarketMarney/WarXAU-live-check','Accept':'application/json'})
+            with urllib.request.urlopen(req,timeout=20) as r:
+              b=r.read(20000); d=json.loads(b)
+              samples.append({'receivedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'data':d,'date':r.headers.get('date'),'cacheControl':r.headers.get('cache-control'),'allowOrigin':r.headers.get('access-control-allow-origin'),'exposeHeaders':r.headers.get('access-control-expose-headers')})
+              assert d['symbol']=='XAU' and isinstance(d['price'],(int,float)) and d['price']>0
+              ts=datetime.datetime.fromisoformat(d['updatedAt'].replace('Z','+00:00'))
+              assert -10 < (datetime.datetime.now(datetime.timezone.utc)-ts).total_seconds() < 150, 'STALE PRICE'
+            if i==0: time.sleep(35)
+          with urllib.request.urlopen('https://marketmarney.com/assets/xau-war-3d.html?v=7.6',timeout=20) as r:
+            page=r.read(6000000); site={'sha256':hashlib.sha256(page).hexdigest(),'bytes':len(page),'date':r.headers.get('date'),'csp':r.headers.get('content-security-policy')}
+          assert samples[0]['data']['updatedAt'] != samples[1]['data']['updatedAt'], 'PRICE TIMESTAMP NOT ADVANCING'
+          result={'ok':True,'samples':samples,'site':site,'note':'Public real feed checks only. No changes to website.'}
+          pathlib.Path('warxau-live/feed-check.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result))
+          PY
+      - name: Record public evidence
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-live/feed-check.json
+          git diff --cached --quiet || git commit -m 'Record two fresh gold spot samples and live-site integrity'
+          git push origin HEAD:warxau-hd-daily-v7-6-release
