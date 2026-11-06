@@ -1,0 +1,160 @@
+name: Marney 4.13 XAUWar Live
+on:
+  push:
+    branches: [android-v4.13-xauwar-live]
+    paths: ['mobile413/**', '.github/workflows/build-android413.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney413-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney412-Beta-APK
+          run-id: 42222749138
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base412
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Verify public version and apply route-only change
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,json,datetime,urllib.request
+          assert hashlib.sha256(Path('base412/Marney412.apk').read_bytes()).hexdigest()=='1ac98d4d177efb87d221de277c0f4b42e1fd015d4f527d4fc169c57904a9f998'
+          with ZipFile('base412/Marney412-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          req=urllib.request.Request('https://marketmarney.com/assets/xau-war-3d.html?v=7.7',headers={'User-Agent':'MarneyReadOnlyUpdateCheck/4.13'})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              assert r.status==200 and r.url.startswith('https://marketmarney.com/');b=r.read(4000000)
+          assert b'7.7-hd-live' in b and b'api.gold-api.com/price/XAU' in b
+          Path('public-version413.json').write_text(json.dumps({'url':req.full_url,'httpStatus':200,'version':'7.7-hd-live','sha256':hashlib.sha256(b).hexdigest(),'bytes':len(b),'checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Public HTML/version check, not provider-price freshness or GPU benchmark'},indent=2))
+          print('PASS: deployed XAUWar 7.7 HTML and original APK verified')
+          PY
+          python3 mobile413/prepare413.py android43
+      - name: Compile and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify package and collect artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney413-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney413-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta413'" deliver/Marney413-Package.txt
+          grep -F "versionName='4.13.0-beta'" deliver/Marney413-Package.txt
+          cp "$APK" deliver/Marney413.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney413-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney413-Lint.html
+          cp preserved413.json public-version413.json test_public413.py deliver/
+          sha256sum deliver/Marney413.apk > deliver/Marney413-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import json,hashlib
+          for p,h in json.loads(Path('preserved413.json').read_text()).items():assert hashlib.sha256((Path('android43')/p).read_bytes()).hexdigest()==h,p
+          with ZipFile('deliver/Marney413-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile413')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney413-Panduan.md').write_text('''# Marney 4.13 XAUWar Live
+          Pembaruan khusus tautan XAUWar: /assets/xau-war-3d.html?v=7.7. Tautan versi lama di dalam aplikasi dinormalkan ke 7.7.
+          Menu tetap Beranda, Berita, XAUWar, Market Live, Social Marney. Seluruh aset dan kode autentikasi/splash/resource resolver dipertahankan.
+          XAUWar 7.7 yang sudah dipasang di website memakai snapshot spot XAU/USD Gold API sekitar tiap 30 detik; bukan tick-by-tick broker. DEMO tetap mode terpisah.
+          Sesi D1 UTC WarXAU bukan kalender daily broker. Pembaruan APK ini tidak mengubah sumber data, aturan arena, atau server.
+          Halaman 3D tetap dimuat hanya saat dipilih dan tidak disimpan saat pindah tab. Tidak ada benchmark kecepatan pada HP pengguna.
+          Instal aplikasi bernama Marney 4.13 XAUWar Live. Package beta terpisah com.marketmarney.mobile.beta413; jangan hapus aplikasi lama/stabil.
+          Sesi login tidak berpindah otomatis. Native Google Login belum didaftarkan untuk paket beta413; pengaturan aplikasi utama tidak diubah.
+          Website, Railway, database, akun, izin grup, Google Cloud dan unggahan tidak diubah. Tidak dipublikasikan ke Play Store.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney413-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney413-Test-APK
+          path: testapk/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney413-Build-Diagnostics
+          path: android43/app/build/reports/
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney413-Beta-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney413-Test-APK
+          path: testapk
+      - name: Prepare tests on same signed APK
+        run: |
+          python3 -m pip install websocket-client
+          cat > test413.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality413
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney413.apk
+          adb install -r testapk/Marney413-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Navigation413Test com.marketmarney.mobile.beta413.test/androidx.test.runner.AndroidJUnitRunner | tee quality413/instrumentation.txt
+          grep -Eq 'OK \(8 tests\)' quality413/instrumentation.txt
+          adb shell wm density 200
+          python3 apk/test_public413.py
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Android 15 navigation and deployed XAUWar 7.7 page
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test413.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney413-Android-Evidence
+          path: quality413/
