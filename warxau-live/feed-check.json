@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "samples": [
+    {
+      "receivedAt": "2026-11-06T13:00:25.359110+00:00",
+      "data": {
+        "currency": "USD",
+        "currencySymbol": "$",
+        "exchangeRate": 1.0,
+        "name": "Gold",
+        "price": 4063.100098,
+        "symbol": "XAU",
+        "updatedAt": "2026-11-06T13:00:05Z",
+        "updatedAtReadable": "a few seconds ago"
+      },
+      "date": "Fri, 06 Nov 2026 13:00:25 GMT",
+      "cacheControl": "public, max-age=10",
+      "allowOrigin": "*",
+      "exposeHeaders": null
+    },
+    {
+      "receivedAt": "2026-11-06T13:01:00.653179+00:00",
+      "data": {
+        "currency": "USD",
+        "currencySymbol": "$",
+        "exchangeRate": 1.0,
+        "name": "Gold",
+        "price": 4063.100098,
+        "symbol": "XAU",
+        "updatedAt": "2026-11-06T13:00:34Z",
+        "updatedAtReadable": "a few seconds ago"
+      },
+      "date": "Fri, 06 Nov 2026 13:01:00 GMT",
+      "cacheControl": "public, max-age=5",
+      "allowOrigin": "*",
+      "exposeHeaders": null
+    }
+  ],
+  "site": {
+    "sha256": "5b242984dc0cfc8180d964a4cece6ee0fdbdb302d6463325888a0b867ad0ab44",
+    "bytes": 3205695,
+    "date": "Fri, 06 Nov 2026 13:01:00 GMT",
+    "csp": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+  },
+  "note": "Public real feed checks only. No changes to website."
+}
