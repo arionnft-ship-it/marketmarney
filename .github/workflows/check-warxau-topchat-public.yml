@@ -1,0 +1,88 @@
+name: Check public WarXAU arena and chat
+on:
+  push:
+    branches: [warxau-arena-chat-v7-8]
+    paths: ['.github/workflows/check-warxau-topchat-public.yml']
+permissions:
+  contents: write
+jobs:
+  verify-public:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-arena-chat-v7-8
+      - name: Install browser verification tools
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install chromium --with-deps
+      - name: Inspect actual public page and chat without sending any messages
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json,datetime,re,hashlib
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+          out={'ok':False,'checks':[],'errors':[],'method':'Read-only public HTTPS and anonymous chat polling in Chromium. Frame callback disabled only for layout tests, not a GPU benchmark. No accounts or messages created.'}
+          def check(name,ok):
+            out['checks'].append({'name':name,'ok':bool(ok)})
+            assert ok,name
+          try:
+            bodies={}
+            paths={'/_railway/health':200,'/':200,'/akun.html':200,'/api/auth/android/config':200,'/assets/xau-war-3d.html?v=7.8':200,'/assets/warxau-topchat-layout.js?v=7.8':200,'/assets/warxau-topchat-chat.js?v=7.8':200,'/assets/warxau-topchat.css?v=7.8':200,'/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest':200,'/api/xau-war/mt4/health':200,'/api/xau-war/mt4/arena':401,'/api/xau-war/mt4/status':401,'/api/xau-war/mt4/stream':401}
+            for path,expected in paths.items():
+              req=urllib.request.Request('https://marketmarney.com'+path,headers={'User-Agent':'MarketMarney-WarXAU-TopChat-Check','Accept-Encoding':'identity'})
+              try:r=urllib.request.urlopen(req,timeout=25)
+              except urllib.error.HTTPError as e:r=e
+              bodies[path]=r.read(6291456);check(path+' HTTP',r.status==expected)
+            raw=bodies['/assets/xau-war-3d.html?v=7.8'].decode()
+            check('new layout served', 'data-warxau-topchat="7.8"' in raw)
+            check('Social Marney homepage label preserved',b'SOCIAL MARNEY' in bodies['/'])
+            baseline=Path('warxau-live/dist/WEB-LIVE.html').read_text()
+            scripts=lambda s:[hashlib.sha256(x.encode()).hexdigest() for x in re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',s,re.I) if x]
+            check('all 24 price/game scripts unchanged',scripts(raw)==scripts(baseline) and len(scripts(raw))==24)
+            check('chat interval 3 seconds',b'},3000);' in bodies['/assets/warxau-topchat-chat.js?v=7.8'])
+            with sync_playwright() as p:
+              b=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+              pg=b.new_page(viewport={'width':1440,'height':1000})
+              pg.add_init_script("const r=requestAnimationFrame.bind(window);window.requestAnimationFrame=f=>f.name==='frame'?0:r(f);")
+              pg.on('pageerror',lambda e:out['errors'].append(str(e)))
+              responses=[]
+              pg.on('response',lambda r: responses.append(r.status) if '/api/discussions?' in r.url else None)
+              pg.goto('https://marketmarney.com/assets/xau-war-3d.html?v=7.8',wait_until='load',timeout=60000)
+              pg.wait_for_selector('.mm1831-chat',timeout=30000)
+              pg.wait_for_function("document.querySelector('.mm1831-live-indicator').dataset.state==='connected'",timeout=30000)
+              a=pg.locator('.battle-panel').bounding_box();c=pg.locator('.mm1831-chat').bounding_box()
+              check('arena first content section',pg.eval_on_selector('#main','e=>e.firstElementChild.id')=='warxau-social-root')
+              check('one existing canvas',pg.locator('#battle').count()==1)
+              check('desktop chat to the right',c['x']>=a['x']+a['width'])
+              check('stage near page top',pg.locator('#stage').bounding_box()['y']<340)
+              check('daily cards below arena',pg.locator('.daily-strip').bounding_box()['y']>a['y']+a['height'])
+              check('guest login gate present',pg.locator('.mm1832-auth-open').is_visible() and pg.locator('#mm1831-text').count()==0)
+              pg.locator('.mm1832-auth-open').click()
+              check('existing account/login link',pg.locator('.mm1832-auth-link').get_attribute('href')=='/akun.html')
+              pg.locator('.mm1832-auth-open').click()
+              pg.wait_for_timeout(6500)
+              check('live chat polling successful',len(responses)>=3 and all(x==200 for x in responses))
+              out['chatResponses']=len(responses)
+              pg.locator('#focus-mode').click();check('focus keeps live chat',pg.locator('.mm1831-chat').is_visible());pg.locator('#focus-mode').click()
+              check('HD remains only quality',pg.locator('#quality').count()==0 and pg.evaluate('MM_WAR.getSnapshot().quality')=='hd')
+              pg.set_viewport_size({'width':390,'height':844});pg.wait_for_timeout(400)
+              a=pg.locator('.battle-panel').bounding_box();c=pg.locator('.mm1831-chat').bounding_box()
+              check('mobile chat below arena',c['y']>=a['y']+a['height']-1)
+              check('mobile no horizontal overflow',pg.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
+              check('no JavaScript errors',not out['errors']);b.close()
+            out['ok']=True
+          except Exception as e:out['error']=str(e)
+          out['checkedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          Path('warxau-topchat-public-check.json').write_text(json.dumps(out,indent=2)+'\n');print(json.dumps(out))
+          if not out['ok']:raise SystemExit(1)
+          PY
+      - name: Save non-sensitive verification report
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-topchat-public-check.json
+          git diff --cached --quiet || git commit -m 'Record production WarXAU layout/chat read-only verification'
+          git push origin HEAD:warxau-arena-chat-v7-8
