@@ -16,7 +16,7 @@
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/AdaptGuardTest.java",
       "beforeSha256": "1beb6d4c38cf0ba4d14cffa2a650e689a693068363c89a80c2faaf90b6fa1156",
-      "afterSha256": "7f7ef337f621d07c80b2379ba4eaeea8e4c8aca2e91e1282ef42da2198296c59"
+      "afterSha256": "9df4a87f5d45f8190fe44e35eec0ceb34f258e8d42e914143ef02d9c552e72b1"
     },
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/FullClient420Test.java",
@@ -31,17 +31,17 @@
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/SharedHome420Test.java",
       "beforeSha256": null,
-      "afterSha256": "5ae7e5c4c23a57aec17b7a0b2f57fec2068535a33810c8fed0f6c88b9189acc1"
+      "afterSha256": "af0b361652df56113b37f9a9aa5b522fba67f3485b727fb9f26d3b5bbdf4abfd"
     },
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java",
       "beforeSha256": "96d6d33fc7616f38c1f306e73a3bd6b4f1e83f31e74ba1cc62525aef764fa18a",
-      "afterSha256": "f6a7ea45f374b20924a73c304c439378b1d15fdff9dcd51dabe2be38ac30bc8b"
+      "afterSha256": "608d22b604cd1c0b1a4acbbff8a17c08fa88c5f58d73f40ea2345948cb34b142"
     },
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/WebViewSupport420Test.java",
       "beforeSha256": null,
-      "afterSha256": "a627e555e91b9afd8a641287780a0feac6fc5858fa03d94535fb863de79fcb1e"
+      "afterSha256": "b515a614e67cacead4348dc5b89712dd6bfaaa09fec07f960248da0bd29cfdea"
     },
     {
       "path": "app/src/main/assets/group48/d7c93ae0fe8dc4eb.js",

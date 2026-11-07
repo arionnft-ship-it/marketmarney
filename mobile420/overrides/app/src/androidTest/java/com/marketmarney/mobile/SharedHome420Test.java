@@ -170,7 +170,7 @@ public class SharedHome420Test {
         assertEquals(JSONObject.quote("Beranda"),js(home,"document.getElementById('fixturePage').textContent"));
         assertEquals("true",js(home,"document.querySelector('#nav button[data-page=\"Beranda\"]').classList.contains('active')"));
         assertEquals("Document marker survives Home",marker,js(home,"window.marker"));
-        assertEquals("Router must not manufacture a hash",JSONObject.quote(ROOT),js(home,"location.href"));
+        assertEquals("Router must not manufacture a hash",ROOT,new org.json.JSONTokener(js(home,"location.href")).nextValue());
         assertEquals("Only the initial document was requested",1,documents.get());
         assertEquals("No mutation requests",0,writes.get());
     }

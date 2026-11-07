@@ -23,8 +23,7 @@ public class AdaptGuardTest {
   inst=InstrumentationRegistry.getInstrumentation();activity=(MainActivity)inst.startActivitySync(new Intent(inst.getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("startTab",1));
   FixtureDocumentClient420[] fixture={null};
   inst.runOnMainSync(()->{StartupOverlay o=(StartupOverlay)field("launchOverlay");if(o!=null)o.dispose();fixture[0]=FixtureDocumentClient420.load((WebView)field("web"),url,"<!doctype html><html><head></head><body>Fixture only</body></html>");});
-  assertTrue("Fixture document finished",fixture[0].finished.await(8,TimeUnit.SECONDS));
-  inst.runOnMainSync(()->assertTrue("Fixture URL committed",fixture[0].isCurrent((WebView)field("web"))));
+  assertTrue("Fixture document marker, URL and readiness committed",fixture[0].awaitReady(inst,()->(WebView)field("web")));
   assertEquals("true",js("window.guardErrors=[];window.addEventListener('error',e=>guardErrors.push(e.message));document.querySelectorAll('#mm43-common,#mm43-social-style').forEach(n=>n.remove());true"));
  }
  @After public void finish(){if(activity!=null)inst.runOnMainSync(()->activity.finish());}

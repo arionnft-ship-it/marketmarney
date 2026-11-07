@@ -8,6 +8,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 import java.lang.reflect.Field;
 import org.junit.Test;
@@ -135,7 +136,12 @@ public class WebViewSupport420Test {
             });
             device.pressBack();
             assertTrue("Back must not reveal an unsupported blank page", device.wait(Until.hasObject(By.text("Perbarui komponen tampilan web")), 2000));
-            device.findObject(By.text("Tutup")).click();
+            UiObject2 close = device.wait(Until.findObject(By.res("android:id/button2")), 3000);
+            assertNotNull("Native close button must be available", close);
+            String closeLabel = close.getText();
+            assertTrue("Native close button must retain the Tutup action",
+                    closeLabel != null && "Tutup".equalsIgnoreCase(closeLabel.trim()));
+            close.click();
             instrumentation.waitForIdleSync();
             assertTrue("Close action finishes the guarded Activity", activity.isFinishing() || activity.isDestroyed());
         } finally {

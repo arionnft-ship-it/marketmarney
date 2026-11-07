@@ -31,9 +31,8 @@ public class Stability414Test {
  private void fixture(String url){
   FixtureDocumentClient420[] client={null};
   ui(()->client[0]=FixtureDocumentClient420.load((WebView)field("web"),url,"<!doctype html><html><body>Local test page</body></html>"));
-  try{assertTrue("Fixture document finished",client[0].finished.await(8,TimeUnit.SECONDS));}
+  try{assertTrue("Fixture document marker, URL and readiness committed",client[0].awaitReady(inst,()->(WebView)field("web")));}
   catch(InterruptedException e){Thread.currentThread().interrupt();throw new AssertionError("Fixture wait interrupted",e);}
-  ui(()->assertTrue("Fixture URL committed",client[0].isCurrent((WebView)field("web"))));
  }
  private void capture(String name){try{File dir=new File(activity.getExternalFilesDir(null),"stability-tests");dir.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){inst.getUiAutomation().takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}}catch(Exception e){throw new RuntimeException(e);}}
  @Before public void setup(){
@@ -82,14 +81,16 @@ public class Stability414Test {
 
 /** A real document URL with explicit local HTML; preserves the native client's policy and callbacks. */
 final class FixtureDocumentClient420 extends WebViewClient {
- final CountDownLatch finished=new CountDownLatch(1);
  private final WebView target;
  private final WebViewClient delegate;
  private final String url;
+ private final String marker=java.util.UUID.randomUUID().toString();
  private final byte[] html;
  private FixtureDocumentClient420(WebView target,WebViewClient delegate,String url,String html){
   if(!Recovery414.trusted(url))throw new IllegalArgumentException("Untrusted fixture URL");
-  this.target=target;this.delegate=delegate;this.url=url;this.html=html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  String marked=html.replaceFirst("(?i)<html(?=[\\s>])","<html data-mm420-fixture=\""+marker+"\"");
+  if(marked.equals(html))throw new IllegalArgumentException("Fixture HTML root missing");
+  this.target=target;this.delegate=delegate;this.url=url;this.html=marked.getBytes(java.nio.charset.StandardCharsets.UTF_8);
  }
  static FixtureDocumentClient420 load(WebView target,String url,String html){
   WebViewClient delegate=target.getWebViewClient();
@@ -99,6 +100,26 @@ final class FixtureDocumentClient420 extends WebViewClient {
   target.stopLoading();target.setWebViewClient(fixture);target.loadUrl(url);return fixture;
  }
  boolean isCurrent(WebView current){return current==target&&url.equals(current.getUrl())&&current.getProgress()==100;}
+ boolean awaitReady(Instrumentation inst,java.util.function.Supplier<WebView> current)throws InterruptedException{
+  long deadline=SystemClock.uptimeMillis()+8000;
+  String check="(function(){return location.href==="+org.json.JSONObject.quote(url)+"&&document.readyState==='complete'&&!!document.documentElement&&document.documentElement.getAttribute('data-mm420-fixture')==="+org.json.JSONObject.quote(marker)+";})()";
+  // The bootstrap News page can finish after loadUrl requests this same URL.
+  // Only the marker served in this fixture's HTML identifies the new document.
+  while(SystemClock.uptimeMillis()<deadline){
+   CountDownLatch evaluated=new CountDownLatch(1);
+   java.util.concurrent.atomic.AtomicBoolean ready=new java.util.concurrent.atomic.AtomicBoolean();
+   inst.runOnMainSync(()->{
+    if(!isCurrent(current.get())){evaluated.countDown();return;}
+    target.evaluateJavascript(check,result->{ready.set("true".equals(result)&&isCurrent(current.get()));evaluated.countDown();});
+   });
+   long remaining=deadline-SystemClock.uptimeMillis();
+   if(remaining<=0)return false;
+   if(evaluated.await(Math.min(500,remaining),TimeUnit.MILLISECONDS)&&ready.get())return true;
+   remaining=deadline-SystemClock.uptimeMillis();
+   if(remaining>0)Thread.sleep(Math.min(75,remaining));
+  }
+  return false;
+ }
  @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view,android.webkit.WebResourceRequest request){
   if(request.isForMainFrame()&&"GET".equals(request.getMethod())&&url.equals(request.getUrl().toString())){
    return new android.webkit.WebResourceResponse("text/html","UTF-8",200,"OK",java.util.Collections.singletonMap("Cache-Control","no-store"),new java.io.ByteArrayInputStream(html));
@@ -110,7 +131,7 @@ final class FixtureDocumentClient420 extends WebViewClient {
  @Override public boolean shouldOverrideUrlLoading(WebView view,String url){return delegate.shouldOverrideUrlLoading(view,url);}
  @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon){delegate.onPageStarted(view,url,favicon);}
  @Override public void onPageCommitVisible(WebView view,String url){delegate.onPageCommitVisible(view,url);}
- @Override public void onPageFinished(WebView view,String url){delegate.onPageFinished(view,url);if(view==target&&this.url.equals(url))finished.countDown();}
+ @Override public void onPageFinished(WebView view,String url){delegate.onPageFinished(view,url);}
  @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){delegate.doUpdateVisitedHistory(view,url,reload);}
  @Override public void onReceivedError(WebView view,android.webkit.WebResourceRequest request,android.webkit.WebResourceError error){delegate.onReceivedError(view,request,error);}
  @Override public void onReceivedError(WebView view,int code,String description,String failingUrl){delegate.onReceivedError(view,code,description,failingUrl);}
