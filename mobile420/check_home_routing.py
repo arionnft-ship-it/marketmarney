@@ -53,11 +53,16 @@ async def probe(result):
   async def shot(key,target=page):
    await target.wait_for_timeout(700);result[key]=await target.evaluate(SNAPSHOT)
   async def click_navigation(label,key):
-   control=page.locator('button[data-page="'+label+'"]:visible').first
+   # The website sidebar is collapsed on phones. The native bar invokes this
+   # existing click handler directly; do not change CSS just to expose it.
+   control=page.locator('#nav button[data-page="'+label+'"]').first
    try:
-    await control.click(timeout=3500)
+    was_visible=await control.is_visible()
+    await control.evaluate("button => {if(typeof button.onclick!=='function')throw Error('Website navigation handler is not ready');button.click()}",timeout=3500)
     await shot(key)
     result[key]['clickedLabel']=label
+    result[key]['sidebarButtonVisible']=was_visible
+    result[key]['existingHandlerInvoked']=True
     return True
    except Exception as error:
     result.setdefault('navigationErrors',[]).append({'label':label,'error':str(error)[:350]})
