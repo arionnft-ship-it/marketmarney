@@ -1,0 +1,161 @@
+name: Marney 4.16 Final Reference Opening
+on:
+  push:
+    branches: [android-v4.16-reference-opening]
+    paths: ['hotfix416/**', '.github/workflows/final416.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: final416-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney416-Beta-APK
+          run-id: 42330334084
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base416
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Repair layout/animation timing without changing preserved features
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base416/Marney416.apk').read_bytes()).hexdigest()=='8c473d38e6d4a9a56ae843350eb67bbef5c9cc5f3d0c1a228d004d06c38ec841'
+          with ZipFile('base416/Marney416-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 hotfix416/polish.py android43
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android43/app/src/androidTest/java/com/marketmarney/mobile/Opening416Test.java');s=p.read_text()
+          helper=''' private void assertLogoVisible()throws Exception{
+           final int[] box=new int[4];ui(()->{View v=part("logo");int[] pos=new int[2];v.getLocationOnScreen(pos);box[0]=pos[0];box[1]=pos[1];box[2]=v.getWidth();box[3]=v.getHeight();});
+           Bitmap bmp=inst.getUiAutomation().takeScreenshot();assertNotNull(bmp);int gold=0,total=0;
+           for(int y=Math.max(0,box[1]);y<Math.min(bmp.getHeight(),box[1]+box[3]);y+=2)for(int x=Math.max(0,box[0]);x<Math.min(bmp.getWidth(),box[0]+box[2]);x+=2){int c=bmp.getPixel(x,y);int r=android.graphics.Color.red(c),g=android.graphics.Color.green(c),b=android.graphics.Color.blue(c);total++;if(r>150&&g>65&&b<155&&r>g)gold++;}
+           bmp.recycle();assertTrue("Monogram visibly rendered, not only non-null Drawable",total>0&&gold>total/12);
+          }
+          '''
+          marker=' @Before public void setup()';assert marker in s;s=s.replace(marker,helper+marker,1)
+          s=s.replace('screenshot("opening-reference-style");','screenshot("opening-reference-style");assertLogoVisible();')
+          p.write_text(s)
+          PY
+      - name: Compile and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify and package
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney416-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney416-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta416'" deliver/Marney416-Package.txt
+          cp "$APK" deliver/Marney416.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney416-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney416-Lint.html
+          cp base416/preserved416.json base416/integrity416.json base416/Marney416-Panduan.md deliver/
+          sha256sum deliver/Marney416.apk > deliver/Marney416-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import hashlib,json
+          for n,h in json.loads(Path('deliver/preserved416.json').read_text()).items():assert hashlib.sha256((Path('android43')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('base416/Marney416.apk') as old,ZipFile('deliver/Marney416.apk') as new:
+              assert all(old.read(n)==new.read(n) for n in old.namelist() if n.startswith('assets/') and not n.endswith('/'))
+          with ZipFile('deliver/Marney416-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile416'),Path('hotfix416')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix.lower() in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney416-Final-APK
+          path: deliver/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney416-Final-Test-APK
+          path: testapk/
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35,29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney416-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney416-Final-Test-APK
+          path: testapk
+      - name: Prepare unchanged assertions on final APK
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          cat > check.sh <<'SH'
+          set -euo pipefail
+          mkdir -p evidence416
+          adb shell wm size 480x960
+          adb shell wm density 200
+          adb install -r apk/Marney416.apk
+          adb install -r testapk/Marney416-Tests.apk
+          adb logcat -c
+          CLASSES=com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test
+          COUNT=26
+          if [ "$API" = 35 ]; then
+            CLASSES=$CLASSES,com.marketmarney.mobile.GalleryUi415Test,com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest
+            COUNT=51
+          fi
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta416.test/androidx.test.runner.AndroidJUnitRunner | tee evidence416/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta416/files/opening416-tests evidence416/ || true
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta416/files/gallery-tests evidence416/ || true
+          adb logcat -d -s MM416_LAUNCH:I AndroidRuntime:E > evidence416/runtime.log
+          grep -Eq "OK \($COUNT tests\)" evidence416/instrumentation.txt
+          SH
+          echo "API=$API" >> "$GITHUB_ENV"
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney416-Final-Android-${{ matrix.api }}-Evidence
+          path: evidence416/
