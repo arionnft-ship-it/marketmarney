@@ -1,0 +1,267 @@
+{
+  "unit": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "patched script syntax",
+        "ok": true
+      },
+      {
+        "name": "fresh initial theme",
+        "ok": true
+      },
+      {
+        "name": "fresh initialization does not write preference",
+        "ok": true
+      },
+      {
+        "name": "saved dark initial theme",
+        "ok": true
+      },
+      {
+        "name": "saved dark initialization does not write preference",
+        "ok": true
+      },
+      {
+        "name": "saved light initial theme",
+        "ok": true
+      },
+      {
+        "name": "saved light initialization does not write preference",
+        "ok": true
+      },
+      {
+        "name": "invalid initial theme",
+        "ok": true
+      },
+      {
+        "name": "invalid initialization does not write preference",
+        "ok": true
+      },
+      {
+        "name": "empty initial theme",
+        "ok": true
+      },
+      {
+        "name": "empty initialization does not write preference",
+        "ok": true
+      },
+      {
+        "name": "blocked storage defaults light",
+        "ok": true
+      },
+      {
+        "name": "toggle works with blocked storage",
+        "ok": true
+      },
+      {
+        "name": "explicit dark choice saved",
+        "ok": true
+      },
+      {
+        "name": "explicit light choice saved",
+        "ok": true
+      },
+      {
+        "name": "removed preference returns to light",
+        "ok": true
+      },
+      {
+        "name": "pageshow without preference uses light",
+        "ok": true
+      },
+      {
+        "name": "early initializer respects saved dark",
+        "ok": true
+      },
+      {
+        "name": "early initializer tolerates blocked storage",
+        "ok": true
+      },
+      {
+        "name": "script patch idempotent",
+        "ok": true
+      },
+      {
+        "name": "account HTML untouched",
+        "ok": true
+      },
+      {
+        "name": "arena HTML untouched",
+        "ok": true
+      },
+      {
+        "name": "HTML defaults light before JS",
+        "ok": true
+      },
+      {
+        "name": "early initializer precedes external scripts",
+        "ok": true
+      },
+      {
+        "name": "HTML patch idempotent",
+        "ok": true
+      },
+      {
+        "name": "theme receives new immutable cache URL",
+        "ok": true
+      },
+      {
+        "name": "original theme file not overwritten",
+        "ok": true
+      },
+      {
+        "name": "HTML references patched hash",
+        "ok": true
+      },
+      {
+        "name": "hashed endpoint serves patched source",
+        "ok": true
+      },
+      {
+        "name": "new hash supports conditional 304",
+        "ok": true
+      },
+      {
+        "name": "legacy asset path is patched and revalidated",
+        "ok": true
+      },
+      {
+        "name": "HEAD response stays empty",
+        "ok": true
+      },
+      {
+        "name": "asset rejects POST",
+        "ok": true
+      }
+    ],
+    "release": "public-first-visit-light-20261108-v1"
+  },
+  "browser": {
+    "ok": false,
+    "release": "public-first-visit-light-20261108-v1",
+    "checks": [
+      {
+        "name": "new-dark-OS selected correctly",
+        "ok": true
+      },
+      {
+        "name": "new-dark-OS does not overwrite saved choice",
+        "ok": true
+      },
+      {
+        "name": "new-dark-OS button synchronized",
+        "ok": true
+      },
+      {
+        "name": "new-dark-OS first-visit marker present",
+        "ok": true
+      },
+      {
+        "name": "initial page background is light",
+        "ok": true
+      },
+      {
+        "name": "switch to dark saves choice",
+        "ok": true
+      },
+      {
+        "name": "reload keeps dark",
+        "ok": true
+      },
+      {
+        "name": "switch back to light saves choice",
+        "ok": true
+      },
+      {
+        "name": "news navigation stays light",
+        "ok": true
+      },
+      {
+        "name": "reload keeps light",
+        "ok": true
+      },
+      {
+        "name": "new-light-OS selected correctly",
+        "ok": true
+      },
+      {
+        "name": "new-light-OS does not overwrite saved choice",
+        "ok": true
+      },
+      {
+        "name": "new-light-OS button synchronized",
+        "ok": true
+      },
+      {
+        "name": "new-light-OS first-visit marker present",
+        "ok": true
+      },
+      {
+        "name": "existing-dark selected correctly",
+        "ok": true
+      },
+      {
+        "name": "existing-dark does not overwrite saved choice",
+        "ok": true
+      },
+      {
+        "name": "existing-dark button synchronized",
+        "ok": true
+      },
+      {
+        "name": "existing-dark first-visit marker present",
+        "ok": true
+      },
+      {
+        "name": "existing-light selected correctly",
+        "ok": true
+      },
+      {
+        "name": "existing-light does not overwrite saved choice",
+        "ok": true
+      },
+      {
+        "name": "existing-light button synchronized",
+        "ok": true
+      },
+      {
+        "name": "existing-light first-visit marker present",
+        "ok": true
+      },
+      {
+        "name": "invalid-choice selected correctly",
+        "ok": true
+      },
+      {
+        "name": "invalid-choice does not overwrite saved choice",
+        "ok": true
+      },
+      {
+        "name": "invalid-choice button synchronized",
+        "ok": true
+      },
+      {
+        "name": "invalid-choice first-visit marker present",
+        "ok": true
+      },
+      {
+        "name": "mobile new visitor light",
+        "ok": true
+      },
+      {
+        "name": "no browser JavaScript exceptions",
+        "ok": false
+      }
+    ],
+    "errors": [
+      "Failed to read the 'sessionStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag.",
+      "Failed to read the 'sessionStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag."
+    ],
+    "mode": "isolated-response-overlay",
+    "method": "Anonymous browser checks. Only browser-local theme preferences are changed; no account, order or public content writes.",
+    "error": "no browser JavaScript exceptions",
+    "checkedAt": "2026-11-07T19:01:23.177500+00:00"
+  },
+  "ok": false
+}
