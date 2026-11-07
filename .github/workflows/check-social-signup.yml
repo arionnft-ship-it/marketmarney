@@ -1,0 +1,121 @@
+name: Verify Social Marney signup
+on:
+  push:
+    branches: [social-signup-name-email-20261107]
+    paths: ['.github/workflows/check-social-signup.yml', 'signup/VERIFY-LIVE.txt']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source and public template checks
+        shell: bash
+        run: |
+          mkdir -p signup-evidence
+          for f in signup/*.cjs; do node --check "$f"; done
+          curl --fail --silent --show-error --max-time 30 'https://marketmarney.com/akun.html?signup-check=20261107' -o signup-evidence/before.html
+          node <<'JS'
+          const fs=require('fs'),assert=require('assert/strict'),vm=require('vm');
+          const {emailAddress}=require('./signup/requirements.cjs');
+          for(const x of ['',null,{},'missing','a@@example.com','a@local','a..b@example.com','a@-example.com','a@ex.com\r\nBcc: b@ex.com'])assert.throws(()=>emailAddress(x));
+          assert.equal(emailAddress('User@EXAMPLE.com').key,'user@example.com');assert.notEqual(emailAddress('u+x@example.com').key,emailAddress('u@example.com').key);
+          const src=fs.readFileSync('signup-evidence/before.html','utf8');
+          const out=require('./signup/account-page.cjs').enhanceAccount(src);
+          assert.equal(require('./signup/account-page.cjs').enhanceAccount(out),out);
+          assert(out.includes('id="signupName"')&&out.includes('id="signupEmail"'));
+          for(const s of out.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(!/\bsrc=/.test(s[1]))new vm.Script(s[2]);
+          fs.writeFileSync('signup-evidence/after.html',out);
+          if(fs.existsSync('signup/VERIFY-LIVE.txt'))assert(src.includes('data-mm-signup-release="signup-name-email-20261107-r1"'),'Live account form marker missing');
+          JS
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.56.0 && python -m playwright install --with-deps chromium
+      - name: Browser checks without real account creation
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          from urllib.parse import urlsplit
+          import json, urllib.request
+          from playwright.sync_api import sync_playwright
+          root=Path('signup-evidence');doc=(root/'after.html').read_text();results=[]
+          def ok(name,value):
+            assert value,name
+            results.append({'check':name,'result':'pass'})
+          with sync_playwright() as p:
+            browser=p.chromium.launch()
+            for width in [390,1280]:
+              context=browser.new_context(viewport={'width':width,'height':900},service_workers='block')
+              page=context.new_page();posts=[];errors=[]
+              page.on('pageerror',lambda e:errors.append(str(e)))
+              def route_handler(route):
+                req=route.request;path=urlsplit(req.url).path
+                if path=='/akun.html':return route.fulfill(status=200,body=doc,content_type='text/html')
+                if path=='/api/community/status':return route.fulfill(json={'registrationEnabled':True,'categories':[],'user':None})
+                if path=='/api/auth/google/config':return route.fulfill(json={'enabled':True,'googleSignupEnabled':True,'linked':False})
+                if path in ['/api/community/login','/api/community/register']:
+                  posts.append({'path':path,'data':req.post_data_json})
+                  return route.fulfill(status=400,json={'error':'Uji saja: tidak membuat akun.'})
+                if req.method not in ['GET','HEAD']:return route.fulfill(status=403,json={'error':'All real writes blocked by test'})
+                if path.startswith('/api/'):return route.fulfill(status=401,json={'error':'Mock guest'})
+                return route.continue_()
+              page.route('**/*',route_handler)
+              page.goto('https://marketmarney.com/akun.html',wait_until='networkidle')
+              page.wait_for_function('!document.getElementById("register").hidden')
+              ok(f'{width}: login name/email hidden',not page.locator('#mmSignupFields').is_visible())
+              page.locator('#username').fill('legacy_demo');page.locator('#password').fill('test-only-long-password');page.locator('#login').click()
+              page.wait_for_function("document.getElementById('notice').textContent.includes('Uji saja')")
+              ok(f'{width}: old login fields',set(posts[-1]['data'])=={'username','password'} and posts[-1]['path']=='/api/community/login')
+              page.locator('#register').click()
+              ok(f'{width}: name/email required',page.evaluate("['signupName','signupEmail'].every(i=>document.getElementById(i).required)"))
+              ok(f'{width}: Google explanation visible',page.locator('#mmSignupGoogleNote').is_visible())
+              n=len(posts);page.locator('#signupName').fill('Nia Putri');page.locator('#signupEmail').fill('');page.locator('#login').click()
+              ok(f'{width}: missing email prevents submission',len(posts)==n)
+              page.locator('#signupEmail').fill('invalid');page.locator('#login').click();ok(f'{width}: invalid email prevents submission',len(posts)==n)
+              page.locator('#signupEmail').fill('nia@example.com');page.locator('#username').fill('nia_demo');page.locator('#login').click()
+              page.wait_for_timeout(300)
+              ok(f'{width}: payload includes required data',posts[-1]['path']=='/api/community/register' and posts[-1]['data']['displayName']=='Nia Putri' and posts[-1]['data']['email']=='nia@example.com')
+              ok(f'{width}: no overflow',page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
+              for i in ['signupName','signupEmail','username','password']:page.locator('#'+i).fill('')
+              page.evaluate("document.getElementById('notice').textContent='PRATINJAU UJI — tidak membuat akun nyata.'")
+              page.screenshot(path=str(root/f'mock-registration-{width}.png'),full_page=True)
+              ok(f'{width}: no JavaScript page errors',not errors)
+              context.close()
+            if Path('signup/VERIFY-LIVE.txt').exists():
+              req=urllib.request.Request('https://marketmarney.com/api/community/status',headers={'Cache-Control':'no-cache'})
+              with urllib.request.urlopen(req,timeout=20) as r:data=json.load(r)
+              ok('Live backend requires email and name',data.get('registrationFields')==['displayName','email','username','password'])
+              ok('Manual email not marked verified',data.get('emailVerification')=='not-sent-for-manual-signup')
+              for path,allowed in [('/_railway/health',[200]),('/',[200]),('/api/admin/session',[401,404]),('/api/community/me',[401])]:
+                try:
+                  with urllib.request.urlopen('https://marketmarney.com'+path,timeout=20) as r:code=r.status
+                except urllib.error.HTTPError as e:code=e.code
+                ok('Public status '+path,code in allowed)
+              context=browser.new_context(viewport={'width':390,'height':844},service_workers='block')
+              page=context.new_page()
+              def readonly(route):
+                if route.request.method not in ['GET','HEAD']:return route.abort()
+                return route.continue_()
+              page.route('**/*',readonly)
+              page.goto('https://marketmarney.com/akun.html#daftar',wait_until='networkidle')
+              ok('Actual live registration fields visible',page.locator('#signupName').is_visible() and page.locator('#signupEmail').is_visible())
+              page.screenshot(path=str(root/'live-registration-mobile.png'),full_page=True)
+              context.close()
+            browser.close()
+          report={'scope':'mock submissions; live GET only; no real accounts created','passed':len(results),'total':len(results),'checks':results}
+          (root/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: social-signup-checks
+          path: signup-evidence/
+          retention-days: 7
