@@ -2,6 +2,9 @@ from pathlib import Path
 import sys
 base=Path(sys.argv[1]) if len(sys.argv)>1 else Path('android43')
 p=base/'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java';s=p.read_text()
+# ImageView.setAlpha(int) changes the drawable's alpha permanently; the
+# ViewPropertyAnimator only changes View.alpha. Use the float overload.
+assert s.count('logo.setAlpha(0);')==1;s=s.replace('logo.setAlpha(0);','logo.setAlpha(0f);',1)
 a='    private float appliedScale=-1;'
 b='''    private float appliedScale=-1;
     private final android.view.ViewTreeObserver.OnPreDrawListener firstDraw=()->{
@@ -16,8 +19,6 @@ s=s.replace('description.setSingleLine(true);','description.setMaxLines(1);descr
 a='@Override protected void onAttachedToWindow(){super.onAttachedToWindow();requestApplyInsets();startArtwork();}'
 b='''@Override protected void onAttachedToWindow(){
         super.onAttachedToWindow();requestApplyInsets();
-        // Starting an ImageView property animator before attachment/layout can
-        // capture an empty drawable layer. Wait for the first real pre-draw.
         if(motionAllowed(getContext()))getViewTreeObserver().addOnPreDrawListener(firstDraw);
         else{started=true;settle();}
     }'''
@@ -43,8 +44,7 @@ b='View v=part(n);int[] parent=new int[2],child=new int[2];overlay.getLocationOn
 assert a in s;s=s.replace(a,b,1)
 s=s.replace('assertEquals(0,n.getLayout().getEllipsisCount(0));','assertEquals(0,n.getLayout().getEllipsisCount(0));assertTrue(n.getPaint().measureText(n.getText().toString())<=n.getWidth()-n.getPaddingLeft()-n.getPaddingRight()+1);')
 p.write_text(s)
-# Fixture page commits and loadDataWithBaseURL are asynchronous. Wait for their
-# own identity before testing upload/security; keep the production guards intact.
+# Fixture navigation is asynchronous; keep production origin/security checks.
 p=tests/'GalleryUi415Test.java';s=p.read_text()
 a='  inst.runOnMainSync(()->assertEquals(FIXTURE_URL,((WebView)field("web")).getUrl()));'
 b='''  final java.util.concurrent.atomic.AtomicBoolean committed=new java.util.concurrent.atomic.AtomicBoolean();
@@ -61,4 +61,4 @@ a='  assertEquals("true",js("!!document.getElementById(\'mm43-social-style\')"))
 b='''  for(int retry=0;retry<30&&!"true".equals(js("!!document.getElementById('mm43-social-style')"));retry++)SystemClock.sleep(100);
   assertEquals("true",js("!!document.getElementById('mm43-social-style')"));'''
 assert a in s;s=s.replace(a,b,1);p.write_text(s)
-print('PASS: layout-ready animation, bounded labels and explicit asynchronous fixture readiness; no application security changes')
+print('PASS: correct float image alpha, layout-ready animation, bounded labels, explicit fixture readiness; security unchanged')
