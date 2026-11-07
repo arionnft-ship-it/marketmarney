@@ -1,0 +1,168 @@
+name: Marney 4.18 Final Premium
+on:
+  push:
+    branches: [android-v4.18-premium-marney]
+    paths: ['premium418fix/**', '.github/workflows/final418.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: final418-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney418-Premium-APK
+          run-id: 42380582001
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base418
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Patch thumbnail layers and test timing only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base418/Marney418.apk').read_bytes()).hexdigest()=='20202b22b5638e24b3729be57062abadfd25bca2a23375d561ca7e236c40d835'
+          with ZipFile('base418/Marney418-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 premium418fix/finalize.py
+      - name: Compile app tests and lint
+        run: gradle --no-daemon --project-dir android417 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify and package final APK
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android417/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney418-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney418-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta418'" deliver/Marney418-Package.txt
+          grep -F "versionName='4.18.0-beta'" deliver/Marney418-Package.txt
+          cp "$APK" deliver/Marney418.apk
+          cp android417/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney418-Tests.apk
+          cp android417/app/build/reports/lint-results-debug.html deliver/Marney418-Lint.html
+          cp base418/preserved418.json base418/Marney418-Panduan.md deliver/
+          sha256sum deliver/Marney418.apk > deliver/Marney418-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import hashlib,json
+          report=json.loads(Path('deliver/preserved418.json').read_text())
+          for n,h in report['preserved'].items():assert hashlib.sha256((Path('android417')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('deliver/Marney418-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android417'),Path('mobile418'),Path('premium418fix')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney418-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney418-Final-Test-APK
+          path: testapk/
+  ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney418-Final-APK
+          path: apk
+      - name: Read exact tested source
+        run: |
+          python3 -m pip install playwright
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('apk/Marney418-Source.zip') as z:z.extractall('.')
+          PY
+      - name: News and Social fixtures at 320 and 412 px
+        run: python3 mobile418/test_ui418.py android417
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney418-Final-UI-Evidence
+          path: quality418-ui/
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35,29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney418-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney418-Final-Test-APK
+          path: testapk
+      - name: Prepare regressions on exact final signed APK
+        run: |
+          cat > test.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality418-android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney418.apk
+          adb install -r testapk/Marney418-Tests.apk
+          adb logcat -c
+          if [ '${{ matrix.api }}' = 35 ]; then
+            CLASSES=com.marketmarney.mobile.Premium418Test,com.marketmarney.mobile.Branding417Test,com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test,com.marketmarney.mobile.GalleryUi415Test,com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest
+            COUNT=57
+          else
+            CLASSES=com.marketmarney.mobile.Premium418Test,com.marketmarney.mobile.Branding417Test,com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test
+            COUNT=32
+          fi
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta418.test/androidx.test.runner.AndroidJUnitRunner | tee quality418-android/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta418/files/ quality418-android/ || true
+          adb logcat -d -s AndroidRuntime:E > quality418-android/runtime.log
+          grep -F "OK ($COUNT tests)" quality418-android/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney418-Final-Android-${{ matrix.api }}-Evidence
+          path: quality418-android/
