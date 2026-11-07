@@ -1,0 +1,183 @@
+name: Marney 4.16 Reference Premium Opening
+on:
+  push:
+    branches: [android-v4.16-reference-opening]
+    paths: ['mobile416/**', '.github/workflows/build-android416.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney416-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 1a573b7b6fae4991c61324a710ce8d1d00072fd4
+          path: opening-reference
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney415-Beta-APK
+          run-id: 42325314944
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base415
+      - uses: actions/download-artifact@v4
+        with:
+          name: MarketMarney-Premium-Opening-v3-1-Debug-APK
+          run-id: 42328900074
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: reference-apk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Verify latest base and exact supplied reference
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base415/Marney415.apk').read_bytes()).hexdigest()=='4a11c790c37348750f220e86fa4b0d57a853c214fd61af8a03a579e263c3610f'
+          reference=list(Path('reference-apk').glob('*.apk'));assert len(reference)==1
+          assert hashlib.sha256(reference[0].read_bytes()).hexdigest()=='1936659a95f0a792a70e54372d879c38d04a2685451cf46b49cc362c1fac739a'
+          with ZipFile('base415/Marney415-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 mobile416/prepare416.py android43 opening-reference
+      - name: Build app, test APK and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify signed outputs and unchanged previous features
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney416-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney416-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta416'" deliver/Marney416-Package.txt
+          grep -F "versionName='4.16.0-beta'" deliver/Marney416-Package.txt
+          cp "$APK" deliver/Marney416.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney416-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney416-Lint.html
+          cp preserved416.json deliver/
+          sha256sum deliver/Marney416.apk > deliver/Marney416-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          from zipfile import ZipFile,ZIP_DEFLATED
+          for n,h in json.loads(Path('preserved416.json').read_text()).items():assert hashlib.sha256((Path('android43')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('base415/Marney415.apk') as old,ZipFile('deliver/Marney416.apk') as new:
+              assets=[n for n in old.namelist() if n.startswith('assets/') and not n.endswith('/')]
+              assert all(old.read(n)==new.read(n) for n in assets)
+              Path('deliver/integrity416.json').write_text(json.dumps({'base':'4.15','unchangedApkAssets':len(assets),'referenceSha256':'1936659a95f0a792a70e54372d879c38d04a2685451cf46b49cc362c1fac739a','noBackendChanged':True},indent=2))
+          with ZipFile('deliver/Marney416-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile416')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix.lower() in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney416-Panduan.md').write_text('''# Marney 4.16 Premium Opening
+          Opening mengikuti APK Premium Opening 3.1 yang diberikan: monogram M emas, latar grid navy, garis chart dekoratif, nama MarketMarney putih/emas, teks bertahap, garis emas dan slogan KENALI PASARNYA.
+          Basis aplikasi tetap 4.15 Galeri; bukan downgrade atau penggantian oleh APK contoh 3.1. Seluruh 86 aset fitur sebelumnya tidak berubah.
+          Halaman dimuat bersamaan. Opening langsung ditutup saat halaman siap; tidak dipaksa menunggu 3,8 detik. Tombol LEWATI tersedia. Batas pengaman 4 detik, bukan waktu tunggu wajib.
+          Garis emas dekoratif, bukan persentase jaringan. Tidak ada video/audio tambahan. Gradien dan jalur latar disimpan per ukuran layar; animasi berhenti saat selesai atau aplikasi ditinggalkan.
+          Pengaturan animasi Android nonaktif dan mode hemat baterai memakai tampilan statis. Opening tidak dijalankan ulang hanya karena berpindah tab.
+          Menu: Beranda, Berita, XAUWar, Market Live, Social Marney. Galeri otomatis, grup, profil, Reels, keamanan dan autentikasi tetap sama.
+          Instal aplikasi bernama Marney 4.16 Premium Opening. Paket beta terpisah com.marketmarney.mobile.beta416; jangan hapus aplikasi utama/stabil.
+          Sesi login tidak berpindah otomatis. Google Login native belum didaftarkan untuk package beta416. Pengaturan website/Railway/Google Cloud tidak diubah.
+          Tidak diterbitkan ke Play Store. Belum diukur pada HP pengguna; tidak ada klaim bebas lag di semua perangkat.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney416-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney416-Test-APK
+          path: testapk/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney416-Build-Diagnostics
+          path: android43/app/build/reports/
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35,29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney416-Beta-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney416-Test-APK
+          path: testapk
+      - name: Prepare exact APK tests
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          cat > check416.sh <<'SH'
+          set -euo pipefail
+          mkdir -p evidence416
+          adb shell wm size 480x960
+          adb shell wm density 200
+          adb install -r apk/Marney416.apk
+          adb install -r testapk/Marney416-Tests.apk
+          adb logcat -c
+          CLASSES=com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test
+          COUNT=26
+          if [ "$API" = 35 ]; then
+            CLASSES=$CLASSES,com.marketmarney.mobile.GalleryUi415Test,com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest
+            COUNT=51
+          fi
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta416.test/androidx.test.runner.AndroidJUnitRunner | tee evidence416/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta416/files/opening416-tests evidence416/ || true
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta416/files/gallery-tests evidence416/ || true
+          adb logcat -d -s MM416_LAUNCH:I AndroidRuntime:E > evidence416/runtime.log
+          grep -Eq "OK \($COUNT tests\)" evidence416/instrumentation.txt
+          SH
+          echo "API=$API" >> "$GITHUB_ENV"
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Real Android opening and retained feature tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check416.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney416-Android-${{ matrix.api }}-Evidence
+          path: evidence416/
