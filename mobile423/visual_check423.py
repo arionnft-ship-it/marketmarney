@@ -164,12 +164,15 @@ class Preview:
         await asyncio.wait_for(page.evaluate("""async () => {
           let timer;
           const settle=(async()=>{
-            void document.documentElement.offsetWidth;
-            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
             const pending=()=>document.getAnimations().filter(a=>a instanceof CSSTransition &&
               a.playState!=='finished' && a.playState!=='idle');
-            await Promise.all(pending().map(a=>a.finished.catch(()=>{})));
-            if(pending().length)throw new Error('Theme CSS transitions remain unsettled');
+            for(;;){
+              void document.documentElement.offsetWidth;
+              await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+              const transitions=pending();
+              if(!transitions.length)return;
+              await Promise.all(transitions.map(a=>a.finished.catch(()=>{})));
+            }
           })();
           try{
             await Promise.race([settle,new Promise((resolve,reject)=>{
@@ -474,8 +477,15 @@ async def run(args):
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(executable_path=chrome, headless=True,
                 args=["--disable-dev-shm-usage", "--disable-background-networking"])
-            await preview.public_home(browser)
-            await preview.packaged(browser)
+            scope_errors = []
+            for scope, verify in (("public", preview.public_home), ("packaged", preview.packaged)):
+                try:
+                    await verify(browser)
+                except Exception as error:
+                    scope_errors.append(scope + ": " + type(error).__name__ + ": " + str(error)[:1200])
+            if scope_errors:
+                report["scopeErrors"] = scope_errors
+                raise AssertionError("; ".join(scope_errors))
             report["completed"] = True
             await browser.close()
             browser = None
