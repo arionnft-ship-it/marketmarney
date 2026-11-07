@@ -1,0 +1,60 @@
+name: Verify BTCUSD War
+on:
+  push:
+    branches: [btc-war-v1-20261107]
+    paths: ['.github/workflows/btc-war-test.yml','warxau-fbs/btc-*','warxau-fbs/start-btc.cjs','warxau-fbs/test-btc.cjs','warxau-fbs/verify-btc-browser.py','warxau-fbs/Dockerfile.btc']
+permissions:
+  contents: write
+concurrency:
+  group: btc-war-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: btc-war-v1-20261107
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit and syntax tests
+        run: |
+          mkdir -p btc-test-results
+          node --check warxau-fbs/btc-feed.js
+          node --check warxau-fbs/btc-addon.cjs
+          node --check warxau-fbs/start-btc.cjs
+          set -o pipefail
+          node --test warxau-fbs/test-btc.cjs | tee btc-test-results/unit.tap
+      - name: Prepare public chat code in isolated fixture
+        run: |
+          mkdir -p btc-fixture-app/assets
+          python3 - <<'PY'
+          import urllib.request,pathlib
+          for name in ['discussion-1828.js','discussion-1828.css']:
+            with urllib.request.urlopen('https://marketmarney.com/assets/'+name,timeout=25) as r:
+              assert r.status==200
+              pathlib.Path('btc-fixture-app/assets/'+name).write_bytes(r.read(1000000))
+          PY
+          node warxau-fbs/btc-fixture-server.cjs >/tmp/btc-fixture.log 2>&1 &
+      - name: Install browser testing tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Browser fixtures and actual Bitcoin feed
+        run: python3 warxau-fbs/verify-btc-browser.py
+      - name: Check deployable image preserves branding
+        run: docker build -f warxau-fbs/Dockerfile.btc -t btc-war-check .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btc-war-tests
+          path: btc-test-results
+          retention-days: 7
+      - name: Record non-sensitive verification
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add btc-test-results/*.json btc-test-results/*.tap 2>/dev/null || true
+          git diff --cached --quiet || git commit -m 'Record BTC War unit/browser verification results'
+          git push origin HEAD:btc-war-v1-20261107
