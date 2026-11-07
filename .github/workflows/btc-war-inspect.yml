@@ -1,0 +1,52 @@
+name: BTC War inspection
+on:
+  push:
+    branches: [btc-war-v1-20261107]
+    paths: ['.github/workflows/btc-war-inspect.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Collect code and public assets only
+        run: |
+          mkdir -p btc-reference/public
+          cp -r warxau-fbs btc-reference/
+          cp warxau-live/dist/WEB-LIVE.html btc-reference/base.html
+          cp -r marney-brand btc-reference/
+          python3 - <<'PY'
+          import pathlib,urllib.request,json
+          root=pathlib.Path('btc-reference/public')
+          for name,url in [('xau.html','/assets/xau-war-3d.html?v=7.8'),('home.html','/'),('chat.js','/assets/discussion-1828.js'),('chat.css','/assets/discussion-1828.css')]:
+            with urllib.request.urlopen('https://marketmarney.com'+url,timeout=25) as r:root.joinpath(name).write_bytes(r.read(6500000))
+          for symbol in ['KRAKEN:BTCUSD','COINBASE:BTCUSD','BITSTAMP:BTCUSD']:
+            url='https://marketmarney.com/api/discussions?kind=analysis&target=MARKET%3A'+symbol.replace(':','%3A')+'&sort=newest'
+            try:
+              with urllib.request.urlopen(url,timeout=15) as r:
+                d=json.loads(r.read()); print(symbol,r.status,'items',len(d.get('items',[])))
+            except Exception as e:print(symbol,type(e).__name__,str(e))
+          PY
+      - name: Observe public Kraken BTC/USD stream
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const out={ok:false,events:[],startedAt:new Date().toISOString()};
+          const ws=new WebSocket('wss://ws.kraken.com/v2');
+          const end=()=>{ws.close();out.ok=out.events.filter(x=>x.channel==='trade'&&x.type==='update').length>=2;fs.writeFileSync('btc-reference/kraken-check.json',JSON.stringify(out,null,2));console.log(JSON.stringify(out));process.exit(out.ok?0:1);};
+          const timer=setTimeout(end,45000);
+          ws.onopen=()=>{ws.send(JSON.stringify({method:'subscribe',params:{channel:'trade',symbol:['BTC/USD'],snapshot:true},req_id:1}));ws.send(JSON.stringify({method:'subscribe',params:{channel:'ohlc',symbol:['BTC/USD'],interval:1440},req_id:2}));};
+          ws.onmessage=e=>{const d=JSON.parse(e.data);if(['trade','ohlc'].includes(d.channel)){out.events.push(d);if(out.events.filter(x=>x.channel==='trade'&&x.type==='update').length>=3&&out.events.some(x=>x.channel==='ohlc')){clearTimeout(timer);end();}}};
+          ws.onerror=()=>{out.error='WebSocket connection error';clearTimeout(timer);end();};
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btc-war-reference
+          path: btc-reference
+          retention-days: 3
