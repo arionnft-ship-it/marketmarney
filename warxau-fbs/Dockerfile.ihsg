@@ -19,8 +19,8 @@ COPY marney-brand/branding.cjs ./branding.cjs
 COPY marney-brand/install.cjs ./brand-install.cjs
 COPY signup ./signup
 COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
-RUN node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs
-RUN for file in *.cjs *.js signup/*.cjs; do node --check "$file" || exit 1; done
+RUN node signup/otp/install.cjs && node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs
+RUN for file in *.cjs *.js signup/*.cjs signup/otp/*.cjs; do node --check "$file" || exit 1; done
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs"
 CMD ["node", "/opt/warxau-fbs/start-ihsg.cjs"]
