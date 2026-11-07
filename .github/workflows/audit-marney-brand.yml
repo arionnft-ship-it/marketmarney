@@ -1,0 +1,62 @@
+name: Audit MARNEY public branding
+on:
+  push:
+    branches: [marney-web-logo-20261107]
+    paths: ['.github/workflows/audit-marney-brand.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public pages and approved logo reference
+        shell: bash
+        run: |
+          mkdir -p brand-audit
+          python3 - <<'PY'
+          import urllib.request, json, pathlib, re, hashlib, time
+          from urllib.parse import urljoin,urlsplit
+          root=pathlib.Path('brand-audit'); base='https://marketmarney.com'
+          urls=['/','/beranda-trader.html','/akun.html','/jurnal.html','/grup.html','/profil.html','/reels.html','/offline.html','/manifest.webmanifest','/sw.js','/assets/xau-war-3d.html']
+          report=[]; seen=set(); refs=set()
+          def get(u):
+            req=urllib.request.Request(u,headers={'User-Agent':'MarketMarneyBrandAudit/1.0','Cache-Control':'no-cache'})
+            with urllib.request.urlopen(req,timeout=25) as r:return r.status,dict(r.headers),r.read()
+          for p in urls:
+            try:
+              status,headers,data=get(base+p)
+              fname=('index.html' if p=='/' else p.lstrip('/').replace('/','__'))
+              (root/fname).write_bytes(data); text=data.decode('utf-8','replace')
+              scripts=re.findall(r'<script[^>]+src=[\"\']([^\"\']+)',text)
+              imgs=re.findall(r'<img[^>]+>',text)
+              links=re.findall(r'<link[^>]+>',text)
+              for src in scripts:
+                u=urljoin(base+p,src)
+                if urlsplit(u).hostname=='marketmarney.com':refs.add(u)
+              for src in re.findall(r'(?:src|href)=[\"\']([^\"\']*(?:brand|logo|icon|manifest|favicon)[^\"\']*)',text,re.I):
+                u=urljoin(base+p,src)
+                if urlsplit(u).hostname=='marketmarney.com':refs.add(u)
+              report.append({'path':p,'status':status,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'headers':{k:v for k,v in headers.items() if k.lower() in ['content-type','cache-control','content-security-policy']},'images':imgs[:40],'links':links[:30],'scripts':scripts})
+            except Exception as e:report.append({'path':p,'error':str(e)})
+          for u in sorted(refs):
+            try:
+              status,headers,data=get(u); name=urlsplit(u).path.lstrip('/').replace('/','__')
+              if len(data)<1500000:(root/name).write_bytes(data)
+              report.append({'asset':u,'status':status,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+            except Exception as e:report.append({'asset':u,'error':str(e)})
+          source='https://raw.githubusercontent.com/arionnft-ship-it/marketmarney/eade05c280526f9c28ce868ccc0d7e1da76866e7/mobile417/logo.png'
+          try:
+            _,_,b=get(source); (root/'android417-logo.png').write_bytes(b)
+            report.append({'logoReference':source,'sha256':hashlib.sha256(b).hexdigest(),'bytes':len(b)})
+          except Exception as e: report.append({'logoError':str(e)})
+          (root/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marney-brand-before-audit
+          path: brand-audit/
+          retention-days: 7
