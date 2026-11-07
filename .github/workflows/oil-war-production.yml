@@ -1,0 +1,54 @@
+name: Verify deployed OIL WAR
+on:
+  push:
+    branches: [oil-war-v1-20261107]
+    paths: ['.github/workflows/oil-war-production.yml']
+permissions:
+  contents: write
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: oil-war-v1-20261107
+      - name: Install browser verification tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Read-only public routes and real WTI perpetual reception
+        run: python3 warxau-fbs/verify-oil-public.py
+      - name: Capture deployed 3D arena explicitly in DEMO mode
+        run: |
+          python3 - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+            b=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+            pg=b.new_page(viewport={'width':1440,'height':1000})
+            pg.goto('https://marketmarney.com/assets/oil-war-3d.html?v=1.0',wait_until='load',timeout=60000)
+            pg.wait_for_function('window.MM_WAR?.ready',timeout=30000)
+            pg.locator('#mode-demo').click()
+            pg.locator('[data-quick-pips="20"]').click()
+            pg.evaluate('window.scrollTo(0,0)')
+            pg.wait_for_function('MM_WAR.getSnapshot().sceneTime>2',polling=500,timeout=60000)
+            pg.screenshot(path='OIL-WAR-Desktop-DEMO.png',timeout=60000)
+            pg.set_viewport_size({'width':390,'height':844});pg.wait_for_timeout(1000)
+            pg.screenshot(path='OIL-WAR-Mobile-DEMO.png',timeout=60000)
+            b.close()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-war-production
+          path: |
+            oil-production-check.json
+            OIL-WAR-Desktop-DEMO.png
+            OIL-WAR-Mobile-DEMO.png
+          retention-days: 7
+      - name: Record verification without private user data
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add oil-production-check.json
+          git diff --cached --quiet || git commit -m 'Record deployed OIL WAR price/chat/access checks'
+          git push origin HEAD:oil-war-v1-20261107
