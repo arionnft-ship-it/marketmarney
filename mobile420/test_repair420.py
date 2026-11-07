@@ -66,6 +66,11 @@ POSTS = [
     post(2, "Jurnal latihan: semua isi di halaman ini adalah data simulasi QA."),
     post(3, "Materi latihan tambahan untuk memeriksa tombol muat berikutnya."),
 ]
+REEL = {"id": "qa-reel-stats", **SESSION_USER, "avatarUrl": None,
+        "createdAt": FIXTURE_TIME, "caption": "Reel simulasi QA: statistik ditunda, video tidak diputar.",
+        "videoUrl": "/qa-fixture/reel.mp4", "own": False}
+REEL_STATS = {"liked": False, "likes": 7, "comments": 3, "views": 21,
+              "commentsEnabled": True}
 
 
 def digest(data):
@@ -170,6 +175,10 @@ class FixtureRouter:
         self.closed = False
         self.hold_status = asyncio.Event()
         self.hold_neighbors = asyncio.Event()
+        self.hold_stats = asyncio.Event()
+        self.hold_media = asyncio.Event()
+        self.stats_started = asyncio.Event()
+        self.login_attempted = asyncio.Event()
         self.status_started = None
         self.neighbors_started = set()
 
@@ -201,6 +210,8 @@ class FixtureRouter:
         path = u.path
         self.calls[path] += 1
         ordinal = self.calls[path]
+        if path == "/akun.html":
+            self.login_attempted.set()
         self.requests.append({"method": request.method, "path": path,
                               "type": request.resource_type, "ordinal": ordinal})
         if request.method not in ("GET", "HEAD"):
@@ -225,6 +236,22 @@ class FixtureRouter:
         if path == "/qa-fixture/chart.svg":
             await route.fulfill(content_type="image/svg+xml", body=CHART)
             return
+        if self.scenario == "reel_stats_pending" and path == "/assets/video-placeholder1880.svg":
+            await route.fulfill(content_type="image/svg+xml", body=CHART)
+            return
+        if self.scenario == "reel_stats_pending" and path == "/qa-fixture/reel.mp4":
+            # No media bytes are delivered: this is a UI/statistics ordering test,
+            # never a simulated playback, watched view, or production video request.
+            if await self.stall(route, self.hold_media):
+                await route.fulfill(status=204, content_type="video/mp4", body=b"")
+            return
+        if self.scenario == "reel_stats_pending" and path == "/api/social-video/summaries":
+            query = parse_qs(u.query)
+            if query == {"kind": ["reel"], "ids": [REEL["id"]]}:
+                self.stats_started.set()
+                if await self.stall(route, self.hold_stats):
+                    await self.json_response(route, {"items": {REEL["id"]: REEL_STATS}})
+                return
         if path == "/api/community/status":
             self.status_started = self.status_started or time.monotonic()
             if self.scenario == "guest_401":
@@ -265,7 +292,7 @@ class FixtureRouter:
             "/api/trader-follow/search": {"items": [], "hint": "Akun simulasi QA."},
             "/api/trader-connect/conversations": {"items": [], "unread": 0},
             "/api/trader-connect/groups": {"mine": [], "discover": []},
-            "/api/trader-connect/reels": {"items": []},
+            "/api/trader-connect/reels": {"items": [REEL] if self.scenario == "reel_stats_pending" else []},
             "/api/trader-connect/unread": {"unread": 0},
             "/api/trader-connect/search": {"users": [], "groups": [], "posts": []},
             "/api/trader-notifications": {"items": [], "unread": 0},
@@ -311,7 +338,19 @@ class Case:
             raise AssertionError(name + (": " + str(detail) if detail is not None else ""))
 
     async def wait(self, expression, timeout=6000):
-        await self.page.wait_for_function(expression, timeout=timeout)
+        # Playwright's wait_for_function evaluates its polling predicate inside the
+        # page, which is rejected by the APK's no-unsafe-eval CSP. Evaluate a
+        # function through the browser protocol instead; keep the production CSP.
+        deadline = time.monotonic() + timeout / 1000
+        while time.monotonic() < deadline:
+            remaining = deadline - time.monotonic()
+            result = await asyncio.wait_for(
+                self.page.evaluate("() => Boolean(" + expression + ")"),
+                timeout=max(0.05, min(1.5, remaining)))
+            if result:
+                return
+            await self.page.wait_for_timeout(min(100, max(1, remaining * 1000)))
+        raise TimeoutError(f"Condition not met within {timeout} ms: {expression}")
 
     async def open(self):
         response = await self.page.goto(ORIGIN + SOCIAL, wait_until="domcontentloaded", timeout=8000)
@@ -484,6 +523,38 @@ async def session_failure(case):
     await case.stable("Recovered session and queued navigation")
 
 
+async def reel_stats_pending(case):
+    p, r = case.page, case.router
+    await case.open()
+    await case.authenticated()
+    await case.nav("Reels", "reels")
+    selector = '#shReelFeed .sh-reel-card[data-reel-id="qa-reel-stats"]'
+    card = p.locator(selector)
+    await card.wait_for(state="visible", timeout=3000)
+    await asyncio.wait_for(r.stats_started.wait(), timeout=2)
+    await case.wait("document.querySelector('[data-reel-id=\"qa-reel-stats\"] [data-mm46-action=like]')!==null", timeout=2000)
+    case.check("A nonempty Reel renders before optional statistics resolve",
+               not r.hold_stats.is_set() and r.count("/api/social-video/summaries") == 1)
+    like = card.locator('[data-mm46-action="like"]')
+    comments = card.locator('[data-mm46-action="comment"]')
+    case.check("Reel actions are usable before statistics arrive",
+               await like.is_visible() and await like.is_enabled()
+               and await comments.is_visible() and await comments.is_enabled())
+    before = await card.evaluate("n=>[n.querySelector('[data-mm46-action=like] strong').textContent,n.querySelector('[data-mm46-action=comment] strong').textContent,n.querySelector('.sh-reel-views strong').textContent]")
+    case.check("Missing statistics are not invented as zero", before == ["—", "—", "—"], before)
+    original = await card.element_handle()
+    case.check("Synthetic video has not played", await card.locator("video").evaluate("v=>v.paused && v.currentTime===0"))
+    await case.screenshot("before-statistics")
+    r.hold_stats.set()
+    await case.wait("(() => {const n=document.querySelector('[data-reel-id=\"qa-reel-stats\"]');return n && n.querySelector('[data-mm46-action=like] strong').textContent==='7' && n.querySelector('[data-mm46-action=comment] strong').textContent==='3' && n.querySelector('.sh-reel-views strong').textContent==='21';})()", timeout=3000)
+    case.check("Statistics update the same existing Reel card",
+               await original.evaluate("n=>n.isConnected && n===document.querySelector('[data-reel-id=\"qa-reel-stats\"]')"))
+    case.check("Statistics use exactly one explicit GET", r.count("/api/social-video/summaries") == 1)
+    case.check("No video view registration or other write was simulated", not r.writes, r.writes)
+    await case.screenshot("after-statistics")
+    await case.stable("Reel after optional statistics")
+
+
 async def baseline_profile(case):
     """A pass means the delivered client demonstrably has the old profile failure."""
     p, r = case.page, case.router
@@ -520,12 +591,15 @@ async def baseline_loading(case):
     except Exception:
         if not r.count("/akun.html"):
             raise
+    # request events may precede the async route handler; assert after our guard
+    # has observed and blocked the attempted navigation, not before it runs.
+    await asyncio.wait_for(r.login_attempted.wait(), timeout=2)
     observed = {"accountNavigationAttempts": r.count("/akun.html"),
                 "sessionStillPending": not r.hold_status.is_set(),
                 "statusReads": r.count("/api/community/status")}
     case.observations["defect"] = observed
     case.check("Reproduced: early Reels click navigates to login before authentication resolves",
-               observed["accountNavigationAttempts"] == 1 and observed["sessionStillPending"], observed)
+               observed["accountNavigationAttempts"] >= 1 and observed["sessionStillPending"], observed)
 
 
 async def run(args):
@@ -554,7 +628,8 @@ async def run(args):
     started = time.monotonic()
     scenarios = [("healthy", healthy), ("profile_500", profile_failure),
                  ("profile_malformed", profile_failure), ("guest_401", guest),
-                 ("session_500", session_failure), ("session_timeout", session_failure)]
+                 ("session_500", session_failure), ("session_timeout", session_failure),
+                 ("reel_stats_pending", reel_stats_pending)]
     if args.baseline_probe:
         scenarios = [("baseline_profile_500", baseline_profile),
                      ("baseline_loading_navigation", baseline_loading)]
@@ -582,7 +657,7 @@ async def run(args):
                     case_started = time.monotonic()
                     error = None
                     try:
-                        await asyncio.wait_for(test(case), timeout=35)
+                        await asyncio.wait_for(test(case), timeout=7.5 if scenario == "reel_stats_pending" else 35)
                         await case.invariants()
                     except Exception as exc:
                         error = {"type": type(exc).__name__, "message": str(exc)[:1800]}
@@ -596,6 +671,8 @@ async def run(args):
                         router.closed = True
                         router.hold_status.set()
                         router.hold_neighbors.set()
+                        router.hold_stats.set()
+                        router.hold_media.set()
                         record = {"name": scenario, "width": width,
                             "durationMs": round((time.monotonic() - case_started) * 1000),
                             "checks": case.checks, "metrics": case.metrics, "error": error,

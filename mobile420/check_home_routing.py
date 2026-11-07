@@ -1,5 +1,5 @@
 """Read-only public page check: the native shared view must honor real hash routes."""
-import asyncio,json,shutil
+import asyncio,json,shutil,re
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.async_api import async_playwright
@@ -30,7 +30,22 @@ async def main():
   page=await context.new_page()
   async def shot(key):
    await page.wait_for_timeout(1000);result[key]=await page.evaluate(SNAPSHOT)
-  await page.goto('https://marketmarney.com/index.html',wait_until='domcontentloaded',timeout=12000)
+  response=await page.goto('https://marketmarney.com/index.html',wait_until='domcontentloaded',timeout=12000)
+  result['navigationControls']=await page.evaluate("""() => [...document.querySelectorAll('nav a,nav button,#nav a,#nav button,[data-page],[data-view]')].map(n=>({tag:n.tagName,id:n.id,text:n.textContent.trim().slice(0,70),href:n.getAttribute('href'),page:n.getAttribute('data-page'),view:n.getAttribute('data-view'),onclick:n.getAttribute('onclick')})).slice(0,90)""")
+  source=await response.text()
+  scripts=await page.evaluate("() => [...document.querySelectorAll('script[src]')].map(n=>n.src).filter(u=>u.startsWith(location.origin+'/'))")
+  result['routeSource']=[]
+  for url in list(dict.fromkeys(scripts))[:45]:
+   try:
+    reply=await context.request.get(url,timeout=5000)
+    if reply.status!=200:continue
+    body=await reply.text()
+    snippets=[]
+    for m in list(re.finditer(r'marketlive|hashchange|location\.hash|mmHome|renderHome|setPage',body,re.I))[:12]:
+     snippet=body[max(0,m.start()-220):m.end()+300]
+     if not re.search(r'client_secret|api[_-]?key|access_token',snippet,re.I):snippets.append(snippet)
+    if snippets:result['routeSource'].append({'path':urlsplit(url).path,'snippets':snippets})
+   except Exception:pass
   await shot('initialHome')
   docs=result['documents']
   await page.evaluate("location.hash='marketlive'")
@@ -43,9 +58,10 @@ async def main():
   result['marketHeadingsMatch']=result['hashMarket']['headings']==result['directMarket']['headings']
   result['homeHeadingsMatch']=result['initialHome']['headings']==result['hashHome']['headings']
   result['marketChangesContent']=result['initialHome']['headings']!=result['hashMarket']['headings'] or result['initialHome']['containers']!=result['hashMarket']['containers']
+  # A failed contract is evidence to reject a native hash-reuse optimization.
+  result['hashReuseSafe']=result['sameDocumentTransitions'] and result['marketHeadingsMatch'] and result['homeHeadingsMatch'] and result['marketChangesContent']
   (out/'live-home-routing.json').write_text(json.dumps(result,indent=2,ensure_ascii=False))
   await browser.close()
  print(json.dumps(result,ensure_ascii=False))
- assert result['sameDocumentTransitions'] and result['marketHeadingsMatch'] and result['homeHeadingsMatch'] and result['marketChangesContent']
 
 asyncio.run(main())

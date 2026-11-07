@@ -2,7 +2,7 @@ name: Marney 4.20 Full Client Preflight
 on:
   push:
     branches: [android-v4.20-performance-fix]
-    paths: ['.github/workflows/preflight420.yml', 'mobile420/client-preflight.json']
+    paths: ['.github/workflows/preflight420.yml', 'mobile420/client-preflight.json', 'mobile420/check_home_routing.py']
 permissions:
   contents: read
   actions: read
