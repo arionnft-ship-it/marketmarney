@@ -1,0 +1,66 @@
+/* MARNEY 4.26 — soft dimensional finish.
+   Keeps hierarchy and premium separation while removing deep bevels and heavy shadows. */
+html[data-mm-depth="423"]{
+ --mm423-surface:linear-gradient(180deg,#ffffff 0%,#fbfcfd 58%,#f6f8fb 100%)!important;
+ --mm423-hero:linear-gradient(135deg,#fff9ef 0%,#ffffff 48%,#f3f7fb 100%)!important;
+ --mm423-header:linear-gradient(180deg,#ffffff 0%,#f9fbfd 100%)!important;
+ --mm423-control:linear-gradient(180deg,#ffffff 0%,#f7f9fb 100%)!important;
+ --mm423-well:linear-gradient(180deg,#f2f5f8 0%,#fafbfd 100%)!important;
+ --mm423-selected:linear-gradient(180deg,#fff7e9 0%,#ffebc8 100%)!important;
+ --mm423-card-shadow:0 1px 2px #18324a12,0 5px 14px #18324a0a!important;
+ --mm423-header-shadow:0 1px 0 #dce4ec,0 3px 9px #18324a08!important;
+ --mm423-control-shadow:0 1px 2px #18324a12!important;
+ --mm423-inset-shadow:inset 0 1px 2px #18324a12,inset 0 -1px 0 #ffffff!important;
+ --mm423-small-shadow:0 1px 3px #18324a12!important;
+ --mm423-gold-face:linear-gradient(180deg,#ffe0a4 0%,#f8bd5c 100%)!important;
+ --mm423-gold-pressed:linear-gradient(180deg,#f4bd64 0%,#efaa3b 100%)!important;
+ --mm423-gold-shadow:0 1px 2px #84551024,0 3px 8px #8455100d!important;
+}
+
+html[data-mm-depth="423"] :is(
+ .hero-premium,.terminal-window,.panel,.card,.article,.mm90-feature,.mm-tv-card,
+ .mm-tv-feature,.mm-tv-empty,.mm85-shell,.mm86-panel,.mm87-panel,.mm88-desk,
+ .pair-panel,.mm1816-pivot-public,.mm1818-center,.mm1816-community-card,
+ .featured,.row,.empty,.sh-post,.sh-guest,.sh-compose,.sh-connect-card,
+ .sh-friend-card,.sh-modal-box,.sh-mobile-account-dialog,.gm-guest,.gm-info-card,
+ .gm-dialog,.mm46-profile-card,.mm46-feed-card,.mm46-list-panel
+){
+ border-width:1px!important;
+}
+
+html[data-mm-depth="423"] :is(
+ .button,.icon-btn,.loadmore,.chip,.save,.mm109-timeframe,.pair-button,.mm85-tab,
+ .mm88-buttons button,.mm-tv-filters button,.mm44-nav-button,.mm44-icon,
+ .sh-msg-title-actions button,.sh-msg-back,.gm-icon-btn,.gm-filter,.gm-attach,
+ .mm46-actions>a,.mm46-actions>button
+){
+ text-shadow:none!important;
+}
+
+html[data-mm-depth="423"] :is(
+ .button:not(.danger),.icon-btn,.loadmore,.chip,.save,.mm109-timeframe,.pair-button,
+ .mm85-tab,.mm88-buttons button,.mm-tv-filters button,.mm44-nav-button,
+ .sh-msg-title-actions button,.sh-msg-back,.gm-icon-btn,.gm-filter,.gm-attach
+):active{
+ box-shadow:0 1px 2px #18324a12!important;
+}
+
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-toolbar{
+ box-shadow:0 1px 0 #dce4ec!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] :is(.mm46-icon,.sh-reel-rail-btn){
+ box-shadow:0 2px 6px #18324a14!important;
+}
+html[data-mm-light-only="425"] .mm46-options{
+ box-shadow:0 8px 24px #18324a18!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] :is(
+ .mm46-play-state,[data-mm46-loading] .mm46-loading,[data-mm46-error] .mm46-retry
+){
+ box-shadow:0 4px 14px #18324a18!important;
+}
+
+/* Keep media flat: dimensional styling belongs to its container, never to photos or video. */
+html[data-mm-depth="423"] :is(img,video,canvas,iframe){
+ filter:none;
+}

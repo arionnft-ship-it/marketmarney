@@ -1,0 +1,239 @@
+name: Marney 4.26 Cinematic Opening and Soft 3D
+on:
+  push:
+    branches: [android-v4.26-cinematic-opening-soft-3d]
+    paths: ['mobile426/**', '.github/workflows/build426.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: marney426-cinematic-soft-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Reconstruct verified source and apply 4.26 changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          source=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          assert not any(Path(name).exists() for name in (
+              'android417','android419','android420','android421','android422',
+              'android423','android424','android425','android426'))
+          with ZipFile(source) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0]=='android417':
+                      archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420
+          python3 mobile420/prepare420.py
+          mv android420 android421
+          python3 mobile421/prepare421.py
+          mv android421 android422
+          python3 mobile422/prepare422.py
+          mv android422 android423
+          python3 mobile423/prepare423.py
+          mv android423 android424
+          python3 mobile424/prepare424.py
+          mv android424 android425
+          python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426
+          python3 mobile426/prepare426.py
+
+      - name: Compile APK and instrumentation tests
+        run: gradle --no-daemon --project-dir android426 :app:assembleDebug :app:assembleDebugAndroidTest
+
+      - name: Verify package, source and APK assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android426/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney426-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney426-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta426'" deliver/Marney426-Package.txt
+          grep -F "versionCode='30'" deliver/Marney426-Package.txt
+          grep -F "versionName='4.26.0-beta'" deliver/Marney426-Package.txt
+          cp "$APK" deliver/Marney426.apk
+          cp android426/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney426-Tests.apk
+          cp verified426.json mobile426/Marney426-Panduan.md deliver/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, json
+          root=Path('android426')
+          manifest=json.loads(Path('verified426.json').read_text())
+          for rel,digest in manifest['preserved'].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest()==digest,rel
+          for entry in manifest['changed']:
+              assert hashlib.sha256((root/entry['path']).read_bytes()).hexdigest()==entry['afterSha256'],entry['path']
+          apk=Path('deliver/Marney426.apk')
+          digest=hashlib.sha256(apk.read_bytes()).hexdigest()
+          Path('deliver/Marney426-SHA256.txt').write_text(digest+'  Marney426.apk\n')
+          assets=root/'app/src/main/assets'
+          expected={'assets/'+p.relative_to(assets).as_posix():p for p in assets.rglob('*') if p.is_file()}
+          with ZipFile(apk) as archive:
+              actual={entry.filename for entry in archive.infolist() if entry.filename.startswith('assets/') and not entry.is_dir()}
+              assert actual==set(expected),'APK asset inventory differs from prepared source'
+              for name,path in expected.items():
+                  assert archive.read(name)==path.read_bytes(),path
+              dex=b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
+              assert b'MarketMarneyAndroid/4.26 AppShell' in dex
+              assert b'soft426.css' in dex
+              assert b'MM426_LAUNCH' in dex
+              assert b'FINANCIAL INTELLIGENCE' in dex
+          startup=(root/'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java').read_text()
+          depth=(root/'app/src/main/java/com/marketmarney/mobile/DepthStyle423.java').read_text()
+          assert 'CinematicBackdrop' in startup and 'LogoAura' in startup
+          assert 'repeating animator' in startup
+          assert 'restrained depth system' in depth
+          print('APK SHA-256:',digest)
+          print('Changed source files:',len(manifest['changed']))
+          print('Preserved source files:',len(manifest['preserved']))
+          print('Verified APK assets:',len(expected))
+          PYCODE
+
+      - name: Verify soft web depth
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright
+          python3 mobile426/visual_check426.py --apk deliver/Marney426.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney426-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney426-Soft-Preview
+          path: quality426/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney426-Test-APK
+          path: testapk/
+          if-no-files-found: error
+
+  native-ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney426-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney426-Test-APK
+          path: testapk
+      - name: Prepare cinematic opening, soft-depth and regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apk
+          sha256sum -c Marney426-SHA256.txt
+          cd ..
+          cat > native-check.sh <<'SH'
+          set -euo pipefail
+          mkdir -p native426
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney426.apk
+          adb install -r testapk/Marney426-Tests.apk
+          adb logcat -c
+          CLASSES="com.marketmarney.mobile.OpeningSoft426Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable"
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta426.test/androidx.test.runner.AndroidJUnitRunner | tee native426/instrumentation.txt
+          adb logcat -d -s AndroidRuntime:E > native426/runtime.log
+          grep -E "OK \([0-9]+ tests?\)" native426/instrumentation.txt
+          test ! -s native426/runtime.log
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta426/files/opening426-tests native426/ || true
+          adb shell am start -n com.marketmarney.mobile.beta426/com.marketmarney.mobile.MainActivity --ei startTab 1
+          sleep 3
+          adb exec-out screencap -p > native426/news-soft-native.png
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash native-check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney426-Native-UI
+          path: native426/
+          if-no-files-found: error
+
+  release:
+    needs: [build, native-ui]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney426-Final-APK
+          path: release
+      - name: Publish permanent public download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum -c Marney426-SHA256.txt
+          zip -9 Marney426.zip Marney426.apk Marney426-Panduan.md Marney426-SHA256.txt Marney426-Package.txt
+          TAG=marney-v4.26-beta
+          NOTES='Marney 4.26: opening sinematik terinspirasi visual pengendara dengan logo oranye menyala dan aksen logam. Seluruh fitur setelah opening tetap terang. Efek 3D diringankan menjadi bayangan tipis dan permukaan lembut, sementara galeri langsung serta fungsi 4.25 tetap dipertahankan.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.26 Cinematic Soft' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney426.apk Marney426.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney426.apk Marney426.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.26 Cinematic Soft' --notes "$NOTES" --prerelease
+          fi
