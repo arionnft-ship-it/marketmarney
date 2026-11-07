@@ -1,0 +1,68 @@
+name: Check email OTP activation
+on:
+  push:
+    branches: [release/social-email-otp-20261108]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate build hooks and private key tests
+        run: |
+          node signup/otp/install.cjs
+          node signup/otp/install.cjs
+          node signup/otp/activation.cjs
+          node signup/otp/activation.cjs
+          for f in signup/*.cjs signup/otp/*.cjs; do node --check "$f"; done
+          node --test signup-otp-tests/*.test.cjs
+      - name: Check core security without sending email
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict');const {DatabaseSync}=require('node:sqlite');
+          const {createEmailOtp,TTL}=require('./signup/otp/core.cjs'),{emailAddress}=require('./signup/requirements.cjs');
+          (async()=>{
+           const db=new DatabaseSync(':memory:');let now=Date.now();const sent=[];
+           const otp=createEmailOtp({db,normalizeEmail:emailAddress,env:{MM_SIGNUP_EMAIL_OTP:'required',MM_OTP_SECRET:'a'.repeat(64)},clock:()=>now,mailer:{ready:true,async send(m){sent.push(m)}}});
+           const first=await otp.issue({headers:{}},'qa@example.com','test-source');
+           const req={headers:{cookie:first.cookie.split(';')[0]}},payload={otpChallenge:first.body.challengeId,otpCode:sent[0].code};
+           assert.match(sent[0].code,/^\d{6}$/);assert(!Object.hasOwn(first.body,'code'));
+           assert.throws(()=>otp.check({headers:{}},payload,'qa@example.com','test-source'));
+           assert.throws(()=>otp.check(req,payload,'other@example.com','test-source'));
+           const ticket=otp.check(req,payload,'qa@example.com','test-source');assert.throws(()=>otp.consume(ticket));
+           db.exec('BEGIN IMMEDIATE');otp.consume(ticket);db.exec('ROLLBACK');otp.check(req,payload,'qa@example.com','test-source');
+           db.exec('BEGIN IMMEDIATE');otp.consume(ticket);db.exec('COMMIT');assert.throws(()=>otp.check(req,payload,'qa@example.com','test-source'));
+           await assert.rejects(otp.issue(req,'qa@example.com','test-source'),e=>e.status===429);
+           now+=61000;const second=await otp.issue(req,'qa@example.com','test-source'),code=sent.at(-1).code;
+           const wrong={otpChallenge:second.body.challengeId,otpCode:code==='111111'?'222222':'111111'};
+           for(let i=0;i<5;i++)assert.throws(()=>otp.check(req,wrong,'qa@example.com','test-source'));
+           assert.throws(()=>otp.check(req,{...wrong,otpCode:code},'qa@example.com','test-source'));
+           now+=61000;const third=await otp.issue(req,'qa@example.com','test-source'),last=sent.at(-1).code;now+=TTL;
+           assert.throws(()=>otp.check(req,{otpChallenge:third.body.challengeId,otpCode:last},'qa@example.com','test-source'));db.close();
+           console.log('Core checks passed using synthetic database and fake sender only.');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - name: Validate currently served account HTML compatibility
+        run: |
+          mkdir -p otp-evidence
+          curl --fail --silent --show-error --max-time 30 https://marketmarney.com/akun.html -o otp-evidence/before.html
+          node <<'JS'
+          const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+          const source=fs.readFileSync('otp-evidence/before.html','utf8');
+          const out=require('./signup/otp/ui.cjs').enhance(source);
+          assert(out.includes('id="mmOtpPanel"'));assert(out.includes('Verifikasi & buat akun'));
+          for(const s of out.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(!/\bsrc=/.test(s[1]))new vm.Script(s[2]);
+          fs.writeFileSync('otp-evidence/after.html',out);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: email-otp-activation-checks
+          path: otp-evidence/
+          retention-days: 7
