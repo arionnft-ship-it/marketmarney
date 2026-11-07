@@ -1,0 +1,51 @@
+name: Verify private WarXAU FBS receiver
+on:
+  push:
+    branches: [warxau-hd-daily-v7-6-release]
+    paths: ['.github/workflows/check-warxau-fbs.yml', 'warxau-fbs/**']
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-hd-daily-v7-6-release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify files match locally tested source
+        run: |
+          cat <<'SUMS' | sha256sum -c -
+          b12d3e99d4f89d64327105ca0241d47581205c9e339a9cdc44df254fe8fe100c  warxau-fbs/relay.cjs
+          96a6cec9cce557fb6ea604f3cf7f1b92a18d604892ab1232e181c863e0ae5ad5  warxau-fbs/bootstrap.cjs
+          61b1c83fccc2766baafd9131cf69193a37c47978ce70ad215024e2429e770fba  warxau-fbs/page.cjs
+          698009fae16d0599ff3b7019ba3bb47ac1732be94efded549bfb979c81ad1f1c  warxau-fbs/client.js
+          8cfd9aeb8861554c62d8b237b904ace31e19a64942b30e6abfdd5750d3e730c4  warxau-fbs/Dockerfile
+          SUMS
+          for f in warxau-fbs/*.cjs warxau-fbs/*.js; do node --check "$f"; done
+      - name: Read current public page and test owner-only copy
+        run: |
+          node <<'JS'
+          const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+          const {privatePage}=require('./warxau-fbs/page.cjs');
+          (async()=>{
+            const r=await fetch('https://marketmarney.com/assets/xau-war-3d.html?v=7.7');assert.equal(r.status,200);const old=await r.text();
+            const original=crypto.createHash('sha256').update(old).digest('hex');assert.equal(original,'b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212');
+            const html=privatePage(old,fs.readFileSync('warxau-fbs/client.js','utf8'));
+            const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];assert.ok(scripts.length>=20);
+            for(const s of scripts)new vm.Script(s[1]);
+            assert.ok(!html.includes('https://api.gold-api.com'));assert.ok(html.includes('7.8-fbs-private'));assert.ok(html.includes('new EventSource'));assert.ok(html.includes('BID — privat'));
+            const checks=[];for(const p of ['/','/akun.html','/api/auth/android/config','/api/content','/_railway/health']){const q=await fetch('https://marketmarney.com'+p);checks.push({path:p,status:q.status});assert.equal(q.status,200);}
+            fs.writeFileSync('warxau-fbs-check.json',JSON.stringify({ok:true,checkedAt:new Date().toISOString(),sourceCommit:process.env.GITHUB_SHA,publicPageSha256:original,privatePageSha256:crypto.createHash('sha256').update(html).digest('hex'),compiledScripts:scripts.length,checks,note:'Read-only inspection; no credentials used and no synthetic prices uploaded.'},null,2));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - name: Store read-only verification
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-fbs-check.json
+          git diff --cached --quiet || git commit -m 'Record private FBS receiver source and page checks'
+          git push origin HEAD:warxau-hd-daily-v7-6-release
