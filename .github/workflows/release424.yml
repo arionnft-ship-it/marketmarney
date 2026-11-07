@@ -1,0 +1,58 @@
+name: Publish Marney 4.24 Download
+
+on:
+  push:
+    branches: [android-v4.24-adaptive-nav-gallery]
+    paths: ['.github/workflows/release424.yml']
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: marney424-public-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download the verified APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          gh run download 42419008354 \
+            --repo arionnft-ship-it/marketmarney \
+            --name Marney424-Final-APK \
+            --dir release
+          test -s release/Marney424.apk
+          cd release
+          sha256sum -c Marney424-SHA256.txt
+          zip -j Marney424.zip Marney424.apk Marney424-Panduan.md Marney424-SHA256.txt
+
+      - name: Publish stable public download links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='marney-v4.24-beta'
+          NOTES='Marney 4.24 Beta: menu bawah menyesuaikan tema halaman, tampilan hitam khusus Reels, dan tombol unggah media langsung membuka galeri Android. APK SHA-256: 155f3e38acb9b48cfcb52e8ef3e1bd5bdc7843b3525985f18926433689851a66.'
+          if gh release view "$TAG" --repo arionnft-ship-it/marketmarney >/dev/null 2>&1; then
+            gh release upload "$TAG" release/Marney424.apk release/Marney424.zip \
+              --repo arionnft-ship-it/marketmarney --clobber
+            gh release edit "$TAG" --repo arionnft-ship-it/marketmarney \
+              --title 'Marney 4.24 Beta' --notes "$NOTES" --prerelease
+          else
+            gh release create "$TAG" release/Marney424.apk release/Marney424.zip \
+              --repo arionnft-ship-it/marketmarney \
+              --target eff45adb4088713f93101727e7629c6ae732d4bb \
+              --title 'Marney 4.24 Beta' --notes "$NOTES" --prerelease
+          fi
