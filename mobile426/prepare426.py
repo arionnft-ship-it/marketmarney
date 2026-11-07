@@ -88,6 +88,26 @@ for relative,source_name in overrides.items():
     destination.parent.mkdir(parents=True,exist_ok=True)
     shutil.copyfile(patch/source_name,destination)
 
+# A child click must finish dispatching before its full-screen parent is removed.
+# Restore light system bars only after the overlay is detached, preventing an
+# insets/layout re-entry while Android is still traversing the clicked child.
+startup_relative="app/src/main/java/com/marketmarney/mobile/StartupOverlay.java"
+startup_path=root/startup_relative
+startup=startup_path.read_text()
+listener='skip.setOnClickListener(v->finish(false,"skip"));'
+assert startup.count(listener)==1
+startup=startup.replace(listener,'skip.setOnClickListener(v->post(()->finish(false,"skip")));',1)
+old_remove='''        setSystemBars(false);
+        ViewGroup parent=(ViewGroup)getParent();
+        if(parent!=null)parent.removeView(this);
+        if(onRemoved!=null)onRemoved.run();'''
+new_remove='''        ViewGroup parent=(ViewGroup)getParent();
+        if(parent!=null)parent.removeView(this);
+        setSystemBars(false);
+        if(onRemoved!=null)onRemoved.run();'''
+assert startup.count(old_remove)==1
+startup_path.write_text(startup.replace(old_remove,new_remove,1))
+
 shutil.copyfile(patch/"Marney426-Panduan.md",root/"README-MULAI-DISINI.md")
 
 after=inventory(root)
