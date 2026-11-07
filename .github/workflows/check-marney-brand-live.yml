@@ -1,0 +1,32 @@
+name: Verify deployed MARNEY branding
+on:
+  push:
+    branches: [marney-web-logo-20261107]
+    paths: ['.github/workflows/check-marney-brand-live.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare expected assets and browser
+        run: |
+          python -m pip install Pillow==11.3.0 playwright
+          python marney-brand/build-assets.py
+          python -m playwright install --with-deps chromium
+      - name: Verify actual online website, no response substitutions
+        env:
+          BRAND_LIVE: '1'
+        run: python marney-brand/verify-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marney-brand-live-verified
+          path: brand-verification/
+          retention-days: 7
