@@ -55,6 +55,8 @@ async def run(args):
           localStorage.setItem('mm_public_theme_v1','dark');localStorage.setItem('mm43-news-theme','dark');
           localStorage.setItem('mm1839-last-theme','dark');localStorage.setItem('other-setting','keep');""")
         page = await context.new_page()
+        page_errors = []
+        page.on('pageerror', lambda error: page_errors.append(str(error)))
         await page.goto('https://marketmarney.com/light425-probe.html', wait_until='domcontentloaded')
         await page.add_style_tag(content=css)
         await page.evaluate(script)
@@ -68,8 +70,10 @@ async def run(args):
         storage = await page.evaluate("""() => ({public:localStorage.getItem('mm_public_theme_v1'),news:localStorage.getItem('mm43-news-theme'),social:localStorage.getItem('mm1839-last-theme'),other:localStorage.getItem('other-setting')})""")
         check('Saved theme preferences are rewritten to light', storage['public'] == storage['news'] == storage['social'] == 'light', storage)
         check('Unrelated storage is preserved', storage['other'] == 'keep', storage)
-        hidden = await page.evaluate("""() => [...document.querySelectorAll('#theme,#shTheme,[data-mm-theme-choice],[data-ac-theme],[data-j-theme]')].every(n=>getComputedStyle(n).display==='none')""")
-        check('Theme controls are not visible or clickable', hidden)
+        layout = await page.evaluate("""() => ({html:getComputedStyle(document.documentElement).display,body:getComputedStyle(document.body).display,width:document.documentElement.getBoundingClientRect().width,height:document.body.getBoundingClientRect().height})""")
+        check('Theme-state attributes keep the document visible', layout['html'] != 'none' and layout['body'] != 'none' and layout['width'] > 300 and layout['height'] > 100, layout)
+        hidden = await page.evaluate("""() => [...document.querySelectorAll('#theme,#shTheme,[data-mm-theme-choice],[data-sh-theme],button[data-ac-theme],button[data-j-theme]')].every(n=>n.hidden&&getComputedStyle(n).display==='none'&&getComputedStyle(n).pointerEvents==='none')""")
+        check('Actual theme controls are not visible or clickable', hidden)
         menu_hidden = await page.evaluate("""() => {const b=[...document.querySelectorAll('#mm43-create-menu button')].find(n=>/tema|gelap/i.test(n.textContent));return !!b&&getComputedStyle(b).display==='none'&&b.tabIndex===-1}""")
         check('Social theme menu action is removed', menu_hidden)
         normal = await page.evaluate("""() => ({root:getComputedStyle(document.documentElement).backgroundColor,body:getComputedStyle(document.body).backgroundColor,tone:window.__tones.at(-1),scheme:getComputedStyle(document.documentElement).colorScheme})""")
@@ -90,7 +94,7 @@ async def run(args):
 
         await page.evaluate(script)
         check('Repeated installation reuses one controller', await page.evaluate("Boolean(window.MMLight425)"))
-        check('No uncaught browser errors occurred', True)
+        check('No uncaught browser errors occurred', not page_errors, page_errors)
         await context.close()
         await browser.close()
 
