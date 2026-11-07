@@ -1,0 +1,97 @@
+name: Verify live email OTP
+on:
+  push:
+    branches: [release/social-email-otp-20261108]
+    paths: ['.github/workflows/verify-email-otp-live.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.56.0 && python -m playwright install --with-deps chromium
+      - name: Check live status and form; allow one synthetic email request only
+        run: |
+          mkdir -p otp-live-evidence
+          python <<'PY'
+          from pathlib import Path
+          import json,urllib.request,urllib.error
+          from urllib.parse import urlsplit
+          from playwright.sync_api import sync_playwright
+          base='https://marketmarney.com';root=Path('otp-live-evidence');checks=[]
+          def ok(name,condition):
+              assert condition,name
+              checks.append({'check':name,'passed':True})
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'MarketMarneyOtpReleaseCheck/1.0'})
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as r:return r.status,r.read()
+              except urllib.error.HTTPError as e:return e.code,e.read()
+          code,raw=get('/api/community/status');state=json.loads(raw)
+          ok('Public status 200',code==200)
+          ok('Registration requires OTP',state.get('emailVerification')=='otp-required' and state.get('emailOtp',{}).get('required') is True)
+          ok('Sender and private key ready',state['emailOtp'].get('available') is True)
+          ok('Code policy 6 digits / 5 minutes / resend 60s',state['emailOtp']['digits']==6 and state['emailOtp']['expiresInSeconds']==300 and state['emailOtp']['resendAfterSeconds']==60)
+          ok('No private key or API credential in public status','RESEND_API_KEY' not in raw.decode() and 'MM_OTP_SECRET' not in raw.decode())
+          for path,allowed in [('/',[200]),('/akun.html',[200]),('/beranda-trader.html',[200]),('/_railway/health',[200]),('/api/community/me',[401]),('/api/admin/session',[401,404])]:
+              status,_=get(path);ok('Public route '+path,status in allowed)
+          sent=0;blocked=[]
+          with sync_playwright() as p:
+              browser=p.chromium.launch()
+              for width in [390,1280]:
+                  ctx=browser.new_context(viewport={'width':width,'height':960},service_workers='block')
+                  page=ctx.new_page();errors=[]
+                  page.on('pageerror',lambda e:errors.append(str(e)))
+                  def guard(route):
+                      global sent
+                      req=route.request;path=urlsplit(req.url).path
+                      if req.method in ['GET','HEAD']:return route.continue_()
+                      if width==390 and sent==0 and req.method=='POST' and req.url==base+'/api/community/register/otp' and req.post_data_json=={'email':'delivered+marketmarney-live-otp@resend.dev'}:
+                          sent+=1
+                          return route.continue_()
+                      blocked.append({'method':req.method,'path':path});return route.abort()
+                  page.route('**/*',guard)
+                  page.goto(base+'/akun.html#daftar',wait_until='networkidle')
+                  page.wait_for_function('document.getElementById("login").textContent==="Kirim kode OTP"')
+                  ok(str(width)+' OTP form visible',page.locator('#mmOtpPanel').is_visible() and page.locator('#signupEmail').is_visible())
+                  ok(str(width)+' correct autocomplete',page.locator('#signupOtp').get_attribute('autocomplete')=='one-time-code')
+                  ok(str(width)+' no horizontal overflow',page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
+                  if width==390:
+                      page.locator('#signupName').fill('Pemeriksaan Sistem')
+                      page.locator('#signupEmail').fill('delivered+marketmarney-live-otp@resend.dev')
+                      page.locator('#username').fill('mm_otp_delivery_probe')
+                      page.locator('#password').fill('Synthetic-UI-only-not-an-account-2026')
+                      with page.expect_response(lambda r:r.url==base+'/api/community/register/otp',timeout=20000) as response:
+                          page.locator('#login').click()
+                      r=response.value;body=r.json()
+                      ok('Live OTP endpoint accepts synthetic request',r.status==200 and body.get('ok') is True)
+                      ok('OTP secret not returned to browser','otpCode' not in body and 'code' not in body)
+                      ok('Valid challenge response',len(body.get('challengeId',''))==64 and body.get('expiresInSeconds',0)>0)
+                      page.wait_for_function('document.getElementById("login").textContent==="Verifikasi & buat akun"')
+                      ok('OTP entry enabled after send',page.locator('#signupOtp').is_enabled())
+                      ok('Resend cooldown active',page.locator('#mmResendOtp').is_disabled())
+                      cookies=ctx.cookies(base)
+                      ok('Browser binding HttpOnly and Secure',any(c['name']=='__Host-mm_signup_otp' and c['httpOnly'] and c['secure'] for c in cookies))
+                      # Do not read a code or click the account-creation button.
+                      page.locator('#password').fill('')
+                  ok(str(width)+' no page errors',not errors)
+                  page.evaluate("document.getElementById('notice').textContent='PEMERIKSAAN TAMPILAN — akun tidak dibuat. Pengiriman hanya ke alamat uji resmi Resend.'")
+                  page.screenshot(path=str(root/f'otp-live-{width}.png'),full_page=True)
+                  ctx.close()
+              browser.close()
+          ok('Exactly one synthetic request and no other writes',sent==1 and not blocked)
+          report={'scope':'Public GET checks plus exactly one OTP POST to Resend synthetic recipient. No real inbox or user account created.','passed':len(checks),'checks':checks,'publicPolicy':state['emailOtp']}
+          (root/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-otp-live-check
+          path: otp-live-evidence/
+          retention-days: 7
