@@ -1,0 +1,222 @@
+name: Marney 4.25 Light Only
+on:
+  push:
+    branches: [android-v4.25-light-only]
+    paths: ['mobile425/**', '.github/workflows/build425.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: marney425-light-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Reconstruct verified source and apply 4.25 light-only mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          source = Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest() == '701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          assert not any(Path(name).exists() for name in ('android417','android419','android420','android421','android422','android423','android424','android425'))
+          with ZipFile(source) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0] == 'android417': archive.extract(entry, '.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420
+          python3 mobile420/prepare420.py
+          mv android420 android421
+          python3 mobile421/prepare421.py
+          mv android421 android422
+          python3 mobile422/prepare422.py
+          mv android422 android423
+          python3 mobile423/prepare423.py
+          mv android423 android424
+          python3 mobile424/prepare424.py
+          mv android424 android425
+          python3 mobile425/prepare425.py
+      - name: Compile APK and instrumentation tests
+        run: gradle --no-daemon --project-dir android425 :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verify package, source and APK assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android425/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney425-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney425-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta425'" deliver/Marney425-Package.txt
+          grep -F "versionCode='29'" deliver/Marney425-Package.txt
+          grep -F "versionName='4.25.0-beta'" deliver/Marney425-Package.txt
+          cp "$APK" deliver/Marney425.apk
+          cp android425/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney425-Tests.apk
+          cp verified425.json mobile425/Marney425-Panduan.md deliver/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, json
+          root=Path('android425')
+          manifest=json.loads(Path('verified425.json').read_text())
+          for rel,digest in manifest['preserved'].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest()==digest,rel
+          for entry in manifest['changed']:
+              assert hashlib.sha256((root/entry['path']).read_bytes()).hexdigest()==entry['afterSha256'],entry['path']
+          apk=Path('deliver/Marney425.apk')
+          digest=hashlib.sha256(apk.read_bytes()).hexdigest()
+          Path('deliver/Marney425-SHA256.txt').write_text(digest+'  Marney425.apk\n')
+          assets=root/'app/src/main/assets'
+          expected={'assets/'+p.relative_to(assets).as_posix():p for p in assets.rglob('*') if p.is_file()}
+          with ZipFile(apk) as archive:
+              actual={entry.filename for entry in archive.infolist() if entry.filename.startswith('assets/') and not entry.is_dir()}
+              assert actual==set(expected), 'APK asset inventory differs from prepared source'
+              for name,p in expected.items(): assert archive.read(name)==p.read_bytes(),p
+              dex=b''.join(archive.read(n) for n in archive.namelist() if n.endswith('.dex'))
+              assert b'MarketMarneyAndroid/4.25 AppShell' in dex
+              assert b'light425.js' in dex and b'light425.css' in dex
+          styles=(root/'app/src/main/res/values/styles.xml').read_text()+(root/'app/src/main/res/values-v31/styles.xml').read_text()
+          assert '#061423' not in styles and styles.count('windowLightStatusBar">true')==2
+          assert 'windowLightNavigationBar">true' in styles
+          print('APK SHA-256:',digest)
+          print('Changed source files:',len(manifest['changed']))
+          print('Preserved source files:',len(manifest['preserved']))
+          print('Verified APK assets:',len(expected))
+          PYCODE
+      - name: Verify exact light-only web layer
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright
+          python3 mobile425/visual_check425.py --apk deliver/Marney425.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney425-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney425-Light-Preview
+          path: quality425/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney425-Test-APK
+          path: testapk/
+          if-no-files-found: error
+
+  native-ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney425-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney425-Test-APK
+          path: testapk
+      - name: Prepare focused native, light-theme and gallery checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apk
+          sha256sum -c Marney425-SHA256.txt
+          cd ..
+          cat > native-check.sh <<'SH'
+          set -euo pipefail
+          mkdir -p native425
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney425.apk
+          adb install -r testapk/Marney425-Tests.apk
+          adb logcat -c
+          CLASSES="com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable"
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta425.test/androidx.test.runner.AndroidJUnitRunner | tee native425/instrumentation.txt
+          adb logcat -d -s AndroidRuntime:E > native425/runtime.log
+          grep -F "OK (17 tests)" native425/instrumentation.txt
+          test ! -s native425/runtime.log
+          adb shell am start -n com.marketmarney.mobile.beta425/com.marketmarney.mobile.MainActivity --ei startTab 1
+          sleep 3
+          adb exec-out screencap -p > native425/news-light-native.png
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash native-check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney425-Native-UI
+          path: native425/
+          if-no-files-found: error
+
+  release:
+    needs: [build, native-ui]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney425-Final-APK
+          path: release
+      - name: Publish permanent public download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum -c Marney425-SHA256.txt
+          zip -9 Marney425.zip Marney425.apk Marney425-Panduan.md Marney425-SHA256.txt Marney425-Package.txt
+          TAG=marney-v4.25-beta
+          NOTES='Marney 4.25 Light Only: seluruh antarmuka aplikasi dikunci ke tema terang, pilihan gelap dihapus, Reels memakai kontrol terang, dan unggah media tetap langsung membuka galeri Android.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.25 Light Only' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney425.apk Marney425.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney425.apk Marney425.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.25 Light Only' --notes "$NOTES" --prerelease
+          fi

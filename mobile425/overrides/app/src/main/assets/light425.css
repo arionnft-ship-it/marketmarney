@@ -1,0 +1,137 @@
+/* Marney 4.25: one light presentation across every application surface. */
+html[data-mm-light-only="425"]{
+ color-scheme:light!important;
+ background:#f4f6f9!important;
+ --bg:#f4f6f9!important;
+ --panel:#ffffff!important;
+ --panel2:#f7f9fc!important;
+ --surface:#ffffff!important;
+ --surface-alt:#f7f9fc!important;
+ --other:#ffffff!important;
+ --chat:#fff5df!important;
+ --ink:#17283b!important;
+ --text:#17283b!important;
+ --muted:#62758a!important;
+ --line:#dbe4ec!important;
+ --border:#dbe4ec!important;
+ --soft:#e9eef4!important;
+ --accent:#986319!important;
+ --amber:#a86b13!important;
+ --gold:#986319!important;
+ --mm423-base:#f4f6f9!important;
+ --mm423-ink:#1b2d41!important;
+ --mm423-line:#cfdae5!important;
+ --mm423-edge:#c2cdda!important;
+ --mm423-highlight:#ffffff!important;
+ --mm423-accent:#8d5b17!important;
+ --mm423-surface:linear-gradient(145deg,#ffffff 0%,#fffdfa 44%,#edf2f7 100%)!important;
+ --mm423-hero:linear-gradient(130deg,#fff6e6 0%,#fffdf8 43%,#e8eff7 100%)!important;
+ --mm423-header:linear-gradient(110deg,#ffffff 0%,#fffaf0 66%,#edf3f9 100%)!important;
+ --mm423-control:linear-gradient(180deg,#ffffff 0%,#f8fafc 45%,#e6edf4 100%)!important;
+ --mm423-well:linear-gradient(180deg,#e9eef5 0%,#f9fbfd 100%)!important;
+ --mm423-selected:linear-gradient(180deg,#fff4dc 0%,#ffe7b9 52%,#f6d296 100%)!important;
+ --mm423-selected-ink:#73460e!important;
+ --mm423-selected-line:#d2ad71!important;
+ --mm423-card-shadow:inset 0 1px 0 #ffffff,0 3px 0 #c6d1de,0 8px 16px #1d354d12!important;
+ --mm423-header-shadow:inset 0 1px 0 #ffffff,0 2px 0 #d1dbe6,0 6px 12px #1d354d0d!important;
+ --mm423-control-shadow:inset 0 1px 0 #ffffff,0 2px 0 #c4cfdb,0 4px 7px #1d354d0d!important;
+ --mm423-inset-shadow:inset 0 2px 4px #20374e16,inset 0 -1px 0 #ffffff!important;
+ --mm423-small-shadow:inset 0 1px 0 #ffffffbd,0 2px 2px #1d354d16!important;
+ --mm423-gold-shadow:inset 0 1px 0 #fff8e9,0 3px 0 #b97b24,0 6px 10px #8558161a!important;
+}
+html[data-mm-light-only="425"] body{
+ background:#f4f6f9!important;
+ color:#17283b!important;
+ color-scheme:light!important;
+}
+html[data-mm-light-only="425"] :is(.topbar,.mobilebar,.sidebar,.mast,.sticky,.mm44-social-header,.mm44-headrow,.mm44-nav,.gm-room-head,.gm-compose,.gm-info-head,.mm44-profile-header,.j-top,.j-hero){
+ color:#17283b!important;
+ border-color:#dbe4ec!important;
+}
+html[data-mm-light-only="425"] :is(#theme,#shTheme,.sh-theme-switch,.mm-theme-switch,.mm80-themes,.j-theme,[data-mm-theme-choice],[data-sh-theme],[data-ac-theme],[data-j-theme],[data-theme-toggle],[aria-label="Ganti tema"],[title="Ganti tema"],[aria-label="Tema gelap"],[title="Tema gelap"]){
+ display:none!important;
+ visibility:hidden!important;
+ pointer-events:none!important;
+}
+html[data-mm-light-only="425"] #mm43-create-menu .sh-modal-box>button:nth-of-type(4){display:none!important}
+
+/* Reels remains an edge-to-edge media viewer, but every interface surface is light. */
+html[data-mm-light-only="425"][data-mm46-reels]{
+ --mm46-gold:#986319!important;
+ background:#f4f6f9!important;
+ color-scheme:light!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] body,
+html[data-mm-light-only="425"][data-mm46-reels] #shReelsPanel,
+html[data-mm-light-only="425"][data-mm46-reels] #shReelFeed,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-card,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-stage{
+ background:#f4f6f9!important;
+ color:#17283b!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] video.sh-reel-video{background:#e9eef4!important}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-toolbar{
+ background:linear-gradient(180deg,#fffffff5 0%,#ffffffcf 62%,#ffffff00 100%)!important;
+ color:#17283b!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-icon,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-rail-btn{
+ background:#fffffff0!important;
+ color:#263c51!important;
+ border:1px solid #d2dce6!important;
+ box-shadow:0 4px 12px #1d354d1a!important;
+ text-shadow:none!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-brand{color:#17283b!important}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-brand-mark{
+ color:#805215!important;
+ border-color:#d6ad6f!important;
+ background:#fff3da!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-brand small,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-rail-btn small{color:#63758a!important}
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-rail-btn strong{color:inherit!important;text-shadow:none!important}
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-rail-btn:active{background:#fff0d4!important}
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-rail-btn[aria-pressed=true][data-mm46-action=like]{color:#986319!important}
+html[data-mm-light-only="425"][data-mm46-reels] #shReelStatus:not(:empty),
+html[data-mm-light-only="425"][data-mm46-reels] #shReelFeed>.sh-friend-empty,
+html[data-mm-light-only="425"][data-mm46-reels] #shReelFeed>.sh-muted,
+html[data-mm-light-only="425"] .mm46-options{
+ background:#ffffff!important;
+ color:#17283b!important;
+ border-color:#dbe4ec!important;
+ box-shadow:0 14px 40px #1d354d1f!important;
+ color-scheme:light!important;
+}
+html[data-mm-light-only="425"] .mm46-option{border-color:#e2e8ef!important}
+html[data-mm-light-only="425"] .mm46-option small,
+html[data-mm-light-only="425"] .mm46-note{color:#63758a!important}
+html[data-mm-light-only="425"] .mm46-option select{
+ background:#ffffff!important;
+ border-color:#d7e1eb!important;
+ color:#17283b!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] .mm46-play-state,
+html[data-mm-light-only="425"][data-mm46-reels] [data-mm46-loading] .mm46-loading,
+html[data-mm-light-only="425"][data-mm46-reels] [data-mm46-error] .mm46-retry{
+ background:#fffffff2!important;
+ color:#17283b!important;
+ border-color:#d2dce6!important;
+ box-shadow:0 8px 24px #1d354d24!important;
+}
+
+/* The video itself may naturally contain dark pixels; captions keep a localized readability veil. */
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-overlay{
+ background:linear-gradient(180deg,#ffffffbd 0%,#ffffff26 18%,transparent 40%,#07111c12 60%,#07111cb8 100%)!important;
+}
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-bottom,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-meta strong,
+html[data-mm-light-only="425"][data-mm46-reels] .sh-reel-caption{color:#ffffff!important}
+
+/* Native web surfaces that previously defaulted to terminal dark tones. */
+html[data-mm-light-only="425"][data-mm-depth-page="war"] header.site-header{
+ background:linear-gradient(110deg,#ffffff,#fff8eb,#edf3f9)!important;
+ color:#17283b!important;
+ border-color:#dbe4ec!important;
+}
+html[data-mm-light-only="425"] :is(dialog,.sh-modal-box,.sh-mobile-account-dialog,.gm-dialog){color-scheme:light!important}
