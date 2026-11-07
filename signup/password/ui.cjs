@@ -96,7 +96,9 @@ $('mmChangePasswordForm').addEventListener('submit',async event=>{
  try{
   await api('password','POST',{oldPassword,newPassword});
   for(const id of ['mmCurrentPassword','mmNewPassword','mmConfirmPassword'])$(id).value='';
-  const accessCard=document.getElementById('mm80AccessCard'),accessAnchor=document.getElementById('mm80AccessAnchor');\n  if(accessCard&&accessAnchor)accessAnchor.after(accessCard);\n  document.getElementById('mm36Account').hidden=true;await refresh();notice('Password berhasil diganti. Semua sesi telah dikeluarkan; silakan login kembali.');
+  const accessCard=document.getElementById('mm80AccessCard'),accessAnchor=document.getElementById('mm80AccessAnchor');
+  if(accessCard&&accessAnchor)accessAnchor.after(accessCard);
+  document.getElementById('mm36Account').hidden=true;await refresh();notice('Password berhasil diganti. Semua sesi telah dikeluarkan; silakan login kembali.');
  }catch(e){passwordStatus('mmChangePasswordStatus',e.message,true);}
  finally{processing=false;$('mmChangePasswordButton').disabled=false;}
 });
