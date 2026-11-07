@@ -48,7 +48,8 @@ html[data-mm-light-only="425"] :is(.topbar,.mobilebar,.sidebar,.mast,.sticky,.mm
  color:#17283b!important;
  border-color:#dbe4ec!important;
 }
-html[data-mm-light-only="425"] :is(#theme,#shTheme,.sh-theme-switch,.mm-theme-switch,.mm80-themes,.j-theme,[data-mm-theme-choice],[data-sh-theme],[data-ac-theme],[data-j-theme],[data-theme-toggle],[aria-label="Ganti tema"],[title="Ganti tema"],[aria-label="Tema gelap"],[title="Tema gelap"]){
+/* Account and journal also store theme state on <html>; hide only their actual buttons. */
+html[data-mm-light-only="425"] :is(#theme,#shTheme,.sh-theme-switch,.mm-theme-switch,.mm80-themes,.j-theme,[data-mm-theme-choice],[data-sh-theme],button[data-ac-theme],[role="button"][data-ac-theme],button[data-j-theme],[role="button"][data-j-theme],[data-theme-toggle],[aria-label="Ganti tema"],[title="Ganti tema"],[aria-label="Tema gelap"],[title="Tema gelap"]){
  display:none!important;
  visibility:hidden!important;
  pointer-events:none!important;
