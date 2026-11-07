@@ -1,0 +1,40 @@
+name: Marney 4.20 Public Integration Diagnosis
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-v4.20-performance-fix]
+    paths:
+      - '.github/workflows/diagnose420-public.yml'
+      - 'mobile420/diagnose420_public.py'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney420-public-diagnosis
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13581255651'
+          run-id: 42389241507
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: observed419
+      - name: Install browser driver
+        run: python3 -m pip install --disable-pip-version-check playwright==1.56.0
+      - name: Compare real guest pages and verified APK resource replay
+        run: timeout --signal=TERM --kill-after=8s 205s python3 -u mobile420/diagnose420_public.py --apk-dir observed419 --out diagnostics420
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney420-Public-Integration-Diagnosis
+          path: diagnostics420/
+          if-no-files-found: error
+          retention-days: 7
