@@ -75,7 +75,7 @@ jobs:
               page.wait_for_timeout(5500)
               sums=page.evaluate("() => ({long:window.__perfLong,inner:document.documentElement.innerHTML.length,renderer:!!window.MMSoftwarePerformance,market:document.title,links:[...document.querySelectorAll('#war-market-selector a')].map(x=>x.href)})")
               results.append({'mode':kind,**sums,'errors':errors})
-              page.screenshot(path='perf-check/'+kind+'-btc.png',timeout=20000)
+              # Headless WebGL/Canvas can block screenshot font readiness; no screenshot is necessary for timing.
               ctx.close()
             browser.close()
           pathlib.Path('perf-check/benchmark.json').write_text(json.dumps(results,indent=2))
@@ -88,5 +88,5 @@ jobs:
         if: always()
         with:
           name: marketmarney-derived-war-benchmark
-          path: perf-check/
+          path: perf-check/benchmark.json
           retention-days: 5
