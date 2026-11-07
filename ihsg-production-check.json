@@ -1,0 +1,248 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/auth/android/config HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/content HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/ihsg-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/ihsg-war-layout.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/ihsg-war-chat.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "FBS still private",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AIDX%3ACOMPOSITE&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "IDX:COMPOSITE guest-readable",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ANASDAQ%3ANDX&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "NASDAQ:NDX guest-readable",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AHYPERLIQUID%3AWTI&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "HYPERLIQUID:WTI guest-readable",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "OANDA:XAUUSD guest-readable",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ABITSTAMP%3ABTCUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "BITSTAMP:BTCUSD guest-readable",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AIDX%3AARBITRARY&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/ihsg-war/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "no live value/provider/calendar invented",
+      "ok": true
+    },
+    {
+      "name": "default waiting, never fake live",
+      "ok": true
+    },
+    {
+      "name": "correct unavailable IHSG status",
+      "ok": true
+    },
+    {
+      "name": "live daily session absent",
+      "ok": true
+    },
+    {
+      "name": "no external market socket",
+      "ok": true
+    },
+    {
+      "name": "no starting tank granted",
+      "ok": true
+    },
+    {
+      "name": "5 arena links",
+      "ok": true
+    },
+    {
+      "name": "only IHSG selected",
+      "ok": true
+    },
+    {
+      "name": "separate IHSG room",
+      "ok": true
+    },
+    {
+      "name": "guest must log in to send",
+      "ok": true
+    },
+    {
+      "name": "chat updates received",
+      "ok": true
+    },
+    {
+      "name": "desktop chat right",
+      "ok": true
+    },
+    {
+      "name": "HD single quality",
+      "ok": true
+    },
+    {
+      "name": "manual demo labeled",
+      "ok": true
+    },
+    {
+      "name": "20 points yields 4 infantry 1 tank",
+      "ok": true
+    },
+    {
+      "name": "demo daily close ends battle",
+      "ok": true
+    },
+    {
+      "name": "return from demo clears price",
+      "ok": true
+    },
+    {
+      "name": "demo calendar not labeled BEI",
+      "ok": true
+    },
+    {
+      "name": "390 chat below arena",
+      "ok": true
+    },
+    {
+      "name": "390 no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "768 chat below arena",
+      "ok": true
+    },
+    {
+      "name": "768 no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "no layout exceptions",
+      "ok": true
+    },
+    {
+      "name": "xau source and scale preserved",
+      "ok": true
+    },
+    {
+      "name": "xau 5 links and IHSG link",
+      "ok": true
+    },
+    {
+      "name": "btc source and scale preserved",
+      "ok": true
+    },
+    {
+      "name": "btc 5 links and IHSG link",
+      "ok": true
+    },
+    {
+      "name": "oil source and scale preserved",
+      "ok": true
+    },
+    {
+      "name": "oil 5 links and IHSG link",
+      "ok": true
+    },
+    {
+      "name": "nasdaq source and scale preserved",
+      "ok": true
+    },
+    {
+      "name": "nasdaq 5 links and IHSG link",
+      "ok": true
+    },
+    {
+      "name": "normal WebGL loop advances",
+      "ok": true
+    },
+    {
+      "name": "no render exceptions",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "liveAvailable": false,
+  "method": "Manual DEMO, layout and guest chat tests. 3D frames paused during layout tests and enabled separately for software-rendering check. No accounts, posts, orders or fake live prices.",
+  "softwareRenderer": {
+    "fps": 10,
+    "sceneTime": 1.9502000000000013,
+    "renderer": "webgl2",
+    "quality": "hd",
+    "drawCalls": 12
+  },
+  "checkedAt": "2026-11-07T17:27:30.032675+00:00"
+}
