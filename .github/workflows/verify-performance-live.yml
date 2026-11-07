@@ -41,7 +41,7 @@ jobs:
           for market in ['btc','oil','nasdaq','ihsg']:
             status,_,body=get('/assets/'+market+'-war-3d.html')
             check('optimized '+market+' is active',status==200 and b'data-mm-derived-software="derived-software-20261108-v1"' in body)
-            check('market selector still present '+market,b'war-market-selector' in body)
+            check('market chat integration remains '+market,b'data-warxau-topchat="7.8"' in body)
           pathlib.Path('perf-live/route-report.json').write_text(json.dumps(checks,indent=2))
           print(json.dumps({'checksPassed':len(checks),'status':'ok','readOnly':True}))
           PY
