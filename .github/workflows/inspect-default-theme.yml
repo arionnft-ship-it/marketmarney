@@ -1,0 +1,36 @@
+name: Inspect default theme
+on:
+  push:
+    branches: [default-light-first-visit-20261108]
+    paths: ['.github/workflows/inspect-default-theme.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read public pages and theme scripts only
+        run: |
+          mkdir -p theme-reference/public theme-reference/source
+          cp warxau-fbs/bootstrap.cjs warxau-fbs/start-ihsg.cjs warxau-fbs/performance-*.cjs warxau-fbs/Dockerfile.ihsg theme-reference/source/
+          cp marney-brand/branding.cjs signup/account-page.cjs theme-reference/source/
+          python3 - <<'PY'
+          import urllib.request,pathlib,re,json
+          root=pathlib.Path('theme-reference/public')
+          urls={'home.html':'/','account.html':'/akun.html','theme.js':'/assets/public-theme1867.js','theme.css':'/assets/public-theme1867.css','experience.js':'/assets/experience1881.js'}
+          for name,url in urls.items():
+            with urllib.request.urlopen('https://marketmarney.com'+url,timeout=25) as r:
+              data=r.read(5000000);root.joinpath(name).write_bytes(data)
+          home=root.joinpath('home.html').read_text()
+          matches=[x for x in re.findall(r'<script[^>]*>([\s\S]*?)</script>',home) if any(t in x for t in ['localStorage','data-theme','prefers-color-scheme'])]
+          root.joinpath('theme-inline.json').write_text(json.dumps(matches,indent=2))
+          print(root.joinpath('theme.js').read_text())
+          print('INITIAL HTML',home[:6000])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: default-theme-reference
+          path: theme-reference
+          retention-days: 3
