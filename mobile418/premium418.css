@@ -1,0 +1,47 @@
+/* MARNEY 4.18 — typography/surfaces only. No JS observers, remote fonts or blur. */
+html[data-mm44-social]:not([data-mm46-reels]){--mm44-base:#f7f8fa;--mm44-surface:#ffffff;--mm44-ink:#152334;--mm44-muted:#667386;--mm44-border:#e4e8ee;--amber:#9a651d}
+html[data-mm44-social] body{font-family:system-ui,-apple-system,sans-serif!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-social-header{background:#ffffff!important;border-bottom:1px solid #e5e9ef!important;box-shadow:0 2px 10px #0c223005!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow{background:linear-gradient(105deg,#fff,#fffaf0)!important;min-height:64px!important;padding:8px 14px!important}
+html[data-mm44-social] .mm417-brand-image{object-fit:contain!important}
+html[data-mm44-social] .mm44-headrow .mm417-brand-image{width:42px!important;height:42px!important}
+html[data-mm44-social] .mm44-wordmark.mm417-wordmark{gap:10px!important;min-width:0!important}
+html[data-mm44-social] .mm44-wordmark .mm417-brand-section{font-size:13px!important;letter-spacing:-.2px!important;font-weight:750!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav{padding:5px 9px 9px!important;gap:4px!important;background:#fff!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button{min-height:50px!important;border:1px solid transparent!important;border-radius:15px!important;color:#667486!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button[aria-pressed=true]{background:#fff5de!important;color:#865919!important;border:1px solid #ecd4a1!important}
+html[data-mm44-social] .mm44-nav-button span{font-size:10px!important;font-weight:700!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow>.mm44-icon,html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell{min-width:44px!important;min-height:44px!important;border-radius:14px!important;box-shadow:none!important;border:1px solid #e3e8ef!important;background:#f8fafc!important}
+html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell{background:#fff7e7!important;border-color:#ebd9b3!important;color:#90601b!important}
+html[data-mm44-social] .sh-story-section{padding-top:14px!important;padding-bottom:12px!important;background:#fff!important;border-bottom:1px solid #e8ebef!important}
+html[data-mm44-social] .sh-post{border:1px solid #e2e7ed!important;border-radius:20px!important;background:#fff!important;margin:10px 8px 14px!important;overflow:hidden!important;box-shadow:0 3px 12px #11233204!important}
+html[data-mm44-social] .sh-post-header{padding:15px 14px 11px!important}
+html[data-mm44-social] .sh-post-meta a{font-size:13px!important;font-weight:750!important;color:#192b40!important}
+html[data-mm44-social] .sh-post-body{font-size:14px!important;line-height:1.7!important;color:#28394b!important}
+html[data-mm44-social] .sh-compose-open{border-radius:17px!important;border:1px solid #e1e7ec!important;background:#fff!important;min-height:48px!important}
+html[data-mm44-social] .sh-guest{border:1px solid #e5d6b5!important;background:linear-gradient(145deg,#fffdf7,#f2f6fb)!important;border-radius:28px!important;padding:28px 22px!important;box-shadow:none!important}
+html[data-mm44-social] .sh-guest h1{font-size:29px!important;line-height:1.2!important;letter-spacing:-.8px!important;color:#16283b!important}
+html[data-mm44-social] .sh-guest p{line-height:1.65!important}
+html[data-mm44-social] .mm44-login{min-height:48px!important;border-radius:15px!important;font-weight:750!important}
+html[data-mm44-social] .sh-msg-titlebar,html[data-mm44-social] .sh-notice-head{background:#fff!important;border-bottom:1px solid #e5e9ef!important}
+html[data-mm44-social] .sh-msg-titlebar h2,html[data-mm44-social] .sh-notice-head h2{font-size:24px!important;letter-spacing:-.7px!important;color:#172a3e!important}
+html[data-mm47-group] .gm-aside{background:#fff!important}
+html[data-mm47-group] .gm-room-head{background:#fff!important;border-bottom:1px solid #e3e9ef!important;padding:13px 12px!important}
+html[data-mm47-group] .gm-room-title h2{font-size:16px!important;letter-spacing:-.3px!important;color:#182b40!important}
+html[data-mm47-group] .gm-messages{background:#f0f4f8!important}
+html[data-mm47-group] .gm-compose{background:#fff!important;border-top:1px solid #dfe7ef!important;padding:10px 12px!important}
+html[data-mm47-group] .gm-compose input,html[data-mm47-group] .gm-compose textarea{background:#f7f9fc!important;border:1px solid #dfe6ef!important;border-radius:17px!important;color:#1b3046!important}
+html[data-mm47-group] .gm-main-btn{border-radius:14px!important;min-height:44px!important}
+html[data-mm47-group] .gm-search{border-radius:15px!important;background:#f7f9fc!important;border-color:#dfe6ef!important}
+html[data-mm47-group] .gm-empty{background:#f7f9fc!important}
+html[data-mm44-page=profile] .mm44-profile-header{background:#fff!important;border-bottom:1px solid #e4e9ef!important}
+html[data-mm44-page=profile] .mm46-profile-card{border:1px solid #e2e7ed!important;border-radius:24px!important;box-shadow:none!important}
+html[data-mm44-page=profile] .mm46-cover{background:linear-gradient(120deg,#102436,#1c3646)!important}
+html[data-mm44-page=profile] .mm46-stat-row{border:1px solid #e3e9ef!important;background:#f7f9fc!important;border-radius:17px!important;padding:11px 8px!important}
+html[data-mm44-page=profile] .mm46-follow-btn,html[data-mm44-page=profile] .mm46-message-btn{border-radius:13px!important;min-height:44px!important}
+html[data-mm46-reels] .mm44-social-header{border-bottom-color:#34414d!important}
+html[data-mm46-reels] .mm44-nav-button[aria-pressed=true]{color:#efc578!important;background:#27271f!important;border-radius:13px!important}
+html[data-mm46-reels] .mm46-icon{border-color:#eac77a3b!important;border-radius:15px!important}
+html[data-mm44-social] button:focus-visible,html[data-mm44-social] a:focus-visible,html[data-mm44-social] input:focus-visible{outline:2px solid #ab7625!important;outline-offset:3px!important}
+@media(max-width:350px){html[data-mm44-social] .mm44-wordmark .mm417-brand-section{font-size:12px!important}html[data-mm44-social] .mm44-wordmark.mm417-wordmark{gap:6px!important}html[data-mm44-social] .mm44-headrow{padding-left:9px!important;padding-right:9px!important}}
+@media(prefers-reduced-motion:reduce){html[data-mm44-social] .mm44-social-header,html[data-mm44-social] .sh-post,html[data-mm44-social] .mm44-nav-button{animation:none!important;transition:none!important}}
