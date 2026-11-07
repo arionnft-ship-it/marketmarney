@@ -1,0 +1,51 @@
+name: Verify 3D sidebar
+on:
+  push:
+    branches: [sidebar-3d-premium-20261108]
+    paths: ['sidebar3d/**','warxau-fbs/Dockerfile.ihsg','.github/workflows/sidebar-3d-test.yml']
+permissions:
+  contents: read
+concurrency:
+  group: sidebar3d-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and scoped integration checks
+        run: |
+          node --check sidebar3d/client.js
+          node --check sidebar3d/index.cjs
+          node --check sidebar3d/install.cjs
+          node - <<'JS'
+          const assert=require('node:assert/strict'),fs=require('node:fs');
+          const m=require('./sidebar3d/index.cjs'),p=require('./sidebar3d/install.cjs');
+          const h='<html><head></head><body><aside id="sidebar"><div id="nav"></div></aside></body></html>';
+          const x=m.enhance(h);assert.notEqual(x,h);assert.equal(m.enhance(x),x);
+          for(const h of [null,'<html><head></head><body>Account</body></html>','<html><head></head><body><canvas id="battle"></canvas></body></html>'])assert.equal(m.enhance(h),h);
+          const raw=fs.readFileSync('marney-brand/branding.cjs','utf8');assert.equal(p.patch(p.patch(raw)),p.patch(raw));
+          assert.equal(fs.readFileSync('marney-brand/branding.cjs','utf8'),raw);
+          console.log('Scoped integration and idempotence checks passed');
+          JS
+      - name: Install Chromium test tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Test actual public UI using browser-only stylesheet overlay
+        run: python3 sidebar3d/verify.py
+      - name: Build complete image preserving latest OTP and performance features
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t sidebar3d-check .
+      - name: Collect code and report for inspection
+        if: always()
+        run: |
+          mkdir -p sidebar3d-results/source
+          cp sidebar3d/* sidebar3d-results/source/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sidebar3d-tests
+          path: sidebar3d-results
+          retention-days: 7
