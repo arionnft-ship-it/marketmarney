@@ -1,0 +1,22 @@
+FROM python:3.12-slim-bookworm AS brandbuild
+WORKDIR /build/marney-brand
+RUN pip install --no-cache-dir Pillow==11.3.0
+COPY marney-brand/source.png marney-brand/build-assets.py ./
+RUN python build-assets.py
+
+FROM node:22-bookworm-slim
+WORKDIR /opt/warxau-fbs
+COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bootstrap.cjs ./
+COPY warxau-fbs/topchat.cjs warxau-fbs/topchat-layout.js warxau-fbs/topchat.css warxau-fbs/start-topchat.cjs ./
+COPY warxau-fbs/btc-feed.js warxau-fbs/btc-addon.cjs warxau-fbs/start-btc.cjs ./
+COPY warxau-fbs/oil-feed.js warxau-fbs/oil-addon.cjs warxau-fbs/oil-preload.cjs warxau-fbs/start-oil.cjs ./
+COPY warxau-fbs/nasdaq-addon.cjs warxau-fbs/nasdaq-preload.cjs warxau-fbs/start-nasdaq.cjs ./
+COPY marney-brand/branding.cjs ./branding.cjs
+COPY marney-brand/install.cjs ./brand-install.cjs
+COPY signup ./signup
+COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
+RUN node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs && node --check signup/requirements.cjs && node --check signup/patches.cjs && node --check signup/preload.cjs && node --check signup/account-page.cjs && node --check branding.cjs && node --check relay.cjs && node --check page.cjs && node --check client.js && node --check bootstrap.cjs && node --check topchat.cjs && node --check topchat-layout.js && node --check start-topchat.cjs && node --check btc-feed.js && node --check btc-addon.cjs && node --check start-btc.cjs
+RUN node --check oil-feed.js && node --check oil-addon.cjs && node --check oil-preload.cjs && node --check start-oil.cjs && node --check nasdaq-addon.cjs && node --check nasdaq-preload.cjs && node --check start-nasdaq.cjs
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/nasdaq-preload.cjs"
+CMD ["node", "/opt/warxau-fbs/start-nasdaq.cjs"]
