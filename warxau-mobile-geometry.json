@@ -1,0 +1,28 @@
+{
+  "width": 390,
+  "scrollWidth": 434,
+  "items": [
+    {
+      "tag": "DIV",
+      "id": "",
+      "classes": "mode-switch",
+      "left": 334.40625,
+      "right": 434.25,
+      "width": 99.84375,
+      "display": "flex",
+      "minWidth": "auto",
+      "whiteSpace": "normal"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "mode-demo",
+      "classes": "",
+      "left": 387.890625,
+      "right": 430.25,
+      "width": 42.359375,
+      "display": "block",
+      "minWidth": "auto",
+      "whiteSpace": "normal"
+    }
+  ]
+}
