@@ -12,8 +12,8 @@ Identitas paket uji ini adalah `com.marketmarney.mobile.beta421` (versi `4.21.0-
 
 ## Cakupan perubahan
 
-- Lapisan latar ikon Android diubah menjadi transparan.
-- Latar khusus di belakang ikon splash Android diubah menjadi transparan.
+- Ikon aplikasi menggunakan PNG transparan secara langsung. Ikon adaptif tidak dipakai karena Android dapat menggabungkan lapisan transparannya di atas bidang hitam.
+- Logo splash memakai PNG yang sama dengan ruang aman 20% agar bentuknya tidak terpotong, dan tanpa latar khusus di belakang ikon.
 - Nama dan penanda versi diperbarui menjadi 4.21.
 - Semua gambar logo dan aset web dipertahankan byte demi byte dari 4.20; perbaikan akses, pemuatan, dan navigasi 4.20 tetap disertakan.
 
@@ -27,4 +27,4 @@ Login Google langsung di APK beta belum tersedia. Untuk akun yang hanya memakai 
 
 ## Pemeriksaan
 
-Build memverifikasi bahwa aset web dan gambar logo sama dengan 4.20, memeriksa paket dan tanda tangan APK, lalu memeriksa ikon yang benar-benar dirender oleh Android. Bukti khusus ikon mencakup transparansi di dalam bentuk ikon dan gambar hasil render. Ini adalah pemeriksaan pembaruan logo; hasil pengujian fitur 4.20 dicatat terpisah di build sebelumnya: https://github.com/arionnft-ship-it/marketmarney/actions/runs/42396336237
+Build memverifikasi bahwa aset web dan gambar logo sama dengan 4.20, memeriksa paket dan tanda tangan APK, lalu memeriksa ikon yang benar-benar dirender oleh Android. Bukti khusus ikon mencakup transparansi di area dalam logo dan gambar hasil render. Ini adalah pemeriksaan pembaruan logo; hasil pengujian fitur 4.20 dicatat terpisah di build sebelumnya: https://github.com/arionnft-ship-it/marketmarney/actions/runs/42396336237

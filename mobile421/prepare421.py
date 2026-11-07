@@ -24,6 +24,8 @@ updated_main=(root/'app/src/main/java/com/marketmarney/mobile/MainActivity.java'
 normalized=updated_main.replace('4.21','4.20').replace("mmAndroid='421'","mmAndroid='420'").replace("s.dataset.revision!=='421'","s.dataset.revision!=='420'").replace("s.dataset.revision='421'","s.dataset.revision='420'")
 assert normalized==original_main, 'Only release labels may change in MainActivity'
 assert 'com.marketmarney.mobile.beta421' in (root/'app/build.gradle').read_text()
+assert (root/'app/src/main/AndroidManifest.xml').read_text().count('@drawable/mm_brand_logo')==2
+assert '@drawable/mm_splash_logo_clear' in (root/'app/src/main/res/values-v31/styles.xml').read_text()
 assert '@android:color/transparent' in (root/'app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml').read_text()
 assert '<item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>' in (root/'app/src/main/res/values-v31/styles.xml').read_text()
 Path('verified421.json').write_text(json.dumps(manifest,indent=2))

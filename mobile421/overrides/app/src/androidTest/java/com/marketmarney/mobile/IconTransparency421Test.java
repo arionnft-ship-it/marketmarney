@@ -12,6 +12,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.AdaptiveIconDrawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
 
 /** One compiled-icon visual check. Does not start an app Activity or access any service. */
 public class IconTransparency421Test {
-    @Test public void compiledAdaptiveIconHasTransparentInteriorAndVisibleLogo() throws Exception {
+    @Test public void compiledIconHasTransparentInteriorAndVisibleLogo() throws Exception {
         Instrumentation inst = InstrumentationRegistry.getInstrumentation();
         Context context = inst.getTargetContext();
         ActivityManager manager = context.getSystemService(ActivityManager.class);
@@ -43,7 +44,7 @@ public class IconTransparency421Test {
         File dir = new File(context.getExternalFilesDir(null), "icon421-evidence");
         assertTrue("Evidence directory available", dir.isDirectory() || dir.mkdirs());
         JSONObject evidence = new JSONObject();
-        evidence.put("scope", "Compiled adaptive icon on this device; launcher observation is recorded separately");
+        evidence.put("scope", "Compiled application icon on this device; launcher observation is recorded separately");
         evidence.put("sdk", Build.VERSION.SDK_INT);
         evidence.put("package", context.getPackageName());
         PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
@@ -59,15 +60,27 @@ public class IconTransparency421Test {
 
         Drawable loaded = context.getPackageManager().getApplicationIcon(context.getPackageName());
         evidence.put("drawableClass", loaded.getClass().getName());
-        if (!(loaded instanceof AdaptiveIconDrawable)) {
+        if (!(loaded instanceof AdaptiveIconDrawable) && !(loaded instanceof BitmapDrawable)) {
             evidence.put("compiledIconPassed", false);
             writeJson(dir, evidence);
-            fail("Installed API 35 application icon must be an AdaptiveIconDrawable; see evidence JSON");
+            fail("Installed application icon must be a direct BitmapDrawable or AdaptiveIconDrawable; see evidence JSON");
         }
-        AdaptiveIconDrawable icon = (AdaptiveIconDrawable) loaded;
+        Drawable icon = loaded;
+        AdaptiveIconDrawable adaptive = loaded instanceof AdaptiveIconDrawable ? (AdaptiveIconDrawable) loaded : null;
         icon.setBounds(0, 0, size, size);
         Region mask = new Region();
-        mask.setPath(new Path(icon.getIconMask()), new Region(0, 0, size, size));
+        if (adaptive != null) {
+            mask.setPath(new Path(adaptive.getIconMask()), new Region(0, 0, size, size));
+            evidence.put("innerRegionKind", "adaptive-mask-interior");
+        } else {
+            // A direct PNG has no platform mask. Exclude the outer 10% on each side,
+            // so transparent padding alone cannot satisfy the inner transparency check.
+            int margin = Math.max(1, (int) Math.ceil(size * 0.10));
+            mask.set(margin, margin, size - margin, size - margin);
+            evidence.put("innerRegionKind", "central-80-percent-rectangle");
+            evidence.put("innerRect", new JSONObject().put("left", margin).put("top", margin)
+                    .put("right", size - margin).put("bottom", size - margin));
+        }
 
         Bitmap rendered = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         rendered.eraseColor(Color.TRANSPARENT);
@@ -77,21 +90,26 @@ public class IconTransparency421Test {
         savePng(dir, "compiled-icon-checkerboard.png", checker);
         checker.recycle();
 
-        // The corners outside an adaptive mask are transparent even with an opaque plate.
-        // Only pixels safely inside the real platform mask count; the edge margin scales
-        // with the device's actual launcher icon size rather than an arbitrary render size.
-        int interior = 0, transparent = 0, visible = 0, opaque = 0;
-        for (int y = edge; y < size - edge; y++) {
-            for (int x = edge; x < size - edge; x++) {
-                if (!strictInterior(mask, x, y, edge)) continue;
-                interior++;
+        // Adaptive mask corners and a PNG's outer padding are not proof of transparency.
+        // Measure the chosen inner region separately from the whole rendered canvas.
+        int interior = 0, transparent = 0, visible = 0, opaque = 0, wholeTransparent = 0;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
                 int alpha = Color.alpha(rendered.getPixel(x, y));
+                if (alpha == 0) wholeTransparent++;
+                boolean inside = adaptive != null ? strictInterior(mask, x, y, edge) : mask.contains(x, y);
+                if (!inside) continue;
+                interior++;
                 if (alpha == 0) transparent++;
                 if (alpha > 0) visible++;
                 if (alpha == 255) opaque++;
             }
         }
-        evidence.put("maskInteriorPixels", interior);
+        evidence.put("wholeCanvasPixels", size * size);
+        evidence.put("wholeCanvasAlphaZeroPixels", wholeTransparent);
+        evidence.put("wholeCanvasAlphaZeroFraction", (double) wholeTransparent / (size * size));
+        evidence.put("innerRegionPixels", interior);
+        if (adaptive != null) evidence.put("maskInteriorPixels", interior);
         evidence.put("interiorAlphaZeroPixels", transparent);
         evidence.put("interiorVisiblePixels", visible);
         evidence.put("interiorOpaquePixels", opaque);
@@ -99,37 +117,43 @@ public class IconTransparency421Test {
         evidence.put("minimumTransparentInteriorFraction", 0.20);
         evidence.put("minimumVisibleInteriorFraction", 0.01);
 
-        // Draw the actual compiled background layer separately, retaining the bounds that
-        // AdaptiveIconDrawable assigned. This rejects the old navy plate directly.
-        Bitmap background = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        background.eraseColor(Color.TRANSPARENT);
-        Drawable layer = icon.getBackground();
+        // An adaptive icon has a separate compiled background; a direct PNG does not.
+        // Never manufacture a blank background image as evidence for the direct-PNG case.
+        Drawable layer = adaptive == null ? null : adaptive.getBackground();
+        evidence.put("backgroundCheckApplicable", adaptive != null);
         evidence.put("backgroundDrawablePresent", layer != null);
-        if (layer != null) layer.draw(new Canvas(background));
-        int backgroundNonzero = 0;
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                if (Color.alpha(background.getPixel(x, y)) != 0) backgroundNonzero++;
+        int backgroundNonzero = -1;
+        if (adaptive != null) {
+            Bitmap background = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            background.eraseColor(Color.TRANSPARENT);
+            if (layer != null) layer.draw(new Canvas(background));
+            backgroundNonzero = 0;
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    if (Color.alpha(background.getPixel(x, y)) != 0) backgroundNonzero++;
+                }
             }
+            savePng(dir, "compiled-background-transparent.png", background);
+            background.recycle();
         }
-        evidence.put("backgroundNonzeroAlphaPixels", backgroundNonzero);
-        savePng(dir, "compiled-background-transparent.png", background);
-        background.recycle();
+        evidence.put("backgroundNonzeroAlphaPixels", adaptive == null ? JSONObject.NULL : backgroundNonzero);
         rendered.recycle();
 
-        boolean passed = layer != null && interior > size * size / 2
+        boolean passed = interior > size * size / 2
                 && transparent > interior / 5 && visible > interior / 100
-                && backgroundNonzero == 0;
+                && (adaptive == null || (layer != null && backgroundNonzero == 0));
         evidence.put("compiledIconPassed", passed);
         // Write before the optional launcher probe so compiled evidence survives UI trouble.
         writeJson(dir, evidence);
         evidence.put("launcher", observeLauncher(inst, context, dir));
         writeJson(dir, evidence);
 
-        assertNotNull("Compiled adaptive background layer exists", layer);
-        assertTrue("Real adaptive mask contains a substantial interior", interior > size * size / 2);
-        assertEquals("Compiled background must contain no opaque or translucent plate", 0, backgroundNonzero);
-        assertTrue("At least 20% of pixels INSIDE the adaptive mask must be fully transparent", transparent > interior / 5);
+        if (adaptive != null) {
+            assertNotNull("Compiled adaptive background layer exists", layer);
+            assertEquals("Compiled background must contain no opaque or translucent plate", 0, backgroundNonzero);
+        }
+        assertTrue("Measured inner region contains a substantial part of the icon", interior > size * size / 2);
+        assertTrue("At least 20% of pixels INSIDE the measured region must be fully transparent", transparent > interior / 5);
         assertTrue("Logo remains visibly present; an empty icon must fail", visible > interior / 100);
     }
 

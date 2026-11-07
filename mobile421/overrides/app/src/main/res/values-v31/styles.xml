@@ -8,5 +8,5 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#061423</item>
-    <item name="android:windowSplashScreenBackground">#061423</item><item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item><item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item></style>
+    <item name="android:windowSplashScreenBackground">#061423</item><item name="android:windowSplashScreenAnimatedIcon">@drawable/mm_splash_logo_clear</item><item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item></style>
 </resources>

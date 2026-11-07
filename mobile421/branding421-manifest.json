@@ -6,7 +6,7 @@
     {
       "path": "README-MULAI-DISINI.md",
       "beforeSha256": "26d51f4976caf79e334b17b08142426a5141843646c47e8437296b6600d3ef7a",
-      "afterSha256": "b1ec6bfbfb2aaac2efeee0befd14eea15896cb0a6b14bf2ccfe29cfa8593ac99"
+      "afterSha256": "9ff6a6d0737eeccd0d798d8981f9cc922014f1e50c5affa519a7fc09bad54448"
     },
     {
       "path": "app/build.gradle",
@@ -16,7 +16,7 @@
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/IconTransparency421Test.java",
       "beforeSha256": null,
-      "afterSha256": "480128996f24b8e6eb81cdbb48bef4f5f0e59befe1348291ce23db2e47726416"
+      "afterSha256": "336321096af4a8ee1528f9b725afd2fbc513e3d440076981b5cde50f8f698e5c"
     },
     {
       "path": "app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java",
@@ -24,9 +24,19 @@
       "afterSha256": "2577848b4fb7ef82881bec60bfcad59aa7f6c2ce0fc3386c1b8db4c4987f0126"
     },
     {
+      "path": "app/src/main/AndroidManifest.xml",
+      "beforeSha256": "b6cb25d613216433ba3bcc0a076743c8b8904f1c05f2fda023004adfe6c5f250",
+      "afterSha256": "f49888b35a2c607b20423bedb3bff59d47442cf92c83953db636a5cbdfde3c31"
+    },
+    {
       "path": "app/src/main/java/com/marketmarney/mobile/MainActivity.java",
       "beforeSha256": "6931e4fd4be4099d6a8a55e0e651533a0ed3de57b058184544f6768900f18c94",
       "afterSha256": "31658715a94981041b5c470781f3c75a140b8efdc8c99e418afcca606e978b2c"
+    },
+    {
+      "path": "app/src/main/res/drawable/mm_splash_logo_clear.xml",
+      "beforeSha256": null,
+      "afterSha256": "8a8196ec9a637df3f257e428795b4dbd7d90af0f02e038bf1b29ff33b8a6cd54"
     },
     {
       "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
@@ -36,7 +46,7 @@
     {
       "path": "app/src/main/res/values-v31/styles.xml",
       "beforeSha256": "6ae3076ca8d2fd312ced155524564437fc23ed690f4764c291cf023977713d3f",
-      "afterSha256": "cf08548b4d9859bfdac9a183d39b06a8cb51fd2ee268e50a37a8b8066707c415"
+      "afterSha256": "77377da5150b6a9a59bec4e56eea7f767871028ceaf6e80beb9d2ed66d82dd98"
     },
     {
       "path": "app/src/main/res/values/strings.xml",
@@ -58,7 +68,6 @@
     "app/src/androidTest/java/com/marketmarney/mobile/Premium418Test.java": "bd4d73b48ba74de91a3e6b122962506b6fc8f072d53a689d55ae5b06be3b778f",
     "app/src/androidTest/java/com/marketmarney/mobile/SharedHome420Test.java": "af0b361652df56113b37f9a9aa5b522fba67f3485b727fb9f26d3b5bbdf4abfd",
     "app/src/androidTest/java/com/marketmarney/mobile/WebViewSupport420Test.java": "b515a614e67cacead4348dc5b89712dd6bfaaa09fec07f960248da0bd29cfdea",
-    "app/src/main/AndroidManifest.xml": "b6cb25d613216433ba3bcc0a076743c8b8904f1c05f2fda023004adfe6c5f250",
     "app/src/main/assets/brand417/logo.png": "4ae1790f464e5bd93719e795af1f6ab61a316a110768dc77ed9577514ea14cca",
     "app/src/main/assets/branding417.js": "68a9c30a676c3eac178508ed69fa8b8989ad74520261674e05ad50514b586053",
     "app/src/main/assets/group48-map.json": "3d0554910dd410cae7e0e295b3bfc7a474ef9c1c4377823c68ada86d230bad3c",
@@ -166,5 +175,6 @@
   "webAssetsChanged": false,
   "rasterLogosChanged": false,
   "functionalNativeLogicChanged": false,
-  "productionServicesModified": false
+  "productionServicesModified": false,
+  "iconRendering": "Direct transparent PNG; no adaptive composite"
 }
