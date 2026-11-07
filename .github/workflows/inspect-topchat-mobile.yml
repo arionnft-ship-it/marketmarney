@@ -1,0 +1,39 @@
+name: Inspect WarXAU mobile geometry
+on:
+  push:
+    branches: [warxau-arena-chat-v7-8]
+    paths: ['.github/workflows/inspect-topchat-mobile.yml']
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-arena-chat-v7-8
+      - run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - run: |
+          python3 - <<'PY'
+          from playwright.sync_api import sync_playwright
+          from pathlib import Path
+          import json
+          with sync_playwright() as p:
+            b=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+            pg=b.new_page(viewport={'width':1440,'height':1000})
+            pg.add_init_script("const r=requestAnimationFrame.bind(window);window.requestAnimationFrame=f=>f.name==='frame'?0:r(f);")
+            pg.goto('https://marketmarney.com/assets/xau-war-3d.html?v=7.8',wait_until='load',timeout=60000)
+            pg.wait_for_selector('.mm1831-chat')
+            pg.locator('.mm1832-auth-open').click();pg.locator('.mm1832-auth-open').click()
+            pg.locator('#focus-mode').click();pg.locator('#focus-mode').click()
+            pg.set_viewport_size({'width':390,'height':844});pg.wait_for_timeout(1500)
+            result=pg.evaluate("()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,items:[...document.querySelectorAll('body *')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,id:e.id,classes:e.className,left:r.left,right:r.right,width:r.width,display:s.display,minWidth:s.minWidth,whiteSpace:s.whiteSpace}}).filter(e=>e.width>0&&(e.right>innerWidth+1||e.left< -1)).slice(0,30)})")
+            Path('warxau-mobile-geometry.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result));b.close()
+          PY
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-mobile-geometry.json
+          git diff --cached --quiet || git commit -m 'Record mobile layout geometry without user content'
+          git push origin HEAD:warxau-arena-chat-v7-8
