@@ -1,0 +1,39 @@
+name: Verify deployed NASDAQ WAR
+on:
+  push:
+    branches: [nasdaq-war-v1-20261107]
+    paths: ['.github/workflows/nasdaq-war-production.yml']
+permissions:
+  contents: write
+concurrency:
+  group: nasdaq-war-production-check
+  cancel-in-progress: false
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: nasdaq-war-v1-20261107
+      - name: Install Chromium verification tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Public route checks, demo, honest feed status and existing arena regressions
+        run: python3 warxau-fbs/verify-nasdaq-public.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nasdaq-war-production
+          path: |
+            nasdaq-production-check.json
+            nasdaq-production-results
+          retention-days: 7
+      - name: Record non-sensitive evidence without replacing source commits
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add nasdaq-production-check.json
+          git diff --cached --quiet || git commit -m 'Record production NASDAQ arena/chat and no-fake-price verification'
+          git pull --rebase origin nasdaq-war-v1-20261107
+          git push origin HEAD:nasdaq-war-v1-20261107
