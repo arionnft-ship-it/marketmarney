@@ -156,6 +156,7 @@ public final class MainActivity extends Activity {
         bottomBar.setBackgroundColor(Color.rgb(8, 23, 39));
         root.addView(bottomBar, lp(-1, 67));
         navigate(NAV_HOME);
+        if (savedInstanceState == null) MarketMarneyOpening.show(this);
     }
 
     private void buildHeader() {
