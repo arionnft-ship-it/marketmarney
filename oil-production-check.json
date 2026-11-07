@@ -1,0 +1,255 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/auth/android/config HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/content HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/oil-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/oil-war-layout.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/oil-war-chat.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/oil-war/clock HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/xau-war-3d.html?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AHYPERLIQUID%3AWTI&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "HYPERLIQUID:WTI room accessible anonymously",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "OANDA:XAUUSD room accessible anonymously",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ABITSTAMP%3ABTCUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "BITSTAMP:BTCUSD room accessible anonymously",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AHYPERLIQUID%3AARBITRARY&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "oil does not use gold/bitcoin feed",
+      "ok": true
+    },
+    {
+      "name": "XAU original price source intact",
+      "ok": true
+    },
+    {
+      "name": "BTC original price source intact",
+      "ok": true
+    },
+    {
+      "name": "FBS data remains private",
+      "ok": true
+    },
+    {
+      "name": "latest signup fields preserved",
+      "ok": true
+    },
+    {
+      "name": "real WTI perpetual source",
+      "ok": true
+    },
+    {
+      "name": "source timestamps advance",
+      "ok": true
+    },
+    {
+      "name": "coin xyz:CL",
+      "ok": true
+    },
+    {
+      "name": "oil pip 0.01 and HD only",
+      "ok": true
+    },
+    {
+      "name": "daily metadata from source",
+      "ok": true
+    },
+    {
+      "name": "instrument difference clearly labeled",
+      "ok": true
+    },
+    {
+      "name": "dedicated oil chat connected",
+      "ok": true
+    },
+    {
+      "name": "anonymous send gated by login",
+      "ok": true
+    },
+    {
+      "name": "desktop side chat",
+      "ok": true
+    },
+    {
+      "name": "3 arena buttons",
+      "ok": true
+    },
+    {
+      "name": "mobile stacked",
+      "ok": true
+    },
+    {
+      "name": "mobile no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "no JavaScript exceptions",
+      "ok": true
+    },
+    {
+      "name": "gold has oil switch",
+      "ok": true
+    },
+    {
+      "name": "bitcoin has oil switch",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "method": "Read-only public HTTPS and real WTI perpetual API/WebSocket; layout tests pause 3D frame loop, not a GPU benchmark. No public posts, wallet calls, logins or orders.",
+  "samples": [
+    {
+      "version": "1.0-oil-war-live",
+      "price": 90.109,
+      "timestamp": 1794068496006,
+      "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "hl-wti-d1-2026-11-07",
+          "symbol": "WTI-PERP",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794068521341,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 27478647.899902344
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+        "symbol": "WTI-PERP",
+        "coin": "xyz:CL",
+        "transport": "WebSocket",
+        "receivedTrades": 3,
+        "displaySamples": 1,
+        "reconnects": 0,
+        "lastPrice": 90.109,
+        "lastTimestamp": 1794068496006,
+        "dailyOpen": 1794009600000
+      }
+    },
+    {
+      "version": "1.0-oil-war-live",
+      "price": 90.109,
+      "timestamp": 1794068526028,
+      "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "hl-wti-d1-2026-11-07",
+          "symbol": "WTI-PERP",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794068524978,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 27474861
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+        "symbol": "WTI-PERP",
+        "coin": "xyz:CL",
+        "transport": "WebSocket",
+        "receivedTrades": 4,
+        "displaySamples": 2,
+        "reconnects": 0,
+        "lastPrice": 90.109,
+        "lastTimestamp": 1794068526028,
+        "dailyOpen": 1794009600000
+      }
+    }
+  ],
+  "pageSha256": "a9cef0c74b6dd99b22f47c5a64eef139c2d09a1f842f62eb5e26db4c8537f561",
+  "checkedAt": "2026-11-07T16:22:15.066128+00:00"
+}
