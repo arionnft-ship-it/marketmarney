@@ -70,6 +70,8 @@ public final class MainActivity extends ComponentActivity {
     // At most one inactive page plus the current page: no unbounded WebView cache.
     private final LinkedHashMap<Integer,WebView> retained = new LinkedHashMap<>();
     private long navigationStarted;
+    private long navigationSequence;
+    private int pendingIndexTab=-1;
     private void discardView(WebView v){
         if(v==null)return;
         v.stopLoading();v.setWebChromeClient(null);v.setWebViewClient(null);
@@ -187,7 +189,8 @@ public final class MainActivity extends ComponentActivity {
     }
     private void recoverPage(){
         long now=SystemClock.uptimeMillis();if(now-lastReloadAt<600)return;lastReloadAt=now;
-        open(Recovery414.safeRetry(lastUrl,BASE+paths[tab]));
+        String retry=tab==MARKET&&(BASE+"/index.html").equals(lastUrl)?BASE+paths[MARKET]:lastUrl;
+        open(Recovery414.safeRetry(retry,BASE+paths[tab]));
     }
     private void confirmReload(){
         new AlertDialog.Builder(this).setTitle("Muat ulang halaman?")
@@ -246,6 +249,7 @@ public final class MainActivity extends ComponentActivity {
             }).show();
     }
     private void reselectTab(int selected){
+        if(pendingIndexTab!=-1){navigate(selected);return;}
         if(tab!=selected||web==null){navigate(selected);return;}
         String current=web.getUrl();
         if(offline!=null){recoverPage();return;}
@@ -315,6 +319,7 @@ public final class MainActivity extends ComponentActivity {
         frame=new FrameLayout(this);root.addView(frame,new LinearLayout.LayoutParams(-1,0,1));
         bottom=new LinearLayout(this);bottom.setBackgroundColor(PANEL);bottom.setElevation(dp(2));
         bottom.setPadding(dp(4),dp(5),dp(4),dp(3));root.addView(bottom,new LinearLayout.LayoutParams(-1,dp(70)));
+        if(WebViewSupport420.showIfNeeded(this)){progress.setVisibility(View.GONE);return;}
         socialCss=asset("social44.css")+"\n"+asset("reels46.css")+"\n"+asset("navigation47.css")+"\n"+asset("premium411.css");socialScript=asset("profile49.js")+"\n"+asset("social44.js")+"\n"+asset("reels46.js")+"\n"+asset("navigation47.js");
         brandingScript=asset("branding417.js");
         appResources=AppResources49.install(getApplicationContext());
@@ -393,11 +398,40 @@ public final class MainActivity extends ComponentActivity {
         if(web!=null){WebView old=web;web=null;old.stopLoading();old.setWebChromeClient(null);old.setWebViewClient(null);frame.removeView(old);old.destroy();}
         if(offline!=null){frame.removeView(offline);offline=null;}
     }
-    private void navigate(int selected){
+    private boolean useLoadedIndex(int selected,long sequence){
+        if((tab!=HOME&&tab!=MARKET)||(selected!=HOME&&selected!=MARKET)||!canRetain())return false;
+        // Only the canonical document has a verified reversible router. Preserve
+        // normal navigation for queries, deep links, unfinished pages and failures.
+        final String document=BASE+"/index.html";
+        final WebView target=web;
+        if(!document.equals(target.getUrl()))return false;
+        final String page=selected==MARKET?"Market Live":"Beranda";
+        pendingIndexTab=selected;
+        String script="(function(){if(location.href!=="+JSONObject.quote(document)+"||document.readyState!=='complete')return false;"+
+            "var nav=document.getElementById('nav'),button=nav&&nav.querySelector('button[data-page=\""+page+"\"]');"+
+            "if(!button||typeof button.onclick!=='function')return false;"+
+            "try{button.click();return location.href==="+JSONObject.quote(document)+"&&button.classList.contains('active');}catch(e){return false;}})()";
+        target.evaluateJavascript(script,result->{
+            if(destroyed||web!=target||navigationSequence!=sequence||pendingIndexTab!=selected)return;
+            if("true".equals(result)&&document.equals(target.getUrl())&&!mainFailed&&offline==null){
+                pendingIndexTab=-1;
+                for(int index:new int[]{HOME,MARKET}){WebView duplicate=retained.remove(index);if(duplicate!=null&&duplicate!=target)discardView(duplicate);}
+                tab=selected;reelsChrome=false;lastUrl=document;updateSocialChrome();drawTabs();progress.setVisibility(View.GONE);
+                Log.i("MM45_NAV","shared index tab="+tab+" ms="+(SystemClock.uptimeMillis()-navigationStarted));
+            }else navigate(selected,false);
+        });
+        return true;
+    }
+    private void navigate(int selected){navigate(selected,true);}
+    private void navigate(int selected,boolean allowSharedIndex){
         if(selected<0||selected>=labels.length||destroyed)return;
+        boolean pending=pendingIndexTab!=-1;pendingIndexTab=-1;long sequence=++navigationSequence;
         cancelPageWait();navigationStarted=SystemClock.uptimeMillis();
+        if(allowSharedIndex&&(selected!=tab||pending)&&useLoadedIndex(selected,sequence))return;
         WebView cached=retained.remove(selected);
-        if(canRetain()){
+        // A queued index click can mutate its document before the callback. Do not
+        // retain that uncertain document when another navigation interrupts it.
+        if(!pending&&canRetain()){
             WebView previous=web;web=null;suspendPage(previous);frame.removeView(previous);
             WebView replaced=retained.put(tab,previous);if(replaced!=null&&replaced!=previous)discardView(replaced);
             while(retained.size()>1){Integer key=retained.keySet().iterator().next();discardView(retained.remove(key));}
@@ -431,12 +465,7 @@ public final class MainActivity extends ComponentActivity {
         next.appendQueryParameter("v",XAUWAR_VERSION);
         return next.build().toString();
     }
-    private void open(String url){if(web==null||!own(url))return;beginPageWait(web);lastUrl=url;if(offline!=null){frame.removeView(offline);offline=null;}web.setVisibility(View.VISIBLE);progress.setVisibility(View.VISIBLE);if(NEWS_PATH.equals(Uri.parse(url).getPath())){
-            String html=asset("news43.html");
-            if(html.isEmpty()){showOffline("Berkas Berita tidak tersedia.");return;}
-            web.loadDataWithBaseURL(BASE+NEWS_PATH,html,"text/html","UTF-8",BASE+NEWS_PATH);
-        }else web.loadUrl(url);
-    }
+    private void open(String url){if(web==null||!own(url))return;navigationSequence++;pendingIndexTab=-1;beginPageWait(web);lastUrl=url;if(offline!=null){frame.removeView(offline);offline=null;}web.setVisibility(View.VISIBLE);progress.setVisibility(View.VISIBLE);web.loadUrl(url);}
     private void signIn(){
         if(!getPackageName().equals("com.marketmarney.mobile")){
             new AlertDialog.Builder(this).setTitle("Login aplikasi beta")
@@ -507,7 +536,7 @@ public final class MainActivity extends ComponentActivity {
             }
             @Override public void onPageStarted(WebView v,String url,android.graphics.Bitmap favicon){
                 if(own(url)){String p=Uri.parse(url).getPath();if("/akun.html".equals(p)||p!=null&&p.startsWith("/api/auth/"))dropRetained();}
-                if(v!=web)return;if(fileOwner==v)finishFileSelection(null);clearOffline();beginPageWait(v);progress.setVisibility(View.VISIBLE);if(own(url))lastUrl=url;
+                if(v!=web)return;if(pendingIndexTab!=-1){navigationSequence++;pendingIndexTab=-1;}if(fileOwner==v)finishFileSelection(null);clearOffline();beginPageWait(v);progress.setVisibility(View.VISIBLE);if(own(url))lastUrl=url;
             }
             @Override public void doUpdateVisitedHistory(WebView v,String url,boolean reload){
                 if(v!=web||!own(url))return;
@@ -581,11 +610,13 @@ public final class MainActivity extends ComponentActivity {
     private boolean handleAppBack(){
         if(launchOverlay!=null){endLaunchAnimation(false,"back");return true;}
         if(fullVideo!=null){closeFullVideo();return true;}
+        if(pendingIndexTab!=-1){navigate(HOME);return true;}
         if(tab==NEWS&&web!=null&&web.getUrl()!=null&&!NEWS_PATH.equals(Uri.parse(web.getUrl()).getPath())){navigate(NEWS);return true;}
         if(web!=null&&web.canGoBack()){web.goBack();return true;}
         if(tab!=HOME){navigate(HOME);return true;}return false;
     }
-    @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("selectedTab",tab);state.putInt("gallerySequence",fileSequence);if(web!=null){Bundle b=new Bundle();web.saveState(b);state.putBundle("webHistory",b);}}
+    // The shared Market view has Home's canonical URL; restore it via Market's deep link.
+    @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("selectedTab",tab);state.putInt("gallerySequence",fileSequence);if(web!=null&&!(tab==MARKET&&(BASE+"/index.html").equals(web.getUrl()))){Bundle b=new Bundle();web.saveState(b);state.putBundle("webHistory",b);}else state.remove("webHistory");}
     @Override protected void onPause(){
         cancelPageWait();if(launchOverlay!=null)launchOverlay.dispose();
         if(web!=null){if(own(web.getUrl()))web.evaluateJavascript("try{window.__mm45Suspended=true;window.dispatchEvent(new Event('mm45:suspend'));document.querySelectorAll('video,audio').forEach(function(v){v.pause()})}catch(e){}",null);if(tab==XAUWAR)web.setVisibility(View.GONE);web.onPause();}

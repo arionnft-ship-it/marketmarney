@@ -82,10 +82,15 @@ jobs:
               assert hashlib.sha256((Path('android420') / name).read_bytes()).hexdigest() == digest, name
           apk_hash = hashlib.sha256(Path('deliver/Marney420.apk').read_bytes()).hexdigest()
           Path('deliver/Marney420-SHA256.txt').write_text(apk_hash + '  Marney420.apk\n')
-          classes = ['Premium418Test','Branding417Test','GalleryPolicy415Test','Stability414Test','Navigation413Test','AdaptGuardTest','NativeRepair420Test','FullClient420Test']
-          count = sum(len(re.findall(r'@Test\b', (Path('android420/app/src/androidTest/java/com/marketmarney/mobile') / (c + '.java')).read_text())) for c in classes)
-          Path('testapk/classes.txt').write_text(','.join('com.marketmarney.mobile.' + c for c in classes))
-          Path('testapk/count.txt').write_text(str(count))
+          common = ['Premium418Test','Branding417Test','GalleryPolicy415Test','NativeRepair420Test','WebViewSupport420Test']
+          suites = {29: common, 35: common + ['Stability414Test','Navigation413Test','AdaptGuardTest','FullClient420Test','SharedHome420Test']}
+          counts = {}
+          for api, classes in suites.items():
+              count = sum(len(re.findall(r'@Test\b', (Path('android420/app/src/androidTest/java/com/marketmarney/mobile') / (c + '.java')).read_text())) for c in classes)
+              counts[api] = count
+              Path(f'testapk/classes{api}.txt').write_text(','.join('com.marketmarney.mobile.' + c for c in classes))
+              Path(f'testapk/count{api}.txt').write_text(str(count))
+          Path('testapk/scope.json').write_text(json.dumps({'api29':'Legacy WebView compatibility notice, resources, gallery/recovery policy. Full client is not claimed on the stock WebView 74 image.','api35':'Supported WebView: full-client behaviors, native navigation, recovery, branding and compatibility policy.','counts':counts},indent=2))
           with ZipFile('deliver/Marney420-Source.zip', 'w', ZIP_DEFLATED) as archive:
               for root in [Path('android420'), Path('mobile419'), Path('mobile420')]:
                   for path in sorted(root.rglob('*')):
@@ -95,7 +100,7 @@ jobs:
               workflow = Path('.github/workflows/build420.yml')
               archive.write(workflow,workflow)
           print('APK SHA-256:', apk_hash)
-          print('Native regression and real-client integration tests:', count)
+          print('Native test counts and scopes:', counts)
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -174,12 +179,13 @@ jobs:
           adb install -r apk/Marney420.apk
           adb install -r testapk/Marney420-Tests.apk
           adb shell dumpsys webviewupdate > quality420-android/webview-version.txt
+          cp testapk/scope.json quality420-android/
           adb logcat -c
-          CLASSES="$(cat testapk/classes.txt)"
-          COUNT="$(cat testapk/count.txt)"
+          CLASSES="$(cat testapk/classes${{ matrix.api }}.txt)"
+          COUNT="$(cat testapk/count${{ matrix.api }}.txt)"
           adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta420.test/androidx.test.runner.AndroidJUnitRunner | tee quality420-android/instrumentation.txt
           adb pull /sdcard/Android/data/com.marketmarney.mobile.beta420/files/ quality420-android/ || true
-          adb logcat -d -s AndroidRuntime:E MM45_NAV:I > quality420-android/runtime.log
+          adb logcat -d -s AndroidRuntime:E MM45_NAV:I MM420_FULL_JS:E MM420_WEBVIEW:I MM420_COMPAT:I WebViewSupport420:I > quality420-android/runtime.log
           grep -F "OK ($COUNT tests)" quality420-android/instrumentation.txt
           SH
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi

@@ -8,6 +8,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,21 +16,30 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 /** Uses synthetic local HTML. No credentials, messages, uploads or market writes. */
+@SdkSuppress(minSdkVersion=26)
 public class Stability414Test {
  private Instrumentation inst; private MainActivity activity;
  private static final String BASE="https://marketmarney.com",NEWS=BASE+"/__android43/news";
  private void ui(Runnable r){inst.runOnMainSync(r);}
  private Object field(String name){try{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return f.get(activity);}catch(Exception e){throw new RuntimeException(e);}}
  private Object call(String name,Class<?>[] types,Object...args){try{Method m=MainActivity.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(activity,args);}catch(Exception e){throw new RuntimeException(e);}}
- private void fixture(String url){ui(()->{WebView w=(WebView)field("web");w.stopLoading();w.loadDataWithBaseURL(url,"<!doctype html><html><body>Local test page</body></html>","text/html","UTF-8",url);});SystemClock.sleep(400);}
+ private void fixture(String url){
+  FixtureDocumentClient420[] client={null};
+  ui(()->client[0]=FixtureDocumentClient420.load((WebView)field("web"),url,"<!doctype html><html><body>Local test page</body></html>"));
+  try{assertTrue("Fixture document finished",client[0].finished.await(8,TimeUnit.SECONDS));}
+  catch(InterruptedException e){Thread.currentThread().interrupt();throw new AssertionError("Fixture wait interrupted",e);}
+  ui(()->assertTrue("Fixture URL committed",client[0].isCurrent((WebView)field("web"))));
+ }
  private void capture(String name){try{File dir=new File(activity.getExternalFilesDir(null),"stability-tests");dir.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){inst.getUiAutomation().takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}}catch(Exception e){throw new RuntimeException(e);}}
  @Before public void setup(){
   inst=InstrumentationRegistry.getInstrumentation();
   activity=(MainActivity)inst.startActivitySync(new Intent(inst.getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("startTab",1));
-  SystemClock.sleep(500);ui(()->{StartupOverlay s=(StartupOverlay)field("launchOverlay");if(s!=null)s.dispose();});fixture(NEWS);
+  ui(()->{StartupOverlay s=(StartupOverlay)field("launchOverlay");if(s!=null)s.dispose();});fixture(NEWS);
  }
  @After public void cleanup(){if(activity!=null)ui(()->activity.finish());}
  @Test public void trustedOriginRejectsHostileInputs(){
@@ -68,4 +78,43 @@ public class Stability414Test {
  @Test public void longPressProvidesAppOptionsWithoutNavigation(){
   ui(()->{Object w=field("web");assertTrue(((LinearLayout)field("bottom")).getChildAt(1).performLongClick());assertSame(w,field("web"));assertEquals(1,field("tab"));});SystemClock.sleep(150);capture("app-options");
  }
+}
+
+/** A real document URL with explicit local HTML; preserves the native client's policy and callbacks. */
+final class FixtureDocumentClient420 extends WebViewClient {
+ final CountDownLatch finished=new CountDownLatch(1);
+ private final WebView target;
+ private final WebViewClient delegate;
+ private final String url;
+ private final byte[] html;
+ private FixtureDocumentClient420(WebView target,WebViewClient delegate,String url,String html){
+  if(!Recovery414.trusted(url))throw new IllegalArgumentException("Untrusted fixture URL");
+  this.target=target;this.delegate=delegate;this.url=url;this.html=html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+ }
+ static FixtureDocumentClient420 load(WebView target,String url,String html){
+  WebViewClient delegate=target.getWebViewClient();
+  if(delegate instanceof FixtureDocumentClient420)delegate=((FixtureDocumentClient420)delegate).delegate;
+  if(delegate==null)throw new IllegalStateException("Native WebViewClient missing");
+  FixtureDocumentClient420 fixture=new FixtureDocumentClient420(target,delegate,url,html);
+  target.stopLoading();target.setWebViewClient(fixture);target.loadUrl(url);return fixture;
+ }
+ boolean isCurrent(WebView current){return current==target&&url.equals(current.getUrl())&&current.getProgress()==100;}
+ @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view,android.webkit.WebResourceRequest request){
+  if(request.isForMainFrame()&&"GET".equals(request.getMethod())&&url.equals(request.getUrl().toString())){
+   return new android.webkit.WebResourceResponse("text/html","UTF-8",200,"OK",java.util.Collections.singletonMap("Cache-Control","no-store"),new java.io.ByteArrayInputStream(html));
+  }
+  return delegate.shouldInterceptRequest(view,request);
+ }
+ @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view,String url){return delegate.shouldInterceptRequest(view,url);}
+ @Override public boolean shouldOverrideUrlLoading(WebView view,android.webkit.WebResourceRequest request){return delegate.shouldOverrideUrlLoading(view,request);}
+ @Override public boolean shouldOverrideUrlLoading(WebView view,String url){return delegate.shouldOverrideUrlLoading(view,url);}
+ @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon){delegate.onPageStarted(view,url,favicon);}
+ @Override public void onPageCommitVisible(WebView view,String url){delegate.onPageCommitVisible(view,url);}
+ @Override public void onPageFinished(WebView view,String url){delegate.onPageFinished(view,url);if(view==target&&this.url.equals(url))finished.countDown();}
+ @Override public void doUpdateVisitedHistory(WebView view,String url,boolean reload){delegate.doUpdateVisitedHistory(view,url,reload);}
+ @Override public void onReceivedError(WebView view,android.webkit.WebResourceRequest request,android.webkit.WebResourceError error){delegate.onReceivedError(view,request,error);}
+ @Override public void onReceivedError(WebView view,int code,String description,String failingUrl){delegate.onReceivedError(view,code,description,failingUrl);}
+ @Override public void onReceivedHttpError(WebView view,android.webkit.WebResourceRequest request,android.webkit.WebResourceResponse response){delegate.onReceivedHttpError(view,request,response);}
+ @Override public void onReceivedSslError(WebView view,android.webkit.SslErrorHandler handler,android.net.http.SslError error){delegate.onReceivedSslError(view,handler,error);}
+ @Override public boolean onRenderProcessGone(WebView view,android.webkit.RenderProcessGoneDetail detail){return delegate.onRenderProcessGone(view,detail);}
 }

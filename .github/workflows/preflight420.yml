@@ -1,7 +1,7 @@
 name: Marney 4.20 Full Client Preflight
 on:
   push:
-    branches: [android-v4.20-performance-fix]
+    branches: [android-v4.20-performance-fix, android-v4.20-route-diagnosis]
     paths: ['.github/workflows/preflight420.yml', 'mobile420/client-preflight.json', 'mobile420/check_home_routing.py']
 permissions:
   contents: read
@@ -47,6 +47,7 @@ jobs:
               shutil.copyfile(source,Path('android419/app/src/main/assets')/p)
           PY
       - name: Reproduce old defects and exercise repaired real clients
+        if: github.ref_name != 'android-v4.20-route-diagnosis'
         run: |
           timeout --signal=TERM --kill-after=10s 90s python3 -u mobile420/test_repair420.py --apk baseline419/Marney419.apk --baseline-probe --out quality420-preflight/baseline419
           timeout --signal=TERM --kill-after=10s 260s python3 -u mobile420/test_repair420.py --assets android419/app/src/main/assets --out quality420-preflight

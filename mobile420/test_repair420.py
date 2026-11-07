@@ -366,7 +366,23 @@ class Case:
     async def authenticated(self):
         await self.wait("document.documentElement.dataset.mmAuthState==='authenticated' && !document.getElementById('shLogged').hidden")
         await self.wait("document.querySelectorAll('#shFeed .sh-post').length===2")
-        self.check("Authenticated features remain visible", await self.page.locator("#shLogged").is_visible())
+        layout = await self.page.evaluate("""() => {
+          const h=document.documentElement, logged=document.getElementById('shLogged');
+          const pane=document.getElementById(h.dataset.mm44View==='reels'?'shReelsPanel':'shFeed');
+          return {auth:h.dataset.mmAuthState, view:h.dataset.mm44View,
+            loggedHidden:logged.hidden, loggedHeight:logged.getBoundingClientRect().height,
+            activePaneHeight:pane.getBoundingClientRect().height};
+        }""")
+        self.observations["authenticatedLayout"] = layout
+        self.check("Authenticated session remains enabled", layout["auth"] == "authenticated" and not layout["loggedHidden"], layout)
+        # Reels is position:fixed and its siblings are display:none, so the
+        # authenticated wrapper can correctly have height zero. Test the actual
+        # active pane; feed mode must still expose its normal-flow feed container.
+        if layout["view"] == "reels":
+            await self.page.locator("#shReelsPanel").wait_for(state="visible", timeout=2500)
+            self.check("Authenticated Reels pane remains visible", await self.page.locator("#shReelFeed").is_visible())
+        else:
+            self.check("Authenticated feed remains visible", layout["view"] == "feed" and await self.page.locator("#shLogged").is_visible() and await self.page.locator("#shFeed").is_visible())
         self.check("Guest login panel stays hidden", await self.page.locator("#shGuest").is_hidden())
         self.check("Feed is rendered by the real client", self.router.count("/api/trader-profiles/feed") == 1)
 
