@@ -1,0 +1,75 @@
+/* MARNEY 4.19 — restrained amber details, readable cards and explicit control states. */
+html[data-mm44-social]:not([data-mm46-reels]){--mm44-base:#f4f6f8;--mm44-surface:#fff;--mm44-ink:#17283b;--mm44-muted:#5f7082;--mm44-border:#e0e6ed}
+html[data-mm44-social]:not([data-mm46-reels]) body{background:#f4f6f8!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow{background:linear-gradient(110deg,#fff 25%,#fff8eb)!important}
+html[data-mm44-social] .mm44-headrow .mm417-brand-image{display:block!important;width:48px!important;height:48px!important;flex:0 0 48px!important;object-fit:contain!important}
+html[data-mm44-social] .mm44-wordmark.mm417-wordmark{min-width:0!important;gap:9px!important}
+html[data-mm44-social] .mm44-wordmark .mm417-brand-section{font-size:13px!important;line-height:1.3!important;font-weight:700!important;letter-spacing:0!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-wordmark .mm417-brand-section{color:#8a591b!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button[aria-pressed=true]{background:#fff0d4!important;border-color:#e7c48c!important;color:#8a591b!important}
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow>.mm44-icon,html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell{border-color:#e2e6eb!important}
+html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell{background:#fff8eb!important;color:#8a591b!important}
+
+/* Align the avatar, name and body once, instead of stacking card margins and padding. */
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post{padding:0 0 10px!important;border-color:#dfe5ec!important;box-shadow:none!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-header{padding:16px 14px 12px!important;margin:0!important;gap:10px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-header>.sh-avatar{width:38px!important;height:38px!important;flex-basis:38px!important;border-radius:13px!important;border-color:#dfe5ec!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-meta{min-width:0!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-meta a{font-size:14px!important;font-weight:700!important;letter-spacing:0!important;color:#17283b!important;overflow-wrap:break-word}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-meta time{font-size:11px!important;color:#647386!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-body{font-size:14px!important;line-height:1.7!important;letter-spacing:0!important;color:#2a3a4d!important;margin:0 14px 12px!important;overflow-wrap:break-word}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-feedbar{padding:8px 14px!important;border-bottom-color:#e4e9ef!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-feedbar h2{font-size:11px!important;font-weight:700!important;letter-spacing:.2px!important;color:#5f7082!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-feedbar select{border:1px solid #dce4ec!important;border-radius:10px!important;padding:6px 8px!important;color:#33485d!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-actions{gap:8px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-actions button{width:auto!important;min-width:44px!important;height:auto!important;min-height:44px!important;padding:8px 10px!important;border-radius:12px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-options{width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;border-radius:12px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-countrow{color:#5f7082!important;font-variant-numeric:tabular-nums}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-comments input,html[data-mm44-social]:not([data-mm46-reels]) .sh-comments textarea{border-color:#dce4ec!important;background:#f5f7fa!important;border-radius:13px!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-compose-open{font-size:13px!important;color:#5f7082!important;border-color:#dce4ec!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-guest{border-color:#e5d4b7!important;background:linear-gradient(145deg,#fffcf5,#f2f6fa)!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-msg-line strong{font-size:14px!important;font-weight:700!important;color:#17283b!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-msg-preview{font-size:12px!important;line-height:1.5!important;color:#647386!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-msg-search{border:1px solid #dfe6ed!important;border-radius:14px!important;background:#f5f7fa!important}
+
+/* Keep the fixed group layout and existing form intact. */
+html[data-mm47-group] .gm-room-title{min-width:0!important}
+html[data-mm47-group] .gm-room-title h2{font-weight:700!important;line-height:1.35!important;color:#17283b!important}
+html[data-mm47-group] .gm-room-title small{color:#647386!important;font-variant-numeric:tabular-nums}
+html[data-mm47-group] .gm-messages{background:#f1f4f8!important}
+html[data-mm47-group] .gm-compose input,html[data-mm47-group] .gm-compose textarea{border-color:#d8e2ec!important;background:#f7f9fc!important;color:#20364b!important}
+html[data-mm47-group] .gm-search{border-color:#d8e2ec!important;background:#f7f9fc!important}
+html[data-mm47-group] .gm-main-btn{font-weight:700!important;letter-spacing:0!important}
+
+/* Preserve the profile grid and action semantics while improving text hierarchy. */
+html[data-mm44-page=profile] .mm46-stat-row{background:#f6f8fb!important;border-color:#dfe6ed!important}
+html[data-mm44-page=profile] .mm46-stat strong,html[data-mm44-page=profile] #mm36PublicCount{color:#17283b!important;font-variant-numeric:tabular-nums;font-weight:700!important}
+html[data-mm44-page=profile] .mm46-stat span{color:#647386!important}
+html[data-mm44-page=profile] #mm36PublicName{font-size:15px!important;font-weight:700!important;color:#17283b!important}
+html[data-mm44-page=profile] #mm36PublicBio{font-size:13px!important;line-height:1.65!important;color:#33485d!important;overflow-wrap:break-word}
+html[data-mm44-page=profile] .mm46-actions>a,html[data-mm44-page=profile] .mm46-actions>button{min-height:44px!important;border-radius:13px!important;font-weight:700!important}
+html[data-mm44-page=profile] .mm46-actions>#mm46FollowBtn{background:#ffb84d!important;color:#342008!important}
+html[data-mm44-page=profile] .mm44-profile-tabs button[aria-pressed=true]{color:#8a591b!important;border-bottom-color:#d08a2b!important}
+
+/* Instant pressed feedback; no added animation or work between interactions. */
+html[data-mm44-social]:not([data-mm46-reels]) .mm44-headrow>.mm44-icon:active:not(:disabled),html[data-mm44-social]:not([data-mm46-reels]) #shNotificationBell:active:not(:disabled),html[data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button:active:not(:disabled){background:#ffe8be!important;color:#784b12!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-post-actions button:active:not(:disabled),html[data-mm44-social]:not([data-mm46-reels]) .sh-post-options:active:not(:disabled){background:#fff0d4!important}
+html[data-mm44-social]:not([data-mm46-reels]) .sh-compose-open:active:not(:disabled){background:#fff8eb!important;border-color:#c99a52!important}
+html[data-mm47-group] .gm-main-btn:active:not(:disabled),html[data-mm44-page=profile] .mm46-actions>a:active,html[data-mm44-page=profile] .mm46-actions>button:active:not(:disabled){box-shadow:inset 0 0 0 2px #bd7a22!important}
+html[data-mm46-reels] .mm44-nav-button[aria-pressed=true],html[data-mm47-nav][data-mm46-reels] .mm44-nav-button[aria-pressed=true]{color:#ffb84d!important;border-bottom-color:#ffb84d!important}
+html[data-mm46-reels] .mm44-nav-button:active:not(:disabled),html[data-mm46-reels] .mm44-headrow>.mm44-icon:active:not(:disabled){background:#342a1c!important;color:#ffce86!important}
+
+html[data-mm44-social] button:focus-visible,html[data-mm44-social] a:focus-visible,html[data-mm44-social] input:focus-visible,html[data-mm44-social] textarea:focus-visible,html[data-mm44-social] select:focus-visible,
+html[data-mm47-group] button:focus-visible,html[data-mm47-group] a:focus-visible,html[data-mm47-group] input:focus-visible,html[data-mm47-group] textarea:focus-visible,html[data-mm47-group] select:focus-visible,
+html[data-mm44-page=profile] button:focus-visible,html[data-mm44-page=profile] a:focus-visible,html[data-mm44-page=profile] input:focus-visible,html[data-mm44-page=profile] textarea:focus-visible,html[data-mm44-page=profile] select:focus-visible{outline:2px solid #96601b!important;outline-offset:3px!important}
+html[data-mm46-reels] button:focus-visible,html[data-mm46-reels] a:focus-visible,html[data-mm46-reels] input:focus-visible,html[data-mm46-reels] textarea:focus-visible,html[data-mm46-reels] select:focus-visible{outline-color:#ffb84d!important}
+html[data-mm47-group] .gm-compose input:focus,html[data-mm47-group] .gm-compose textarea:focus,html[data-mm44-social]:not([data-mm46-reels]) .sh-comments input:focus,html[data-mm44-social]:not([data-mm46-reels]) .sh-comments textarea:focus{border-color:#b48137!important}
+
+@media(max-width:350px){
+ html[data-mm44-social] .mm44-headrow .mm417-brand-image{width:46px!important;height:46px!important;flex-basis:46px!important}
+ html[data-mm44-social] .mm44-wordmark.mm417-wordmark{gap:6px!important}
+ html[data-mm44-social] .mm44-wordmark .mm417-brand-section{font-size:12px!important}
+ html[data-mm44-social]:not([data-mm46-reels]) .sh-post-header{padding-left:12px!important;padding-right:12px!important}
+ html[data-mm44-social]:not([data-mm46-reels]) .sh-post-body{margin-left:12px!important;margin-right:12px!important}
+}
+@media(max-height:440px){html[data-mm44-social] .mm44-headrow .mm417-brand-image{width:36px!important;height:36px!important;flex-basis:36px!important}}

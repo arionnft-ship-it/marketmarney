@@ -1,0 +1,217 @@
+name: Marney 4.19 Premium Logo
+on:
+  push:
+    branches: [android-v4.19-premium-logo]
+    paths: ['mobile419/**', '.github/workflows/build419.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: marney419-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare the focused 4.19 update
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          # Exact source of final 4.18, retained so rebuilding does not rely on artifact expiry.
+          expected = '701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          assert hashlib.sha256(Path('mobile419/base418-source.zip').read_bytes()).hexdigest() == expected
+          assert not Path('android417').exists() and not Path('android419').exists()
+          with ZipFile('mobile419/base418-source.zip') as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0] == 'android417':
+                      archive.extract(entry, '.')
+          assert Path('android417/app/build.gradle').is_file()
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+      - name: Compile app and regression tests
+        run: gradle --no-daemon --project-dir android419 :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verify and package the exact APK and source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android419/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney419-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney419-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta419'" deliver/Marney419-Package.txt
+          grep -F "versionName='4.19.0-beta'" deliver/Marney419-Package.txt
+          cp "$APK" deliver/Marney419.apk
+          cp android419/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney419-Tests.apk
+          cp preserved419.json mobile419/Marney419-Panduan.md deliver/
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import hashlib, json
+          report = json.loads(Path('deliver/preserved419.json').read_text())
+          for name, expected in report['preserved'].items():
+              path = Path('android419') / name
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == expected, name
+          apk_hash = hashlib.sha256(Path('deliver/Marney419.apk').read_bytes()).hexdigest()
+          Path('deliver/Marney419-SHA256.txt').write_text(apk_hash + '  Marney419.apk\n')
+          with ZipFile('deliver/Marney419-Source.zip', 'w', ZIP_DEFLATED) as archive:
+              for root in [Path('android419'), Path('mobile419')]:
+                  for path in sorted(root.rglob('*')):
+                      if not path.is_file() or any(part in path.parts for part in ['build', '.gradle', '.git', '__pycache__']):
+                          continue
+                      if path.suffix in ['.jks', '.keystore', '.ttf', '.otf', '.woff', '.woff2'] or path.name in ['local.properties', '.env']:
+                          continue
+                      archive.write(path, path)
+              workflow = Path('.github/workflows/build419.yml')
+              archive.write(workflow, workflow)
+          print('Packaged APK SHA-256:', apk_hash)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney419-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney419-Final-Test-APK
+          path: testapk/
+          if-no-files-found: error
+
+  ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney419-Final-APK
+          path: apk
+      - name: Read the exact packaged source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright
+          if ! command -v chromium >/dev/null 2>&1 && ! command -v google-chrome >/dev/null 2>&1; then
+            python3 -m playwright install --with-deps chromium
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          expected = Path('apk/Marney419-SHA256.txt').read_text().split()[0]
+          assert hashlib.sha256(Path('apk/Marney419.apk').read_bytes()).hexdigest() == expected
+          with ZipFile('apk/Marney419-Source.zip') as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+              archive.extractall('.')
+          PY
+      - name: Check narrow and standard News and Social layouts
+        run: python3 mobile419/test_ui419.py android419
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney419-Final-UI-Evidence
+          path: quality419-ui/
+          if-no-files-found: warn
+
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35, 29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney419-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney419-Final-Test-APK
+          path: testapk
+      - name: Prepare regressions on the exact final signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = Path('apk/Marney419-SHA256.txt').read_text().split()[0]
+          assert hashlib.sha256(Path('apk/Marney419.apk').read_bytes()).hexdigest() == expected
+          PY
+          cat > test.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality419-android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney419.apk
+          adb install -r testapk/Marney419-Tests.apk
+          adb logcat -c
+          if [ '${{ matrix.api }}' = 35 ]; then
+            CLASSES=com.marketmarney.mobile.Premium418Test,com.marketmarney.mobile.Branding417Test,com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test,com.marketmarney.mobile.GalleryUi415Test,com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest
+            COUNT=57
+          else
+            CLASSES=com.marketmarney.mobile.Premium418Test,com.marketmarney.mobile.Branding417Test,com.marketmarney.mobile.Opening416Test,com.marketmarney.mobile.GalleryPolicy415Test
+            COUNT=32
+          fi
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta419.test/androidx.test.runner.AndroidJUnitRunner | tee quality419-android/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta419/files/ quality419-android/ || true
+          adb logcat -d -s AndroidRuntime:E > quality419-android/runtime.log
+          grep -F "OK ($COUNT tests)" quality419-android/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney419-Final-Android-${{ matrix.api }}-Evidence
+          path: quality419-android/
+          if-no-files-found: warn
+
