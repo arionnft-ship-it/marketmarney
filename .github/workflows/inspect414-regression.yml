@@ -1,0 +1,53 @@
+name: Marney 4.14 Detailed Privacy Regression
+on:
+  push:
+    branches: [android-v4.14-stability]
+    paths: ['.github/workflows/inspect414-regression.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          run-id: 42314973932
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Add evidence collection, keeping all assertions
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality414-details')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta414').replace('apk/Marney49.apk','apk/Marney414.apk')
+          anchor=" record('No JavaScript errors during denial',ev('__fixture49.errors.length===0'))"
+          extra=''' (O/'denial-errors.json').write_text(json.dumps(ev('({errors:__fixture49.errors,resources:__fixture49.resources,calls:__fixture49.calls})'),indent=2))
+          print('DENIAL_ERRORS '+json.dumps(ev('__fixture49.errors')),flush=True)
+          screenshot('group-denial')
+          '''
+          extra='\n'.join(' '+line if line and not line.startswith(' ') else line for line in extra.splitlines())+'\n'
+          assert anchor in s;s=s.replace(anchor,extra+anchor,1)
+          p.write_text(s);compile(s,str(p),'exec')
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Privacy-Detailed-Evidence
+          path: quality414-details/
