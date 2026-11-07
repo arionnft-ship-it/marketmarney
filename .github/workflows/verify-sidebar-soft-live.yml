@@ -1,0 +1,45 @@
+name: Verify live MarketMarney soft sidebar
+on:
+  push:
+    branches: [verify/sidebar-soft-live-20261108]
+    paths: ['.github/workflows/verify-sidebar-soft-live.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify publicly deployed CSS and live checks
+        run: |
+          mkdir -p sidebar-soft-live
+          python3 - <<'PY'
+          import urllib.request,json,pathlib
+          base='https://marketmarney.com'
+          q=urllib.request.Request(base+'/assets/marney-sidebar3d-v1.css',headers={'User-Agent':'MarketMarney-SoftSidebar-Verify','Cache-Control':'no-cache'})
+          with urllib.request.urlopen(q,timeout=25) as r:css=r.read().decode()
+          assert 'MarketMarney Soft Premium' in css,'new soft sidebar CSS not live'
+          assert 'background:linear-gradient(145deg,#fff9f0,#fff0db)' in css,'soft active gradient not live'
+          for path in ['/','/akun.html','/beranda-trader.html','/_railway/health']:
+            with urllib.request.urlopen(base+path,timeout=25) as r:assert r.status==200,path
+          with urllib.request.urlopen(base+'/api/community/status',timeout=25) as r:d=json.load(r)
+          assert d.get('passwordRecovery',{}).get('required') is True,'password recovery accidentally changed'
+          assert d.get('emailOtp',{}).get('required') is True,'OTP signup accidentally changed'
+          pathlib.Path('sidebar-soft-live/report.json').write_text(json.dumps({'softStylesLive':True,'mainPagesOk':True,'otpSignupPreserved':True,'passwordRecoveryPreserved':True},indent=2))
+          print('Soft sidebar live and account protections preserved.')
+          PY
+      - name: Install Chromium
+        run: python3 -m pip install playwright==1.56.0 && python3 -m playwright install --with-deps chromium
+      - name: Check desktop/mobile and preserve existing navigation
+        env:
+          SIDEBAR_PUBLIC: '1'
+          SIDEBAR_OUT: sidebar-soft-live
+        run: python3 sidebar3d/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-soft-sidebar-live
+          path: sidebar-soft-live/
+          retention-days: 7
