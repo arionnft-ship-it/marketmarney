@@ -1,0 +1,63 @@
+name: Inspect OIL War source
+on:
+  push:
+    branches: [oil-war-v1-20261107]
+    paths: ['.github/workflows/oil-war-inspect.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Save current code and public compatibility references
+        run: |
+          mkdir -p oil-reference/public oil-reference/docs
+          cp -r warxau-fbs marney-brand signup oil-reference/
+          cp warxau-live/dist/WEB-LIVE.html oil-reference/base.html
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json,pathlib
+          p=pathlib.Path('oil-reference/public')
+          for name,url in [('xau.html','/assets/xau-war-3d.html?v=7.8'),('btc.html','/assets/btc-war-3d.html?v=1.0'),('chat.js','/assets/discussion-1828.js'),('chat.css','/assets/discussion-1828.css')]:
+            with urllib.request.urlopen('https://marketmarney.com'+url,timeout=20) as r:p.joinpath(name).write_bytes(r.read(6500000))
+          checks=[]
+          for s in ['TVC:USOIL','OANDA:WTICOUSD','TVC:UKOIL','FOREXCOM:WTIUSD']:
+            try:
+              with urllib.request.urlopen('https://marketmarney.com/api/discussions?kind=analysis&target=MARKET%3A'+s.replace(':','%3A')+'&sort=newest',timeout=15) as r:
+                d=json.loads(r.read());checks.append({'symbol':s,'status':r.status,'validItems':isinstance(d.get('items'),list)})
+            except urllib.error.HTTPError as e:checks.append({'symbol':s,'status':e.code})
+          p.joinpath('chat-rooms.json').write_text(json.dumps(checks,indent=2));print(json.dumps(checks))
+          urls={'xyz-index':'https://docs.trade.xyz/llms.txt','ws-subscriptions':'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/websocket/subscriptions.md','api-info':'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint.md'}
+          for n,u in urls.items():
+            try:
+              with urllib.request.urlopen(u,timeout=20) as r:pathlib.Path('oil-reference/docs/'+n+'.txt').write_bytes(r.read(250000))
+            except Exception as e:print(n,str(e))
+          PY
+      - name: Confirm WTI instrument and observe live public stream without trading access
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const info=async data=>{const r=await fetch('https://api.hyperliquid.xyz/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Info '+r.status);return r.json();};
+          const meta=await info({type:'meta',dex:'xyz'}),oil=meta.universe.filter(x=>/CL|WTI|BRENT/.test(x.name));
+          const out={ok:false,startedAt:new Date().toISOString(),instruments:oil,events:[]};
+          const candidates=oil.filter(x=>['xyz:CL','xyz:WTIOIL'].includes(x.name)&&!x.isDelisted);
+          if(candidates.length!==1)throw Error('WTI market is missing or ambiguous: '+JSON.stringify(candidates));
+          out.coin=candidates[0].name;
+          out.candles=await info({type:'candleSnapshot',req:{coin:out.coin,interval:'1d',startTime:Date.now()-172800000,endTime:Date.now()}});
+          const ws=new WebSocket('wss://api.hyperliquid.xyz/ws');let finished=false;
+          const end=()=>{if(finished)return;finished=true;ws.close();out.ok=out.events.filter(x=>x.channel==='trades'&&x.data.some(t=>Date.now()-t.time<30000)).length>=2;fs.writeFileSync('oil-reference/feed-check.json',JSON.stringify(out,null,2));console.log(JSON.stringify({ok:out.ok,coin:out.coin,instruments:oil,events:out.events.length,candles:out.candles.length}));process.exit(out.ok?0:1);};
+          const timer=setTimeout(end,60000);
+          ws.onopen=()=>{for(const subscription of [{type:'trades',coin:out.coin},{type:'candle',coin:out.coin,interval:'1d'}])ws.send(JSON.stringify({method:'subscribe',subscription}));};
+          ws.onmessage=e=>{const d=JSON.parse(e.data);if(['trades','candle'].includes(d.channel)){out.events.push(d);if(out.events.filter(x=>x.channel==='trades'&&x.data.some(t=>Date.now()-t.time<30000)).length>=3){clearTimeout(timer);end();}}};
+          ws.onerror=()=>{out.error='Public websocket unavailable';clearTimeout(timer);end();};
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-war-reference
+          path: oil-reference
+          retention-days: 7
