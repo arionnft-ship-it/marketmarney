@@ -5,7 +5,7 @@
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 
-const VERSION = '20261108-2';
+const VERSION = '20261108-3';
 const PREFIX = '/assets/warxau-performance/';
 const CACHE = 'public, max-age=31536000, immutable';
 const digest = data => crypto.createHash('sha256').update(data).digest('hex');
@@ -38,6 +38,8 @@ function notModified(value, etag) {
 // call it. Exact frame comparison avoids repainting an unchanged waiting arena.
 function installSoftwarePerformance(root) {
   const bounds = new WeakMap(), frames = new WeakMap();
+  const roundKinds = new Set(['sphere', 'sphereLite', 'rock']);
+  const boxKinds = new Set(['cylinder', 'cylinderLite', 'hull', 'turret']);
   const equal = (a, b, length = b.length) => {
     if (!a || a.length !== length) return false;
     for (let i = 0; i < length; i++) if (a[i] !== b[i]) return false;
@@ -64,16 +66,20 @@ function installSoftwarePerformance(root) {
     planes.push([m[3], m[7], m[11], m[15] - .15]);
     return {reuse: false, planes};
   }
-  function outside(geometry, m, planes) {
+  function boundFor(geometry) {
     let bound = bounds.get(geometry);
     if (!bound) {
       const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], v = geometry.vertices;
       for (let i = 0; i < v.length; i += 6) for (let j = 0; j < 3; j++) {
         lo[j] = Math.min(lo[j], v[i + j]); hi[j] = Math.max(hi[j], v[i + j]);
       }
-      bound = {center: lo.map((value, i) => (value + hi[i]) / 2), extent: lo.map((value, i) => (hi[i] - value) / 2)};
+      bound = {lo, hi, center: lo.map((value, i) => (value + hi[i]) / 2), extent: lo.map((value, i) => (hi[i] - value) / 2)};
       bounds.set(geometry, bound);
     }
+    return bound;
+  }
+  function outside(geometry, m, planes) {
+    const bound = boundFor(geometry);
     const c = bound.center, e = bound.extent;
     const x = m[12] + m[0] * c[0] + m[4] * c[1] + m[8] * c[2];
     const y = m[13] + m[1] * c[0] + m[5] * c[1] + m[9] * c[2];
@@ -84,12 +90,64 @@ function installSoftwarePerformance(root) {
     return planes.some(p => p[0] * x + p[1] * y + p[2] * z + p[3] +
       Math.abs(p[0]) * ex + Math.abs(p[1]) * ey + Math.abs(p[2]) * ez < -1e-6);
   }
+  function detail(geometry, m, vp, width, height, kind) {
+    const round = roundKinds.has(kind);
+    if (!round && !boxKinds.has(kind)) return geometry;
+    const bound = boundFor(geometry), lo = bound.lo, hi = bound.hi;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    // Project all eight bounding-box corners. Near-plane intersections, invalid
+    // projections, and anything larger than eight canvas pixels keep the exact
+    // original mesh. No object, body part, unit or color is removed.
+    for (let corner = 0; corner < 8; corner++) {
+      const x = corner & 1 ? hi[0] : lo[0], y = corner & 2 ? hi[1] : lo[1], z = corner & 4 ? hi[2] : lo[2];
+      const px = m[0] * x + m[4] * y + m[8] * z + m[12];
+      const py = m[1] * x + m[5] * y + m[9] * z + m[13];
+      const pz = m[2] * x + m[6] * y + m[10] * z + m[14];
+      const depth = vp[3] * px + vp[7] * py + vp[11] * pz + vp[15];
+      if (!Number.isFinite(depth) || depth <= .15) return geometry;
+      const sx = (vp[0] * px + vp[4] * py + vp[8] * pz + vp[12]) / depth * width * .5;
+      const sy = (vp[1] * px + vp[5] * py + vp[9] * pz + vp[13]) / depth * height * .5;
+      minX = Math.min(minX, sx); maxX = Math.max(maxX, sx);
+      minY = Math.min(minY, sy); maxY = Math.max(maxY, sy);
+    }
+    const size = Math.max(maxX - minX, maxY - minY);
+    if (!Number.isFinite(size) || size > 8) return geometry;
+    const key = round ? 'roundDetail' : 'boxDetail';
+    if (bound[key]) return bound[key];
+    const center = bound.center, vertices = [], indices = [];
+    function face(points) {
+      const a = points[0], u = points[1].map((value, i) => value - a[i]), v = points[2].map((value, i) => value - a[i]);
+      let normal = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      if (normal.reduce((total, value, i) => total + value * (a[i] - center[i]), 0) < 0) {
+        points = points.slice().reverse(); normal = normal.map(value => -value);
+      }
+      const length = Math.hypot(...normal) || 1, start = vertices.length / 6;
+      for (const point of points) vertices.push(...point, ...normal.map(value => value / length));
+      for (let i = 1; i < points.length - 1; i++) indices.push(start, start + i, start + i + 1);
+    }
+    if (round) {
+      const ring = [[hi[0], center[1], center[2]], [center[0], center[1], hi[2]],
+        [lo[0], center[1], center[2]], [center[0], center[1], lo[2]]];
+      for (let i = 0; i < 4; i++) {
+        face([[center[0], hi[1], center[2]], ring[i], ring[(i + 1) % 4]]);
+        face([[center[0], lo[1], center[2]], ring[(i + 1) % 4], ring[i]]);
+      }
+    } else {
+      const points = [];
+      for (let corner = 0; corner < 8; corner++) points.push([corner & 1 ? hi[0] : lo[0], corner & 2 ? hi[1] : lo[1], corner & 4 ? hi[2] : lo[2]]);
+      for (const ids of [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]) face(ids.map(i => points[i]));
+    }
+    // Reuse geometry across all matching small parts; preserve original bounds
+    // exactly, so the conservative culling test stays valid for either detail.
+    bound[key] = {vertices: new Float32Array(vertices), indices: new Uint16Array(indices)};
+    return bound[key];
+  }
   function remember(engine) {
     frames.set(engine, {width: engine.canvas.width, height: engine.canvas.height, vp: engine.vp.slice(),
       eye: engine.eye.slice(), leaf: engine.leafImage, leafReady: !!(engine.leafImage?.complete || engine.leafImage?.width),
       groups: Object.values(engine.groups).map(group => ({geometry: group.geometry, data: group.data.slice(0, group.used * 20)}))});
   }
-  root.MMSoftwarePerformance = Object.freeze({begin, outside, remember});
+  root.MMSoftwarePerformance = Object.freeze({begin, outside, detail, remember});
 }
 
 function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
@@ -188,9 +246,12 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
     if (engineIndex < 0) throw Error('WarXAU software renderer missing');
     let engine = replaceOnce(packagedScripts[engineIndex], ' renderSoftware(){',
       ' renderSoftware(){\n  const softwareFrame=root.MMSoftwarePerformance.begin(this);if(softwareFrame.reuse)return;');
+    engine = replaceOnce(engine, 'for(const group of Object.values(this.groups)){',
+      'for(const [groupName,group] of Object.entries(this.groups)){');
+    engine = replaceOnce(engine, 'const verts=group.geometry.vertices,ids=group.geometry.indices;', '');
     engine = replaceOnce(engine,
       'const off=instance*20,m=group.data.subarray(off,off+16),col=group.data.subarray(off+16,off+20);',
-      'const off=instance*20,m=group.data.subarray(off,off+16),col=group.data.subarray(off+16,off+20);if(root.MMSoftwarePerformance.outside(group.geometry,m,softwareFrame.planes))continue;');
+      'const off=instance*20,m=group.data.subarray(off,off+16),col=group.data.subarray(off+16,off+20);if(root.MMSoftwarePerformance.outside(group.geometry,m,softwareFrame.planes))continue;const geometry=root.MMSoftwarePerformance.detail(group.geometry,m,vp,w,h,groupName),verts=geometry.vertices,ids=geometry.indices;');
     engine = replaceOnce(engine, 'this.drawCalls=polys.length;',
       'this.drawCalls=polys.length;root.MMSoftwarePerformance.remember(this);');
     packagedScripts[engineIndex] = engine;

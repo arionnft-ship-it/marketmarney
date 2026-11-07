@@ -20,7 +20,8 @@ const patchedDefinitions = bundle.slice(start, bundle.indexOf(original[20]));
 const baselineDefinitions = original.slice(0, 19).map((source, i) => i === 7 ? 'window.MMAshfallAssets={};' : source).join('\n;\n');
 const sameDetailDefinitions = patchedDefinitions
   .replace("this.lowLOD=this.soft||this.quality==='eco'||u.rank>0", "this.lowLOD=this.quality==='eco'||u.rank>0")
-  .replace('this.soft?Math.min(root.devicePixelRatio||1,.85,960/r.width,540/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height)', 'Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height)');
+  .replace('this.soft?Math.min(root.devicePixelRatio||1,.85,960/r.width,540/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height)', 'Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height)')
+  .replace('root.MMSoftwarePerformance.detail(group.geometry,m,vp,w,h,groupName)', 'group.geometry');
 
 function harness(definitions) {
   let recording = false, hash, calls = 0;
@@ -67,6 +68,7 @@ baseline.engine.cameraMode = optimized.engine.cameraMode = 'drone';
 const before = baseline.render(), first = optimized.render(), idle = optimized.render();
 check('software fallback uses supported low-detail geometry without adding or removing units', optimized.engine.units.length === baseline.engine.units.length && optimized.engine.units.every((unit, i) => unit.id === baseline.engine.units[i].id));
 check('software fallback reduces visible triangle draw operations', first.polygons < before.polygons);
+check('small-part detail removes more than half of original drawing commands', first.calls < before.calls * .5 && first.polygons < 15000);
 check('software canvas is bounded while quality contract stays HD', optimized.engine.canvas.width === 800 && optimized.engine.canvas.height === 449 && optimized.engine.quality === 'hd');
 check('an identical waiting frame skips all Canvas2D drawing commands', idle.calls === 0 && optimized.engine.softwareCachedFrames > 0);
 
@@ -83,6 +85,39 @@ optimized.engine.groups.box.data[16] += .01;
 optimized.engine.static[0].c = optimized.engine.static[0].c.slice();
 optimized.engine.static[0].c[0] += .02;
 check('source color change invalidates the cached bitmap', optimized.render().calls > 0);
+
+const software = optimized.root.MMSoftwarePerformance, math = optimized.root.MMWarMath;
+const model = math.identity(), far = math.identity(), near = math.identity();
+far[0] = far[5] = .005; near[0] = near[5] = .05;
+const sphere = optimized.engine.groups.sphereLite.geometry, cylinder = optimized.engine.groups.cylinderLite.geometry;
+const smallSphere = software.detail(sphere, model, far, 800, 450, 'sphereLite');
+const smallCylinder = software.detail(cylinder, model, far, 800, 450, 'cylinderLite');
+check('small rounded parts use eight triangles and small cylinders use twelve', smallSphere.indices.length === 24 && smallCylinder.indices.length === 36);
+check('close-up parts restore their original mesh', software.detail(sphere, model, near, 800, 450, 'sphereLite') === sphere && software.detail(cylinder, model, near, 800, 450, 'cylinderLite') === cylinder);
+const bounds = geometry => {
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < geometry.vertices.length; i += 6) for (let j = 0; j < 3; j++) {
+    lo[j] = Math.min(lo[j], geometry.vertices[i + j]); hi[j] = Math.max(hi[j], geometry.vertices[i + j]);
+  }
+  return {lo, hi};
+};
+assert.deepEqual(bounds(smallSphere), bounds(sphere)); assert.deepEqual(bounds(smallCylinder), bounds(cylinder));
+check('simplified meshes preserve exact source bounding boxes', true);
+for (const geometry of [smallSphere, smallCylinder]) for (let i = 0; i < geometry.vertices.length; i += 6) {
+  assert.ok(Math.abs(Math.hypot(...geometry.vertices.slice(i + 3, i + 6)) - 1) < 1e-6);
+}
+check('fallback face normals are finite and normalized', true);
+const crossing = far.slice(); crossing[15] = .1;
+const invalid = far.slice(); invalid[0] = NaN;
+check('near-plane intersections and invalid projections retain original detail', software.detail(sphere, model, crossing, 800, 450, 'sphereLite') === sphere && software.detail(sphere, model, invalid, 800, 450, 'sphereLite') === sphere);
+check('unrelated scene meshes are not simplified', software.detail(sphere, model, far, 800, 450, 'river-road') === sphere);
+const frame = {canvas: {width: 800, height: 450}, vp: far, eye: [0, 0, 10], groups: {sphere: {geometry: sphere, data: new Float32Array([...model, .3, .4, .2, 0]), used: 1}}};
+software.remember(frame); assert.equal(software.begin(frame).reuse, true);
+frame.vp = near; assert.equal(software.begin(frame).reuse, false);
+assert.equal(software.detail(sphere, model, frame.vp, 800, 450, 'sphereLite'), sphere);
+software.remember(frame); frame.vp = far; assert.equal(software.begin(frame).reuse, false);
+assert.equal(software.detail(sphere, model, frame.vp, 800, 450, 'sphereLite'), smallSphere);
+check('camera transitions across the eight-pixel threshold invalidate the cached frame in both directions', true);
 
 const liveBefore = harness(baselineDefinitions), liveAfter = harness(patchedDefinitions);
 liveBefore.engine.active = liveAfter.engine.active = true;
