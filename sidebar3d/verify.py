@@ -81,10 +81,11 @@ try:
    pg.set_viewport_size({'width':width,'height':844});pg.wait_for_timeout(200);ck(str(width)+' no page horizontal overflow',pg.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
   ctx.close()
   ctx=context(reduced_motion='reduce');pg=ctx.new_page();pg.goto(BASE+'/',wait_until='domcontentloaded',timeout=60000);pg.wait_for_function('window.MMSidebar3D?.iconCount()===12');ck('reduced-motion honored',pg.locator('#nav .navbtn').first.evaluate('e=>getComputedStyle(e).transitionDuration')=='0s');ctx.close();b.close()
- if not PUBLIC:
-  sandbox_warning="Failed to read the 'serviceWorker' property from 'Navigator': Service worker is disabled because the context is sandboxed and lacks the 'allow-same-origin' flag."
-  out['ignoredSandboxWarnings']=[x for x in out['errors'] if sandbox_warning in x]
-  out['errors']=[x for x in out['errors'] if sandbox_warning not in x]
+ # The site's third-party sandboxed frames emit this warning even on the live site.
+ # Record it, but continue treating every other JavaScript exception as a failure.
+ sandbox_warning="Failed to read the 'serviceWorker' property from 'Navigator': Service worker is disabled because the context is sandboxed and lacks the 'allow-same-origin' flag."
+ out['ignoredSandboxWarnings']=[x for x in out['errors'] if sandbox_warning in x]
+ out['errors']=[x for x in out['errors'] if sandbox_warning not in x]
  ck('no browser JavaScript exceptions',not out['errors'])
  if PUBLIC:
   get('/_railway/health');account=get('/akun.html').decode();ck('account and OTP not restyled','marney-sidebar3d-v1' not in account)

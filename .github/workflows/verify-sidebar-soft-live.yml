@@ -2,7 +2,7 @@ name: Verify live MarketMarney soft sidebar
 on:
   push:
     branches: [verify/sidebar-soft-live-20261108]
-    paths: ['.github/workflows/verify-sidebar-soft-live.yml']
+    paths: ['.github/workflows/verify-sidebar-soft-live.yml', 'sidebar3d/verify.py']
   workflow_dispatch:
 permissions:
   contents: read
