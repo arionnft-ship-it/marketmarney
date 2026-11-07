@@ -1,0 +1,52 @@
+name: Verify deployed first-visit light theme
+on:
+  push:
+    branches: [default-light-first-visit-20261108]
+    paths: ['.github/workflows/default-light-production.yml']
+permissions:
+  contents: write
+concurrency:
+  group: default-light-production
+  cancel-in-progress: false
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chromium
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Check requested release is served
+        run: |
+          python3 - <<'PY'
+          import urllib.request,time
+          for n in range(12):
+            try:
+              with urllib.request.urlopen('https://marketmarney.com/',timeout=20) as r:
+                assert b'id="mm-first-visit-theme"' in r.read(5000000)
+              break
+            except Exception:
+              if n==11:raise
+              time.sleep(5)
+          PY
+      - name: Verify actual public first visit, theme toggles and persistence
+        env:
+          THEME_PUBLIC: '1'
+        run: python3 warxau-fbs/verify-default-theme.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: default-light-production
+          path: theme-production-results
+          retention-days: 7
+      - name: Record non-sensitive verification report
+        if: always()
+        run: |
+          test -f theme-production-results/browser.json || exit 0
+          cp theme-production-results/browser.json default-light-production-check.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add default-light-production-check.json
+          git diff --cached --quiet || git commit -m 'Record public default-light browser and access checks'
+          git pull --rebase origin default-light-first-visit-20261108
+          git push origin HEAD:default-light-first-visit-20261108
