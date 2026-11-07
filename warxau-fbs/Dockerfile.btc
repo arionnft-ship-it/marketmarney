@@ -11,7 +11,9 @@ COPY warxau-fbs/topchat.cjs warxau-fbs/topchat-layout.js warxau-fbs/topchat.css 
 COPY warxau-fbs/btc-feed.js warxau-fbs/btc-addon.cjs warxau-fbs/start-btc.cjs ./
 COPY marney-brand/branding.cjs ./branding.cjs
 COPY marney-brand/install.cjs ./brand-install.cjs
+COPY signup ./signup
 COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
-RUN node brand-install.cjs bootstrap.cjs && node --check branding.cjs && node --check relay.cjs && node --check page.cjs && node --check client.js && node --check bootstrap.cjs && node --check topchat.cjs && node --check topchat-layout.js && node --check start-topchat.cjs && node --check btc-feed.js && node --check btc-addon.cjs && node --check start-btc.cjs
+RUN node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs && node --check signup/requirements.cjs && node --check signup/patches.cjs && node --check signup/preload.cjs && node --check signup/account-page.cjs && node --check branding.cjs && node --check relay.cjs && node --check page.cjs && node --check client.js && node --check bootstrap.cjs && node --check topchat.cjs && node --check topchat-layout.js && node --check start-topchat.cjs && node --check btc-feed.js && node --check btc-addon.cjs && node --check start-btc.cjs
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs"
 CMD ["node", "/opt/warxau-fbs/start-btc.cjs"]
