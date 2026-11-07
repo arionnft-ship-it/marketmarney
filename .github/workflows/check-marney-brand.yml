@@ -1,0 +1,38 @@
+name: Verify MARNEY website branding
+on:
+  push:
+    branches: [marney-web-logo-20261107]
+    paths: ['marney-brand/**', 'warxau-fbs/Dockerfile.topchat', '.github/workflows/check-marney-brand.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and validate brand assets
+        run: |
+          python -m pip install Pillow==11.3.0 playwright
+          python marney-brand/build-assets.py
+          cp marney-brand/branding.cjs warxau-fbs/branding.cjs
+          cp -r marney-brand/dist warxau-fbs/marney-brand-assets
+          node marney-brand/install.cjs warxau-fbs/bootstrap.cjs
+          node --check warxau-fbs/bootstrap.cjs
+          node --test marney-brand/test.cjs
+      - name: Browser preview on actual public pages
+        run: |
+          python -m playwright install --with-deps chromium
+          python marney-brand/verify-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marney-brand-verification
+          path: |
+            marney-brand/dist/
+            brand-verification/
+          retention-days: 7
