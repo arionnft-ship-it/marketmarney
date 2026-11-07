@@ -1,0 +1,126 @@
+{
+  "ok": false,
+  "checks": [
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/auth/android/config HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/xau-war-3d.html?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/warxau-topchat-layout.js?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/warxau-topchat-chat.js?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/warxau-topchat.css?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "new layout served",
+      "ok": true
+    },
+    {
+      "name": "Social Marney homepage label preserved",
+      "ok": true
+    },
+    {
+      "name": "all 24 price/game scripts unchanged",
+      "ok": true
+    },
+    {
+      "name": "chat interval 3 seconds",
+      "ok": true
+    },
+    {
+      "name": "arena first content section",
+      "ok": true
+    },
+    {
+      "name": "one existing canvas",
+      "ok": true
+    },
+    {
+      "name": "desktop chat to the right",
+      "ok": true
+    },
+    {
+      "name": "stage near page top",
+      "ok": true
+    },
+    {
+      "name": "daily cards below arena",
+      "ok": true
+    },
+    {
+      "name": "guest login gate present",
+      "ok": true
+    },
+    {
+      "name": "existing account/login link",
+      "ok": true
+    },
+    {
+      "name": "live chat polling successful",
+      "ok": true
+    },
+    {
+      "name": "focus keeps live chat",
+      "ok": true
+    },
+    {
+      "name": "HD remains only quality",
+      "ok": true
+    },
+    {
+      "name": "mobile chat below arena",
+      "ok": true
+    },
+    {
+      "name": "mobile no horizontal overflow",
+      "ok": false
+    }
+  ],
+  "errors": [],
+  "method": "Read-only public HTTPS and anonymous chat polling in Chromium. Frame callback disabled only for layout tests, not a GPU benchmark. No accounts or messages created.",
+  "chatResponses": 3,
+  "error": "mobile no horizontal overflow",
+  "checkedAt": "2026-11-07T04:19:50.610429+00:00"
+}
