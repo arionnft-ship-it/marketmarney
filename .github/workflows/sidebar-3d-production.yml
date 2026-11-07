@@ -1,0 +1,24 @@
+name: Verify deployed 3D sidebar
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chromium test tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Verify deployed sidebar, theme, navigation and untouched account/arenas
+        env:
+          SIDEBAR_PUBLIC: '1'
+          SIDEBAR_OUT: sidebar3d-production
+        run: python3 sidebar3d/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sidebar3d-production
+          path: sidebar3d-production
+          retention-days: 7
