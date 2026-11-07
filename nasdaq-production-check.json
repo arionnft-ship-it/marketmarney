@@ -1,0 +1,260 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/auth/android/config HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/content HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/nasdaq-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/nasdaq-war-layout.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/nasdaq-war-chat.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/xau-war-3d.html?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/oil-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/nasdaq-war/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "no invented price provider or session",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "FBS remains private",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ANASDAQ%3ANDX&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "NASDAQ:NDX readable as guest",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AHYPERLIQUID%3AWTI&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "HYPERLIQUID:WTI readable as guest",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "OANDA:XAUUSD readable as guest",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ABITSTAMP%3ABTCUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "BITSTAMP:BTCUSD readable as guest",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ANASDAQ%3AARBITRARY&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "production browser tests pass",
+      "ok": true
+    }
+  ],
+  "liveAvailable": false,
+  "scope": "Read-only public access checks and local browser DEMO. No live NASDAQ claim, login, wallet, public post or trading operation.",
+  "browser": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "live state remains waiting",
+        "ok": true
+      },
+      {
+        "name": "live price empty",
+        "ok": true
+      },
+      {
+        "name": "unavailable feed explicit",
+        "ok": true
+      },
+      {
+        "name": "no fabricated daily session",
+        "ok": true
+      },
+      {
+        "name": "no market websocket created",
+        "ok": true
+      },
+      {
+        "name": "no free starting tanks",
+        "ok": true
+      },
+      {
+        "name": "4 arena selectors",
+        "ok": true
+      },
+      {
+        "name": "NASDAQ selected",
+        "ok": true
+      },
+      {
+        "name": "dedicated NASDAQ room",
+        "ok": true
+      },
+      {
+        "name": "anonymous must log in to send",
+        "ok": true
+      },
+      {
+        "name": "desktop chat right",
+        "ok": true
+      },
+      {
+        "name": "HD only",
+        "ok": true
+      },
+      {
+        "name": "demo manual and labeled",
+        "ok": true
+      },
+      {
+        "name": "20 points moves demo by 20",
+        "ok": true
+      },
+      {
+        "name": "20 points triggers 4 infantry 1 tank",
+        "ok": true
+      },
+      {
+        "name": "demo close stops battle",
+        "ok": true
+      },
+      {
+        "name": "return to feed clears synthetic price",
+        "ok": true
+      },
+      {
+        "name": "mobile chat below",
+        "ok": true
+      },
+      {
+        "name": "mobile no horizontal overflow",
+        "ok": true
+      },
+      {
+        "name": "no layout/demo JS exceptions",
+        "ok": true
+      },
+      {
+        "name": "xau original scale preserved",
+        "ok": true
+      },
+      {
+        "name": "xau source preserved",
+        "ok": true
+      },
+      {
+        "name": "xau NASDAQ switch available",
+        "ok": true
+      },
+      {
+        "name": "btc original scale preserved",
+        "ok": true
+      },
+      {
+        "name": "btc source preserved",
+        "ok": true
+      },
+      {
+        "name": "btc NASDAQ switch available",
+        "ok": true
+      },
+      {
+        "name": "oil original scale preserved",
+        "ok": true
+      },
+      {
+        "name": "oil source preserved",
+        "ok": true
+      },
+      {
+        "name": "oil NASDAQ switch available",
+        "ok": true
+      },
+      {
+        "name": "normal 3D renderer advances",
+        "ok": true
+      },
+      {
+        "name": "no render JS exceptions",
+        "ok": true
+      }
+    ],
+    "errors": [],
+    "liveAvailable": false,
+    "scope": "NASDAQ live deliberately unavailable. Manual DEMO and layout tests. No login, posts or orders. Normal 3D checked separately using software rendering.",
+    "normalRender": {
+      "fps": 1,
+      "sceneTime": 1.2166,
+      "renderer": "webgl2",
+      "quality": "hd",
+      "drawCalls": 11
+    },
+    "checkedAt": "2026-11-07T17:04:18.880990+00:00"
+  },
+  "checkedAt": "2026-11-07T17:04:18.903909+00:00"
+}
