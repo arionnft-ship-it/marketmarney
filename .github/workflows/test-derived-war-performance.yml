@@ -4,6 +4,11 @@ on:
     branches: [fix/site-performance-audit-20261108]
     paths:
       - 'warxau-fbs/derived-software.cjs'
+      - 'warxau-fbs/btc-addon.cjs'
+      - 'warxau-fbs/oil-addon.cjs'
+      - 'warxau-fbs/nasdaq-addon.cjs'
+      - 'warxau-fbs/ihsg-addon.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
       - '.github/workflows/test-derived-war-performance.yml'
   workflow_dispatch:
 permissions: {contents: read}
@@ -15,7 +20,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - run: node --check warxau-fbs/derived-software.cjs
+      - run: |
+          for f in warxau-fbs/derived-software.cjs warxau-fbs/{btc,oil,nasdaq,ihsg}-addon.cjs; do node --check "$f"; done
+          node - <<'JS'
+          const assert=require('node:assert/strict'),fs=require('node:fs');
+          for(const market of ['btc','oil','nasdaq','ihsg']){
+            const s=fs.readFileSync('warxau-fbs/'+market+'-addon.cjs','utf8');
+            assert(s.includes("require('./derived-software.cjs').tuneDerivedSoftware("));
+            assert(s.includes(",'"+market+"')"));
+          }
+          assert(fs.readFileSync('warxau-fbs/Dockerfile.ihsg','utf8').includes('COPY warxau-fbs/derived-software.cjs ./'));
+          console.log('All derived War routes are wired to audited software optimization.');
+          JS
       - name: Fetch public arena pages and verify transformations, no feed mutations
         run: |
           mkdir -p perf-check

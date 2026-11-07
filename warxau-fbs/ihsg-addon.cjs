@@ -34,7 +34,7 @@ function makeIHSG(raw,enhance){
 }
 function createIHSG({appRoot=APP,assetRoot=__dirname,topchat=require('./topchat.cjs')}={}){
  const raw=fs.readFileSync(path.join(appRoot,'assets/xau-war-3d.html'));
- const page=Buffer.from(makeIHSG(raw,topchat.enhancePage));
+ const page=Buffer.from(require('./derived-software.cjs').tuneDerivedSoftware(makeIHSG(raw,topchat.enhancePage),'ihsg'));
  const layout=fs.readFileSync(path.join(assetRoot,'topchat-layout.js'),'utf8');
  const chat=topchat.chatSource(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.js'),'utf8')).replaceAll('XAU/USD','IHSG / IDX Composite');
  const routes=new Map([['/assets/ihsg-war-3d.html',[page,'text/html; charset=utf-8']],['/assets/ihsg-war-chat.js',[Buffer.from(chat),'text/javascript; charset=utf-8']]]);

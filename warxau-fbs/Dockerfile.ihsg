@@ -9,6 +9,7 @@ WORKDIR /opt/warxau-fbs
 COPY warxau-fbs/package.json warxau-fbs/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 COPY warxau-fbs/performance-runtime.cjs warxau-fbs/performance-news.cjs warxau-fbs/performance-warxau.cjs ./
+COPY warxau-fbs/derived-software.cjs ./
 COPY warxau-fbs/public-theme-light.cjs warxau-fbs/install-light-theme.cjs ./
 RUN node install-light-theme.cjs performance-runtime.cjs
 COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bootstrap.cjs ./

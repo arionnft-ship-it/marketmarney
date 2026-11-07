@@ -40,7 +40,7 @@ function makeOil(raw,feed,enhance){
 }
 function createOil({appRoot=APP,assetRoot=__dirname,topchat=require('./topchat.cjs')}={}){
  const read=f=>fs.readFileSync(path.join(assetRoot,f),'utf8'),raw=fs.readFileSync(path.join(appRoot,'assets/xau-war-3d.html'));
- const page=Buffer.from(makeOil(raw,read('oil-feed.js'),topchat.enhancePage));
+ const page=Buffer.from(require('./derived-software.cjs').tuneDerivedSoftware(makeOil(raw,read('oil-feed.js'),topchat.enhancePage),'oil'));
  const layout=read('topchat-layout.js'),chat=topchat.chatSource(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.js'),'utf8'));
  const oilLayout=layout.replaceAll('OANDA:XAUUSD','HYPERLIQUID:WTI').replaceAll('XAU/USD','WTI perpetual').replace('WarXAU:','OIL WAR:')+'\n'+NAV;
  const btcLayout=layout.replaceAll('OANDA:XAUUSD','BITSTAMP:BTCUSD').replaceAll('XAU/USD','BTC/USD').replace('WarXAU:','BTCUSD War:')+'\n'+NAV;

@@ -41,7 +41,7 @@ function makeBTC(raw,feed,enhance){
 }
 function createBTC({appRoot=APP,assetRoot=__dirname,topchat=require('./topchat.cjs')}={}){
  const read=f=>fs.readFileSync(path.join(assetRoot,f),'utf8'),raw=fs.readFileSync(path.join(appRoot,'assets/xau-war-3d.html'));
- const page=Buffer.from(makeBTC(raw,read('btc-feed.js'),topchat.enhancePage));
+ const page=Buffer.from(require('./derived-software.cjs').tuneDerivedSoftware(makeBTC(raw,read('btc-feed.js'),topchat.enhancePage),'btc'));
  const layout=read('topchat-layout.js');
  const btcLayout=layout.replaceAll('OANDA:XAUUSD','BITSTAMP:BTCUSD').replaceAll('XAU/USD','BTC/USD').replace('WarXAU:','BTCUSD War:')+'\n'+NAV;
  const chat=topchat.chatSource(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.js'),'utf8')).replaceAll('XAU/USD','BTC/USD');
