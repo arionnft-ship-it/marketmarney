@@ -23,9 +23,13 @@
     'mm_account_theme_v1', 'mm_journal_theme_v1', 'mm80-account-theme',
     'mm80-theme', 'mm-journal-theme', 'marketmarney-theme'
   ];
+  // Theme-state attributes also exist on <html>. Scope account/journal selectors
+  // to actual controls so normal navigation, forms and media clicks are untouched.
   var controlSelector = [
     '#theme', '#shTheme', '.sh-theme-switch', '.mm-theme-switch', '.mm80-themes', '.j-theme',
-    '[data-mm-theme-choice]', '[data-sh-theme]', '[data-ac-theme]', '[data-j-theme]',
+    '[data-mm-theme-choice]', '[data-sh-theme]',
+    'button[data-ac-theme]', '[role="button"][data-ac-theme]',
+    'button[data-j-theme]', '[role="button"][data-j-theme]',
     '[data-theme-toggle]', '[aria-label="Ganti tema"]', '[title="Ganti tema"]',
     '[aria-label="Tema gelap"]', '[title="Tema gelap"]'
   ].join(',');
