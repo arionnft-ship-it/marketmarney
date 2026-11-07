@@ -43,3 +43,99 @@ html[data-mm-theme="dark"] #sidebar[data-mm3d] .navbtn:focus-visible{outline-col
 @media(max-width:750px){html #sidebar[data-mm3d]{padding:18px 14px 26px;width:min(300px,86vw);height:100dvh;}html #sidebar[data-mm3d] .navbtn{min-height:53px;font-size:12px;gap:12px;padding-right:27px;}html #sidebar[data-mm3d] .navbtn small{font-size:9px!important;}html #sidebar[data-mm3d] .social-link{font-size:11px;}html #sidebar[data-mm3d] .sidecap{font-size:9px;}html #sidebar[data-mm3d] .mm3d-wordmark{font-size:21px;}}
 @media(prefers-reduced-motion:reduce){html #sidebar[data-mm3d],html #sidebar[data-mm3d] *{transition:none!important;animation:none!important;scroll-behavior:auto!important;}html #sidebar[data-mm3d] .navbtn:hover,html #sidebar[data-mm3d] .navbtn:active,html #sidebar[data-mm3d] .social-link:hover{transform:none!important;}}
 @media(forced-colors:active){html #sidebar[data-mm3d] .navbtn{border:1px solid ButtonText!important;box-shadow:none!important;}html #sidebar[data-mm3d] .navbtn.active{outline:2px solid Highlight;}html #sidebar[data-mm3d] .brand::after,html #sidebar[data-mm3d] .sidebottom::after{display:none;}}
+
+/* MarketMarney Soft Premium — reduce visual weight while keeping all navigation. */
+html #sidebar[data-mm3d]{
+ --s3-surface:linear-gradient(155deg,#fff 0%,#fbfbfc 100%);
+ --s3-bg:linear-gradient(170deg,#f8f9fa 0%,#f3f4f6 100%);
+ --s3-text:#364153;--s3-muted:#778290;--s3-border:#e0e5eb;--s3-edge:#e7ebef;
+ --s3-shadow:0 1px 3px rgba(34,44,56,.065),inset 0 1px 0 rgba(255,255,255,.7);
+ box-shadow:inset -1px 0 #fff,2px 0 11px rgba(21,32,49,.045)!important;
+ scrollbar-color:#c5cbd2 transparent;
+}
+html #sidebar[data-mm3d]::before{opacity:.22!important;width:1px!important;}
+html #sidebar[data-mm3d] .brand{min-height:67px;padding:10px;margin-bottom:13px;border-radius:12px;gap:8px;}
+html #sidebar[data-mm3d] .brand::after,
+html #sidebar[data-mm3d] .sidebottom::after{display:none!important;}
+html #sidebar[data-mm3d] .brand picture{flex-basis:37px;}
+html #sidebar[data-mm3d] .brand .brand-logo{width:37px;height:37px;}
+html #sidebar[data-mm3d] .mm3d-wordmark{font-size:17px;font-weight:760;letter-spacing:-.5px;text-shadow:none!important;}
+html #sidebar[data-mm3d] .mm3d-wordmark em{color:#b36e31;}
+html #sidebar[data-mm3d] .sidecap{margin-bottom:6px;padding-bottom:9px;letter-spacing:.85px;}
+html #sidebar[data-mm3d] .sidecap::after{height:1px;bottom:2px;background:linear-gradient(90deg,#c69352 0 24%,#d6dbe1 24% 100%);}
+html #sidebar[data-mm3d] #nav{gap:6px;}
+html #sidebar[data-mm3d] .navbtn{
+ min-height:45px;padding:6px 21px 6px 7px;gap:8px;
+ border-radius:10px;font-weight:680;letter-spacing:0;
+ box-shadow:var(--s3-shadow)!important;
+ transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease!important;
+}
+html #sidebar[data-mm3d] > .navbtn{margin-top:6px;}
+html #sidebar[data-mm3d] .navbtn::after{width:4px;height:4px;right:9px;border-width:1.5px;opacity:.43;}
+html #sidebar[data-mm3d] .navbtn .mm3d-label{text-shadow:none!important;line-height:1.35;}
+html #sidebar[data-mm3d] .navbtn > span:first-child,
+html #sidebar[data-mm3d] .navbtn .mm3d-icon{
+ flex:0 0 31px;width:31px;height:31px;min-width:31px;border-radius:8px;
+ background:linear-gradient(160deg,#fafbfc,#f1f3f5)!important;
+ box-shadow:none!important;border-color:#e7e9ed!important;
+}
+html #sidebar[data-mm3d] .mm3d-icon svg{width:27px;height:27px;filter:saturate(.62) opacity(.86);}
+html #sidebar[data-mm3d] .navbtn small{
+ background:#fff6e8!important;border-color:#f1d6b0!important;color:#856036!important;
+ box-shadow:none!important;font-weight:650!important;
+}
+html #sidebar[data-mm3d] .navbtn.active{
+ background:linear-gradient(145deg,#fff9f0,#fff0db)!important;
+ color:#705331!important;border-color:#eccca2!important;
+ box-shadow:inset 3px 0 #c89047,0 1px 3px rgba(127,91,47,.08)!important;
+}
+html #sidebar[data-mm3d] .navbtn.active .mm3d-icon{
+ background:linear-gradient(140deg,#fffdf8,#faeddb)!important;
+ border-color:#f1dec3!important;box-shadow:none!important;
+}
+html #sidebar[data-mm3d] .navbtn.active .mm3d-label{text-shadow:none!important;}
+@media(hover:hover) and (pointer:fine){
+ html #sidebar[data-mm3d] .navbtn:hover{transform:none!important;box-shadow:0 1px 4px rgba(34,44,56,.1)!important;border-color:#d4dbe2!important;}
+ html #sidebar[data-mm3d] .navbtn.active:hover{box-shadow:inset 3px 0 #c89047,0 1px 4px rgba(127,91,47,.12)!important;}
+}
+html #sidebar[data-mm3d] .navbtn:active{transform:none!important;box-shadow:inset 0 1px 3px rgba(34,44,56,.1)!important;}
+html #sidebar[data-mm3d] .sidebottom{padding:11px 10px;margin-top:14px;border-radius:11px;font-weight:700;letter-spacing:.15px;}
+html #sidebar[data-mm3d] .sidebottom > span{color:#916941!important;}
+html #sidebar[data-mm3d] .social-panel{margin:12px 0 3px;padding:10px 8px;border-radius:12px!important;}
+html #sidebar[data-mm3d] .social-label{margin-bottom:8px;letter-spacing:.75px;}
+html #sidebar[data-mm3d] .social-link,
+html #sidebar[data-mm3d] .social-link:last-child{
+ background:linear-gradient(160deg,#fff,#f3f5f7)!important;
+ color:#596575!important;
+ border:1px solid #e0e5eb!important;
+ box-shadow:0 1px 2px rgba(31,44,59,.06)!important;
+ min-height:34px;border-radius:8px;font-weight:700;
+}
+html #sidebar[data-mm3d] .social-link:last-child svg{filter:none;}
+html[data-mm-theme="dark"] #sidebar[data-mm3d]{
+ --s3-surface:linear-gradient(150deg,#242b35,#202731);
+ --s3-bg:linear-gradient(170deg,#1b222c,#171e27);
+ --s3-text:#edf0f3;--s3-muted:#aab5c2;--s3-border:#343c48;--s3-edge:#363f4b;
+ --s3-shadow:0 1px 3px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.025);
+ box-shadow:inset -1px 0 #303c49,2px 0 12px rgba(0,0,0,.15)!important;
+}
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .navbtn.active{
+ background:linear-gradient(150deg,#3a3228,#39302a)!important;color:#eacaa3!important;
+ border-color:#635039!important;box-shadow:inset 3px 0 #c08a4c,0 1px 3px #0003!important;
+}
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .navbtn > span:first-child,
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .navbtn .mm3d-icon{
+ background:linear-gradient(145deg,#333c47,#29313b)!important;border-color:#414b57!important;
+}
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .navbtn.active .mm3d-icon{
+ background:linear-gradient(145deg,#42392e,#39312b)!important;border-color:#5e503d!important;
+}
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .social-link,
+html[data-mm-theme="dark"] #sidebar[data-mm3d] .social-link:last-child{
+ background:linear-gradient(150deg,#313a45,#29323e)!important;
+ color:#d7dce5!important;border-color:#46505d!important;box-shadow:none!important;
+}
+@media(max-width:750px){
+ html #sidebar[data-mm3d] .navbtn{min-height:48px;gap:11px;padding-right:25px;}
+ html #sidebar[data-mm3d] .mm3d-wordmark{font-size:19px;}
+}
