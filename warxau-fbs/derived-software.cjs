@@ -16,12 +16,15 @@ function tuneDerivedSoftware(html,market){
  if(html.includes('data-mm-derived-software="'+VERSION+'"'))return html;
  let text=html;
  text=once(text,'if(this.gl)this.programFast=this.makeProgram(true);','this.programFast=null;');
+ // Software WebGL (SwiftShader/llvmpipe) is not a hardware-accelerated GPU.
+ // Use the existing fast shader and disable shadow passes only for this fallback.
+ text=once(text,"fastTier(){return this.quality==='eco';}","fastTier(){return this.quality==='eco'||this.softwareGL;}");
  text=once(text,'const p=(this.fastTier()?this.programFast:this.program)||this.program;',
   'if(this.fastTier()&&!this.programFast)this.programFast=this.makeProgram(true);const p=(this.fastTier()?this.programFast:this.program)||this.program;');
  text=once(text,'const ratio=Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);',
-  'const ratio=this.soft?Math.min(root.devicePixelRatio||1,.8,900/r.width,500/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);');
+  'const ratio=(this.soft||this.softwareGL)?Math.min(root.devicePixelRatio||1,.8,900/r.width,500/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);');
  text=once(text,"this.lowLOD=this.quality==='eco'||u.rank>0",
-  "this.lowLOD=this.soft||this.quality==='eco'||u.rank>0");
+  "this.lowLOD=this.soft||this.softwareGL||this.quality==='eco'||u.rank>0");
  text=once(text,' renderSoftware(){',
   ' renderSoftware(){\n  const softwareFrame=root.MMSoftwarePerformance.begin(this);if(softwareFrame.reuse)return;');
  text=once(text,'for(const group of Object.values(this.groups)){',
