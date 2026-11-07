@@ -12,7 +12,7 @@ function tests(){
  const ctx={Intl,Date,performance,console};ctx.globalThis=ctx;vm.createContext(ctx);for(const i of [1,2,3,19])vm.runInContext(after[i],ctx);
  const status=ctx.MMIHSG.diagnostics();ck('live unconfigured and no provider',status.liveAvailable===false&&status.provider===null&&status.symbol==='IHSG');
  ck('no quote callback in waiting adapter',!after[19].includes('onQuote'));
- const d=new ctx.MMCore.Demo(),q1=d.next(Date.now());ck('demo symbol IHSG',q1.symbol==='IHSG');ck('demo explicitly marked',q1.mode==='demo');ck('demo baseline is example 8000',d.price===8000);
+ const d=new ctx.MMCore.Demo();ck('demo baseline is example 8000',d.price===8000);const q1=d.next(Date.now());ck('demo symbol IHSG',q1.symbol==='IHSG');ck('demo explicitly marked',q1.mode==='demo');
  const now=Date.now(),q=(price,t)=>({symbol:'IHSG',price,timestamp:t,mode:'demo',provider:'DEMO'});
  let l=new ctx.MMDestruction.Ledger({pipSize:1});l.accept(q(8000,now-1),now);l.accept(q(8100,now),now);let s=l.snapshot();
  ck('100 points: 20 infantry',s.triggered.up.infantry===20);ck('100 points: 5 tanks',s.triggered.up.tank===5);ck('100 points: 2 heli 1 jet',s.triggered.up.heli===2&&s.triggered.up.jet===1);
