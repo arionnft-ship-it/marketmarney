@@ -1,0 +1,45 @@
+name: Verify deployed private FBS receiver
+on:
+  push:
+    branches: [warxau-hd-daily-v7-6-release]
+    paths: ['.github/workflows/check-warxau-fbs-public.yml']
+permissions:
+  contents: write
+jobs:
+  verify-public:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-hd-daily-v7-6-release
+      - name: Check health, private access controls and existing public pages
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json,hashlib,pathlib,datetime
+          result={'ok':False,'checks':[],'checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          items=[('GET','/_railway/health',200),('GET','/',200),('GET','/akun.html',200),('GET','/api/auth/android/config',200),('GET','/api/content',200),('GET','/assets/xau-war-3d.html?v=7.7',200),('GET','/api/xau-war/mt4/health',200),('GET','/api/xau-war/mt4/status',401),('GET','/api/xau-war/mt4/stream',401),('GET','/api/xau-war/mt4/arena',401),('POST','/api/xau-war/mt4/ingest',401),('GET','/api/xau-war/mt4/monitor',200)]
+          for method,path,expected in items:
+            req=urllib.request.Request('https://marketmarney.com'+path,method=method,headers={'User-Agent':'WarXAU-Private-Receiver-Check','Accept-Encoding':'identity','Content-Type':'application/json'},data=b'{}' if method=='POST' else None)
+            try:
+              with urllib.request.urlopen(req,timeout=20) as r:status=r.status;body=r.read(6300000)
+            except urllib.error.HTTPError as e:status=e.code;body=e.read(8192)
+            item={'path':path,'method':method,'status':status,'expected':expected,'ok':status==expected}
+            if path.startswith('/assets/xau-war-3d.html'):
+              item['sha256']=hashlib.sha256(body).hexdigest();item['ok']=item['ok'] and item['sha256']=='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212'
+            if path=='/api/xau-war/mt4/health':
+              item['receiver']=json.loads(body);item['ok']=item['ok'] and item['receiver'].get('publicDisplay') is False and item['receiver'].get('receiver')=='ready'
+            result['checks'].append(item)
+          result['ok']=all(c['ok'] for c in result['checks'])
+          result['note']='No broker credentials, relay keys or price samples sent. Real MT4 ticks still need user-side activation.'
+          pathlib.Path('warxau-fbs-public-check.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result))
+          if not result['ok']:raise SystemExit(1)
+          PY
+      - name: Store deployment check
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-fbs-public-check.json
+          git diff --cached --quiet || git commit -m 'Record private FBS receiver deployment checks'
+          git push origin HEAD:warxau-hd-daily-v7-6-release
