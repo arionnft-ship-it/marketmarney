@@ -106,7 +106,7 @@ jobs:
               dex=b''.join(archive.read(n) for n in archive.namelist() if n.endswith('.dex'))
               assert b'MarketMarneyAndroid/4.25 AppShell' in dex
               assert b'light425.js' in dex and b'light425.css' in dex
-              assert b'button.isConnected' in dex
+              assert b'button.isConnected' in dex and b'aria-current' in dex
           styles=(root/'app/src/main/res/values/styles.xml').read_text()+(root/'app/src/main/res/values-v31/styles.xml').read_text()
           assert '#061423' not in styles and styles.count('windowLightStatusBar">true')==2
           assert 'windowLightNavigationBar">true' in styles
@@ -115,13 +115,14 @@ jobs:
           print('Preserved source files:',len(manifest['preserved']))
           print('Verified APK assets:',len(expected))
           PYCODE
-      - name: Verify exact light-only web layer
+      - name: Verify exact light-only web layer and interactions
         shell: bash
         timeout-minutes: 5
         run: |
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check playwright
           python3 mobile425/visual_check425.py --apk deliver/Marney425.apk
+          python3 final425/interaction_check425.py --apk deliver/Marney425.apk
       - uses: actions/upload-artifact@v4
         with:
           name: Marney425-Final-APK-Final
@@ -215,7 +216,7 @@ jobs:
           sha256sum -c Marney425-SHA256.txt
           zip -9 Marney425.zip Marney425.apk Marney425-Panduan.md Marney425-SHA256.txt Marney425-Package.txt
           TAG=marney-v4.25-beta
-          NOTES='Marney 4.25 Light Only: seluruh antarmuka aplikasi dikunci ke tema terang, pilihan gelap dihapus, Reels memakai kontrol terang, perpindahan Beranda–Market Live tidak memuat ulang WebView, dan unggah media tetap langsung membuka galeri Android.'
+          NOTES='Marney 4.25 Light Only: seluruh antarmuka aplikasi dikunci ke tema terang, pilihan gelap dihapus tanpa memblokir kontrol lain, Reels memakai kontrol terang, perpindahan Beranda–Market Live tidak memuat ulang WebView, dan unggah media tetap langsung membuka galeri Android.'
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.25 Light Only' --notes "$NOTES" --prerelease
             gh release upload "$TAG" Marney425.apk Marney425.zip --repo "$GITHUB_REPOSITORY" --clobber
