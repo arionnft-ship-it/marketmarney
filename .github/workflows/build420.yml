@@ -1,0 +1,203 @@
+name: Marney 4.20 Performance and Access Repair
+on:
+  push:
+    branches: [android-v4.20-performance-fix]
+    paths: ['mobile420/**', '.github/workflows/build420.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney420-build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Reconstruct verified 4.19 source and apply reviewed repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          source = Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest() == '701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          assert not Path('android417').exists() and not Path('android419').exists() and not Path('android420').exists()
+          with ZipFile(source) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0] == 'android417': archive.extract(entry, '.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420
+          python3 mobile420/prepare420.py
+      - name: Compile the repaired APK and native integration tests
+        run: gradle --no-daemon --project-dir android420 :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verify the exact APK and package reproducible source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android420/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney420-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney420-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta420'" deliver/Marney420-Package.txt
+          grep -F "versionName='4.20.0-beta'" deliver/Marney420-Package.txt
+          cp "$APK" deliver/Marney420.apk
+          cp android420/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney420-Tests.apk
+          cp verified420.json mobile420/Marney420-Panduan.md deliver/
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import hashlib, json, re
+          manifest = json.loads(Path('verified420.json').read_text())
+          for name, digest in manifest['preserved'].items():
+              assert hashlib.sha256((Path('android420') / name).read_bytes()).hexdigest() == digest, name
+          apk_hash = hashlib.sha256(Path('deliver/Marney420.apk').read_bytes()).hexdigest()
+          Path('deliver/Marney420-SHA256.txt').write_text(apk_hash + '  Marney420.apk\n')
+          classes = ['Premium418Test','Branding417Test','GalleryPolicy415Test','Stability414Test','Navigation413Test','AdaptGuardTest','NativeRepair420Test','FullClient420Test']
+          count = sum(len(re.findall(r'@Test\b', (Path('android420/app/src/androidTest/java/com/marketmarney/mobile') / (c + '.java')).read_text())) for c in classes)
+          Path('testapk/classes.txt').write_text(','.join('com.marketmarney.mobile.' + c for c in classes))
+          Path('testapk/count.txt').write_text(str(count))
+          with ZipFile('deliver/Marney420-Source.zip', 'w', ZIP_DEFLATED) as archive:
+              for root in [Path('android420'), Path('mobile419'), Path('mobile420')]:
+                  for path in sorted(root.rglob('*')):
+                      if not path.is_file() or any(p in path.parts for p in ['build','.gradle','.git','__pycache__']): continue
+                      if path.suffix in ['.jks','.keystore'] or path.name in ['local.properties','.env']: continue
+                      archive.write(path,path)
+              workflow = Path('.github/workflows/build420.yml')
+              archive.write(workflow,workflow)
+          print('APK SHA-256:', apk_hash)
+          print('Native regression and real-client integration tests:', count)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney420-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney420-Final-Test-APK
+          path: testapk/
+          if-no-files-found: error
+  real-client:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney420-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13581255651'
+          run-id: 42389241507
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: baseline419
+      - name: Exercise full packaged clients with explicit read-only fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright==1.56.0
+          cd apk
+          sha256sum -c Marney420-SHA256.txt
+          cd ..
+          timeout --signal=TERM --kill-after=10s 90s python3 -u mobile420/test_repair420.py --apk baseline419/Marney419.apk --baseline-probe --out quality420-ui/baseline419
+          timeout --signal=TERM --kill-after=10s 260s python3 -u mobile420/test_repair420.py --apk apk/Marney420.apk --out quality420-ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney420-Full-Client-Evidence
+          path: quality420-ui/
+          if-no-files-found: error
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney420-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney420-Final-Test-APK
+          path: testapk
+      - name: Prepare tests of the exact final APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apk
+          sha256sum -c Marney420-SHA256.txt
+          cd ..
+          cat > test.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality420-android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney420.apk
+          adb install -r testapk/Marney420-Tests.apk
+          adb shell dumpsys webviewupdate > quality420-android/webview-version.txt
+          adb logcat -c
+          CLASSES="$(cat testapk/classes.txt)"
+          COUNT="$(cat testapk/count.txt)"
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta420.test/androidx.test.runner.AndroidJUnitRunner | tee quality420-android/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta420/files/ quality420-android/ || true
+          adb logcat -d -s AndroidRuntime:E MM45_NAV:I > quality420-android/runtime.log
+          grep -F "OK ($COUNT tests)" quality420-android/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney420-Android-${{ matrix.api }}-Evidence
+          path: quality420-android/
+          if-no-files-found: error
