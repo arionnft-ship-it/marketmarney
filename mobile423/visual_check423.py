@@ -130,6 +130,7 @@ PROBE = """selector => {
     overflowPx:Math.max(0,h.scrollWidth-innerWidth),depth:h.dataset.mmDepth,
     page:h.dataset.mmDepthPage,tone:h.dataset.mmDepthTone,
     publicTheme:h.dataset.mmTheme,newsTheme:h.dataset.theme,traderTheme:h.dataset.traderTheme,
+    journalTheme:h.dataset.journalTheme,
     reels:h.hasAttribute('data-mm46-reels'),styleCopies:document.querySelectorAll('#mm423-depth').length};
 }"""
 
@@ -156,6 +157,26 @@ class Preview:
                 return
             await page.wait_for_timeout(80)
         raise TimeoutError("Condition did not become ready: " + expression)
+
+    async def settle_theme_transitions(self, page):
+        # Existing reduced-motion CSS still permits a short transition frame.
+        # Observe its finished state without changing styles or stopping animations.
+        await asyncio.wait_for(page.evaluate("""async () => {
+          let timer;
+          const settle=(async()=>{
+            void document.documentElement.offsetWidth;
+            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+            const pending=()=>document.getAnimations().filter(a=>a instanceof CSSTransition &&
+              a.playState!=='finished' && a.playState!=='idle');
+            await Promise.all(pending().map(a=>a.finished.catch(()=>{})));
+            if(pending().length)throw new Error('Theme CSS transitions remain unsettled');
+          })();
+          try{
+            await Promise.race([settle,new Promise((resolve,reject)=>{
+              timer=setTimeout(()=>reject(new Error('Theme CSS transitions did not settle within 1 second')),1000);
+            })]);
+          }finally{clearTimeout(timer);}
+        }"""), timeout=2)
 
     async def adapt(self, page):
         self.check("Adaptation stays on the owned HTTPS origin",
@@ -315,9 +336,11 @@ class Preview:
                 await self.adapt(page)
                 await page.locator('[' + button_attr + '="' + first + '"]').first.evaluate("n=>n.click()")
                 await self.wait(page, "document.documentElement.dataset[" + json.dumps(attribute) + "]===" + json.dumps(first))
+                await self.settle_theme_transitions(page)
                 before = await self.surface(page, label + " " + first + " guest card", selector, gradient=True)
                 await page.locator('[' + button_attr + '="' + second + '"]').first.evaluate("n=>n.click()")
                 await self.wait(page, "document.documentElement.dataset[" + json.dumps(attribute) + "]===" + json.dumps(second))
+                await self.settle_theme_transitions(page)
                 after = await self.surface(page, label + " " + second + " guest card", selector, gradient=True)
                 self.check(label + " existing theme control changes the material", before["background"] != after["background"])
                 for state in (before, after):
@@ -361,6 +384,7 @@ class Preview:
             await self.shot(page, "depth423-news.png")
             await page.locator("#theme").click()
             await self.wait(page, "document.documentElement.dataset.theme==='light'")
+            await self.settle_theme_transitions(page)
             light = await self.surface(page, "News light card", "#list article.featured", gradient=True)
             self.check("News theme control changes the material", light["background"] != dark["background"])
             await page.locator("#search").fill("emas")
