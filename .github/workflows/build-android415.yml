@@ -1,0 +1,169 @@
+name: Marney 4.15 Direct Gallery
+on:
+  push:
+    branches: [android-v4.15-gallery]
+    paths: ['mobile415/**', '.github/workflows/build-android415.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: marney415-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Final-APK
+          run-id: 42317743384
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base414
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Verify base and apply gallery-only patch
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base414/Marney414.apk').read_bytes()).hexdigest()=='799382e726955024f9a6abc5022edfb305c7d82f9d53a63cf283dfd3410f1668'
+          with ZipFile('base414/Marney414-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 mobile415/prepare415.py android43
+          cp mobile415/*Test.java android43/app/src/androidTest/java/com/marketmarney/mobile/
+          sed -i 's/4.14.0-beta/4.15.0-beta/g' android43/app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java
+      - name: Compile app, instrumentation tests and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify package and unchanged assets
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney415-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney415-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta415'" deliver/Marney415-Package.txt
+          grep -F "versionName='4.15.0-beta'" deliver/Marney415-Package.txt
+          cp "$APK" deliver/Marney415.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney415-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney415-Lint.html
+          cp preserved415.json deliver/
+          sha256sum deliver/Marney415.apk > deliver/Marney415-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import hashlib,json
+          for n,h in json.loads(Path('preserved415.json').read_text()).items():assert hashlib.sha256((Path('android43')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('deliver/Marney415-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile415')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix.lower() in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          Path('deliver/Marney415-Panduan.md').write_text('''# Marney 4.15 Galeri
+          Tombol pemilihan foto/video membuka Photo Picker Android langsung, tanpa menambahkan menu pemilih aplikasi.
+          Foto untuk unggahan gambar dan avatar; video MP4 untuk Reels; gambar/video untuk Story. PDF dan dokumen tetap menggunakan pemilih berkas.
+          Di perangkat lama tanpa Photo Picker, AndroidX membuka pemilih dokumen/media sistem. Tampilan mengikuti perangkat dan versi Android.
+          Tidak meminta izin baca seluruh galeri, tidak memindai foto, tidak menyalin media privat ke paket dan tidak mengunggah apa pun yang belum dipilih pengguna.
+          Metadata URI yang dipilih diperiksa di luar thread UI. Batal mengembalikan form tanpa pilihan; hasil usang setelah berpindah halaman ditolak.
+          Perilaku unggah setelah pemilihan tetap mengikuti form lama: beberapa foto dilampirkan/dikirim sebagai media setelah dipilih; Story tetap mengikuti tombol kirimnya. Tidak mengubah endpoint upload atau izin akun.
+          Lima menu, 86 aset UI, Reels, grup, profil, animasi pembuka dan login utama tidak diubah.
+          Paket uji terpisah com.marketmarney.mobile.beta415, versionCode 19. Buka aplikasi bernama Marney 4.15 Galeri. Jangan hapus aplikasi utama/stabil.
+          Google Login native belum terdaftar untuk paket beta415; sesi login tidak otomatis berpindah. Akun Google-only tidak otomatis punya kata sandi.
+          Tidak mengubah website, Railway, database, Google Cloud atau memublikasikan ke toko aplikasi.
+          ''')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney415-Beta-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney415-Test-APK
+          path: testapk/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Marney415-Build-Diagnostics
+          path: android43/app/build/reports/
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [35,29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney415-Beta-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney415-Test-APK
+          path: testapk
+      - name: Prepare permission and gallery checks
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          cat > test415.sh <<'SH'
+          set -euo pipefail
+          mkdir -p evidence
+          adb shell wm size 480x960
+          adb shell wm density 200
+          adb install -r apk/Marney415.apk
+          adb install -r testapk/Marney415-Tests.apk
+          adb logcat -c
+          if [ "$API" = "35" ]; then
+            CLASS=com.marketmarney.mobile.GalleryPolicy415Test,com.marketmarney.mobile.GalleryUi415Test,com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest
+            COUNT=41
+          else
+            CLASS=com.marketmarney.mobile.GalleryPolicy415Test
+            COUNT=16
+          fi
+          adb shell am instrument -w -r -e class "$CLASS" com.marketmarney.mobile.beta415.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta415/files/gallery-tests evidence/ || true
+          adb logcat -d -s AndroidRuntime:E chromium:E > evidence/runtime.log
+          grep -F "OK ($COUNT tests)" evidence/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Run same signed APK on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          API: ${{ matrix.api }}
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test415.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney415-Android-${{ matrix.api }}-Evidence
+          path: evidence/
