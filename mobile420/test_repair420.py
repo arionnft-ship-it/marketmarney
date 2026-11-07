@@ -399,6 +399,10 @@ async def healthy(case):
     await p.locator("#mm44-create-menu [data-mm420-account]").click(timeout=2500)
     await p.locator("#shMobileAccountDialog").wait_for(state="visible", timeout=2500)
     case.check("Drawer keeps the existing interactive form", await original_form.evaluate("n=>n===document.getElementById('shFriendSearch') && !!n.closest('#shMobileAccountDialog')"))
+    # The original mobile drawer intentionally starts its panels collapsed.
+    if await p.locator("#shFriendToggle").get_attribute("aria-expanded") == "false":
+        await p.locator("#shFriendToggle").click(timeout=2500)
+    await p.locator("#shFriendQuery").wait_for(state="visible", timeout=2500)
     await case.screenshot("drawer")
     await p.locator("#shFriendQuery").fill("qa")
     await p.locator("#shFriendQuery").press("Enter")

@@ -50,6 +50,9 @@ jobs:
         run: |
           timeout --signal=TERM --kill-after=10s 90s python3 -u mobile420/test_repair420.py --apk baseline419/Marney419.apk --baseline-probe --out quality420-preflight/baseline419
           timeout --signal=TERM --kill-after=10s 260s python3 -u mobile420/test_repair420.py --assets android419/app/src/main/assets --out quality420-preflight
+      - name: Verify live Home and Market hash navigation
+        if: always()
+        run: timeout --signal=TERM --kill-after=10s 50s python3 -u mobile420/check_home_routing.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
