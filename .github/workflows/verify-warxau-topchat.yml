@@ -1,0 +1,35 @@
+name: Verify WarXAU arena and chat
+on:
+  push:
+    branches: [warxau-arena-chat-v7-8]
+    paths: ['.github/workflows/verify-warxau-topchat.yml', 'warxau-fbs/topchat*', 'warxau-fbs/start-topchat.cjs', 'warxau-fbs/verify-topchat.cjs']
+permissions:
+  contents: write
+concurrency:
+  group: warxau-topchat-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-arena-chat-v7-8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check all addon JavaScript
+        run: |
+          node --check warxau-fbs/topchat.cjs
+          node --check warxau-fbs/topchat-layout.js
+          node --check warxau-fbs/start-topchat.cjs
+          node warxau-fbs/verify-topchat.cjs
+      - name: Record verification without public message contents
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-topchat-verify.json
+          git diff --cached --quiet || git commit -m 'Record WarXAU layout/chat compatibility and access checks'
+          git push origin HEAD:warxau-arena-chat-v7-8
