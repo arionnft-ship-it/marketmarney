@@ -1,0 +1,166 @@
+{
+  "ok": true,
+  "release": "public-first-visit-light-20261108-v1",
+  "checks": [
+    {
+      "name": "new-dark-OS selected correctly",
+      "ok": true
+    },
+    {
+      "name": "new-dark-OS does not overwrite saved choice",
+      "ok": true
+    },
+    {
+      "name": "new-dark-OS button synchronized",
+      "ok": true
+    },
+    {
+      "name": "new-dark-OS first-visit marker present",
+      "ok": true
+    },
+    {
+      "name": "initial page background is light",
+      "ok": true
+    },
+    {
+      "name": "switch to dark saves choice",
+      "ok": true
+    },
+    {
+      "name": "reload keeps dark",
+      "ok": true
+    },
+    {
+      "name": "switch back to light saves choice",
+      "ok": true
+    },
+    {
+      "name": "news navigation stays light",
+      "ok": true
+    },
+    {
+      "name": "reload keeps light",
+      "ok": true
+    },
+    {
+      "name": "new-light-OS selected correctly",
+      "ok": true
+    },
+    {
+      "name": "new-light-OS does not overwrite saved choice",
+      "ok": true
+    },
+    {
+      "name": "new-light-OS button synchronized",
+      "ok": true
+    },
+    {
+      "name": "new-light-OS first-visit marker present",
+      "ok": true
+    },
+    {
+      "name": "existing-dark selected correctly",
+      "ok": true
+    },
+    {
+      "name": "existing-dark does not overwrite saved choice",
+      "ok": true
+    },
+    {
+      "name": "existing-dark button synchronized",
+      "ok": true
+    },
+    {
+      "name": "existing-dark first-visit marker present",
+      "ok": true
+    },
+    {
+      "name": "existing-light selected correctly",
+      "ok": true
+    },
+    {
+      "name": "existing-light does not overwrite saved choice",
+      "ok": true
+    },
+    {
+      "name": "existing-light button synchronized",
+      "ok": true
+    },
+    {
+      "name": "existing-light first-visit marker present",
+      "ok": true
+    },
+    {
+      "name": "invalid-choice selected correctly",
+      "ok": true
+    },
+    {
+      "name": "invalid-choice does not overwrite saved choice",
+      "ok": true
+    },
+    {
+      "name": "invalid-choice button synchronized",
+      "ok": true
+    },
+    {
+      "name": "invalid-choice first-visit marker present",
+      "ok": true
+    },
+    {
+      "name": "mobile new visitor light",
+      "ok": true
+    },
+    {
+      "name": "no browser JavaScript exceptions",
+      "ok": true
+    },
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/news-war-performance-version.json HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "account page unaffected by public theme policy",
+      "ok": true
+    },
+    {
+      "name": "/api/nasdaq-war/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/ihsg-war/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "FBS remains private",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "legacy theme endpoint updated",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "mode": "production",
+  "method": "Anonymous browser checks. Only browser-local theme preferences are changed; no account, order or public content writes.",
+  "checkedAt": "2026-11-07T19:06:47.983784+00:00"
+}
