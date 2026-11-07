@@ -1,0 +1,50 @@
+name: Inspect public War engine anchors
+on:
+  push:
+    branches: [fix/site-performance-audit-20261108]
+    paths: ['.github/workflows/inspect-war-software.yml']
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Analyze published public War pages (no user/private data)
+        run: |
+          mkdir -p war-engine-report
+          python3 - <<'PY'
+          import urllib.request,re,json,pathlib
+          out={}
+          anchors=[
+           'renderSoftware(){',
+           'if(this.gl)this.programFast=this.makeProgram(true);',
+           'const ratio=Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);',
+           "this.lowLOD=this.quality==='eco'||u.rank>0",
+           'for(const group of Object.values(this.groups)){',
+           'const verts=group.geometry.vertices,ids=group.geometry.indices;',
+           'const off=instance*20,m=group.data.subarray(off,off+16),col=group.data.subarray(off+16,off+20);',
+           'this.drawCalls=polys.length;',
+           'window.MMAshfallAssets=',
+          ]
+          for market in ['xau','btc','oil','nasdaq','ihsg']:
+            url='https://marketmarney.com/assets/'+market+'-war-3d.html'
+            try:
+              req=urllib.request.Request(url,headers={'User-Agent':'MarketMarneyWarPerfAudit','Accept-Encoding':'identity'})
+              with urllib.request.urlopen(req,timeout=30) as r:s=r.read(5500000).decode('utf8')
+              out[market]={'bytes':len(s),'scripts':len(re.findall(r'<script\b',s)),'anchors':{k:s.count(k) for k in anchors}}
+              contexts={}
+              for k in anchors:
+                j=s.find(k)
+                if j>=0:contexts[k]=s[max(0,j-125):j+300].replace('\n',' ')[:420]
+              out[market]['contexts']=contexts
+              if market=='btc':pathlib.Path('war-engine-report/btc-public.html').write_text(s)
+            except Exception as e:out[market]={'error':str(e)}
+          pathlib.Path('war-engine-report/anchors.json').write_text(json.dumps(out,indent=2))
+          for market,v in out.items():print(json.dumps({'market':market,'bytes':v.get('bytes'),'scripts':v.get('scripts'),'anchors':v.get('anchors'),'error':v.get('error')}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marketmarney-war-engine-inspection
+          path: war-engine-report/
+          retention-days: 5
