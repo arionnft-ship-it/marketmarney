@@ -1,0 +1,92 @@
+name: Test low-overhead derived War renderer
+on:
+  push:
+    branches: [fix/site-performance-audit-20261108]
+    paths:
+      - 'warxau-fbs/derived-software.cjs'
+      - '.github/workflows/test-derived-war-performance.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node --check warxau-fbs/derived-software.cjs
+      - name: Fetch public arena pages and verify transformations, no feed mutations
+        run: |
+          mkdir -p perf-check
+          python3 - <<'PY'
+          import urllib.request,json,pathlib
+          from urllib.error import HTTPError
+          d={}
+          for market in ['btc','oil','nasdaq','ihsg']:
+            with urllib.request.urlopen('https://marketmarney.com/assets/'+market+'-war-3d.html',timeout=30) as r:raw=r.read(5_000_000)
+            pathlib.Path('perf-check/'+market+'.html').write_bytes(raw)
+            d[market]=len(raw)
+          pathlib.Path('perf-check/original-bytes.json').write_text(json.dumps(d))
+          print(d)
+          PY
+          node <<'JS'
+          const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+          const {tuneDerivedSoftware,VERSION}=require('./warxau-fbs/derived-software.cjs');
+          const markets=['btc','oil','nasdaq','ihsg'];
+          for(const market of markets){
+            const raw=fs.readFileSync('perf-check/'+market+'.html','utf8'),next=tuneDerivedSoftware(raw,market);
+            assert(next.includes('data-mm-derived-software="'+VERSION+'"'));
+            assert.equal(tuneDerivedSoftware(next,market),next);
+            assert(raw.includes('window.MMAshfallAssets='),market+' baseline textures');
+            assert(next.includes('window.MMAshfallAssets='),market+' textures retained');
+            assert(raw.includes('class PremiumRenderer extends Base'),market+' renderer');
+            assert(next.includes('class PremiumRenderer extends Base'),market+' renderer retained');
+            assert(next.includes('if(root.MMSoftwarePerformance.outside('),market+' culling');
+            assert(next.includes('root.MMSoftwarePerformance.remember(this)'),market+' cache');
+            assert.equal(raw.split('https://api.gold-api.com/price/XAU').length,next.split('https://api.gold-api.com/price/XAU').length);
+            assert.equal((raw.match(/<script\b/gi)||[]).length+1,(next.match(/<script\b/gi)||[]).length);
+            for(const script of next.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
+              if(!/\bsrc\s*=/.test(script[1]))new vm.Script(script[2],{filename:market+'.js'});
+            }
+            fs.writeFileSync('perf-check/'+market+'-optimized.html',next);
+            console.log(market,raw.length,'->',next.length,'valid');
+          }
+          JS
+      - run: pip install playwright==1.56.0 && python -m playwright install chromium --with-deps
+      - name: Benchmark untuned versus tuned BTC renderer and inspect navigation
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          from playwright.sync_api import sync_playwright
+          base='https://marketmarney.com/assets/btc-war-3d.html'
+          opt=pathlib.Path('perf-check/btc-optimized.html').read_text()
+          results=[]
+          with sync_playwright() as p:
+            browser=p.chromium.launch(args=['--no-sandbox','--disable-dev-shm-usage'])
+            for kind in ['baseline','optimized']:
+              ctx=browser.new_context(viewport={'width':1200,'height':760},service_workers='block')
+              page=ctx.new_page()
+              errors=[];page.on('pageerror',lambda e:errors.append(str(e)[:250]))
+              page.add_init_script("window.__perfLong=[];new PerformanceObserver(x=>{for(const y of x.getEntries())window.__perfLong.push(Math.round(y.duration))}).observe({entryTypes:['longtask']});")
+              if kind=='optimized':
+                ctx.route(base,lambda route:route.fulfill(status=200,content_type='text/html',body=opt))
+              page.goto(base,wait_until='domcontentloaded',timeout=45000)
+              page.wait_for_timeout(5500)
+              sums=page.evaluate("() => ({long:window.__perfLong,inner:document.documentElement.innerHTML.length,renderer:!!window.MMSoftwarePerformance,market:document.title,links:[...document.querySelectorAll('#war-market-selector a')].map(x=>x.href)})")
+              results.append({'mode':kind,**sums,'errors':errors})
+              page.screenshot(path='perf-check/'+kind+'-btc.png',timeout=20000)
+              ctx.close()
+            browser.close()
+          pathlib.Path('perf-check/benchmark.json').write_text(json.dumps(results,indent=2))
+          for x in results:print(json.dumps({'mode':x['mode'],'longCount':len(x['long']),'longTotalMs':sum(x['long']),'longMaxMs':max(x['long'] or [0]),'hasOptimizer':x['renderer'],'jsErrors':x['errors'],'market':x['market']})[:2500])
+          assert not results[-1]['errors'],'new JavaScript errors'
+          assert results[-1]['renderer'],'missing software helper'
+          assert 'BTC' in results[-1]['market'].upper(),'wrong market'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-derived-war-benchmark
+          path: perf-check/
+          retention-days: 5
