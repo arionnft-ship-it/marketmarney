@@ -1,0 +1,58 @@
+name: Check email OTP preparation
+on:
+  push:
+    branches: [feature/social-marney-email-otp-20261108]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax and compatible build hooks
+        run: |
+          for f in signup/*.cjs signup/otp/*.cjs; do node --check "$f"; done
+          node signup/otp/install.cjs
+          node signup/otp/install.cjs
+          node --check signup/patches.cjs
+          node --check signup/account-page.cjs
+      - name: Test synthetic OTP challenges without sending email
+        run: |
+          node <<'JS'
+          const assert=require('node:assert/strict');
+          const {DatabaseSync}=require('node:sqlite');
+          const {createEmailOtp,TTL}=require('./signup/otp/core.cjs');
+          const {emailAddress}=require('./signup/requirements.cjs');
+          (async()=>{
+           const db=new DatabaseSync(':memory:');let now=Date.now();const sent=[];
+           const off=createEmailOtp({db,normalizeEmail:emailAddress,env:{}});assert.equal(off.info().required,false);
+           const unavailable=createEmailOtp({db,normalizeEmail:emailAddress,env:{MM_SIGNUP_EMAIL_OTP:'required'}});
+           assert.equal(unavailable.info().available,false);await assert.rejects(unavailable.issue({headers:{}},'qa@example.com','qa'),e=>e.status===503);
+           const otp=createEmailOtp({db,normalizeEmail:emailAddress,env:{MM_SIGNUP_EMAIL_OTP:'required',MM_OTP_SECRET:'a'.repeat(64)},clock:()=>now,mailer:{ready:true,async send(m){sent.push(m);}}});
+           const first=await otp.issue({headers:{}},'qa@example.com','test-source');
+           assert.match(sent[0].code,/^\d{6}$/);assert.match(first.cookie,/HttpOnly/);assert.match(first.cookie,/Secure/);
+           assert(!JSON.stringify(first.body).includes(sent[0].code));
+           const req={headers:{cookie:first.cookie.split(';')[0]}},payload={otpChallenge:first.body.challengeId,otpCode:sent[0].code};
+           assert.throws(()=>otp.check({headers:{}},payload,'qa@example.com','test-source'));
+           assert.throws(()=>otp.check(req,payload,'other@example.com','test-source'));
+           const ticket=otp.check(req,payload,'qa@example.com','test-source');assert.throws(()=>otp.consume(ticket));
+           db.exec('BEGIN IMMEDIATE');otp.consume(ticket);db.exec('ROLLBACK');
+           otp.check(req,payload,'qa@example.com','test-source');
+           db.exec('BEGIN IMMEDIATE');otp.consume(ticket);db.exec('COMMIT');
+           assert.throws(()=>otp.check(req,payload,'qa@example.com','test-source'));
+           await assert.rejects(otp.issue(req,'qa@example.com','test-source'),e=>e.status===429);
+           now+=61000;const second=await otp.issue(req,'qa@example.com','test-source'),code=sent.at(-1).code;
+           const wrong={otpChallenge:second.body.challengeId,otpCode:code==='111111'?'222222':'111111'};
+           for(let i=0;i<5;i++)assert.throws(()=>otp.check(req,wrong,'qa@example.com','test-source'));
+           assert.throws(()=>otp.check(req,{...wrong,otpCode:code},'qa@example.com','test-source'));
+           now+=61000;const third=await otp.issue(req,'qa@example.com','test-source'),latest=sent.at(-1).code;now+=TTL;
+           assert.throws(()=>otp.check(req,{otpChallenge:third.body.challengeId,otpCode:latest},'qa@example.com','test-source'));
+           assert.equal(sent.length,3);db.close();
+           console.log('OTP safety checks passed; synthetic database and sender only. No deployment or real email.');
+          })().catch(e=>{console.error(e);process.exit(1);});
+          JS
