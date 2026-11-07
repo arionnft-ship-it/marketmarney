@@ -1,0 +1,1 @@
+Final Marney 4.25 verification: scoped theme controls, visible root document, normal button clicks, shared Home/Market navigation, Reels light UI, and direct gallery uploads.
