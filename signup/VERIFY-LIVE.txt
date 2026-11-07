@@ -1,0 +1,4 @@
+Verify live release 9bf265c1c9f627d84851975267b533e71a594f28.
+Railway deployment f6f9188a-65c8-4c38-88d5-4e17a1bf9542 reported SUCCESS.
+Runtime log confirmed MM_SIGNUP_NAME_EMAIL_READY.
+The verification workflow uses only GET/HEAD against the live website. Form submissions are mocked; no real user accounts or emails are created.
