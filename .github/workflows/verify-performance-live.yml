@@ -1,0 +1,80 @@
+name: Verify MarketMarney performance release on live website
+on:
+  push:
+    branches: [verify/site-performance-live-20261108]
+    paths: ['.github/workflows/verify-performance-live.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Check public HTTP routes and release markers (no writes)
+        run: |
+          mkdir -p perf-live
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error,pathlib
+          base='https://marketmarney.com';checks=[]
+          def check(label,val):
+            checks.append({'check':label,'ok':bool(val)})
+            assert val,label
+          def get(path):
+            req=urllib.request.Request(base+path,headers={'User-Agent':'MarketMarneyPerformanceRelease/1.0','Cache-Control':'no-cache'})
+            try:
+              with urllib.request.urlopen(req,timeout=25) as r:return r.status,dict(r.headers),r.read(5_000_000)
+            except urllib.error.HTTPError as e:return e.code,dict(e.headers),e.read(500000)
+          for p in ['/','/beranda-trader.html','/akun.html','/_railway/health','/api/discussions','/api/content','/api/btc-war/clock','/api/oil-war/clock','/api/nasdaq-war/status','/api/ihsg-war/status']:
+            status,_,body=get(p);check('public GET '+p,status==200)
+          for p in ['/api/xau-war/mt4/arena','/api/xau-war/mt4/status','/api/xau-war/mt4/stream']:
+            status,_,_=get(p);check('private MT4 remains unauthorized '+p,status==401)
+          status,_,body=get('/api/community/status');data=json.loads(body)
+          check('signup OTP still required',status==200 and data.get('emailOtp',{}).get('required') is True)
+          check('password recovery still required',data.get('passwordRecovery',{}).get('required') is True)
+          status,_,body=get('/assets/marney-sidebar3d-v1.css')
+          check('soft sidebar is retained',status==200 and b'MarketMarney Soft Premium' in body)
+          status,_,body=get('/assets/xau-war-3d.html')
+          check('optimized WarXAU is active',status==200 and b'data-warxau-performance="20261108-5"' in body)
+          for market in ['btc','oil','nasdaq','ihsg']:
+            status,_,body=get('/assets/'+market+'-war-3d.html')
+            check('optimized '+market+' is active',status==200 and b'data-mm-derived-software="derived-software-20261108-v1"' in body)
+            check('market selector still present '+market,b'war-market-selector' in body)
+          pathlib.Path('perf-live/route-report.json').write_text(json.dumps(checks,indent=2))
+          print(json.dumps({'checksPassed':len(checks),'status':'ok','readOnly':True}))
+          PY
+      - name: Install Chromium
+        run: pip install playwright==1.56.0 && python -m playwright install chromium --with-deps
+      - name: Browser smoke test of War arenas (anonymous, no writes)
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          from playwright.sync_api import sync_playwright
+          base='https://marketmarney.com';results=[]
+          with sync_playwright() as p:
+            browser=p.chromium.launch(args=['--no-sandbox','--disable-dev-shm-usage'])
+            for name in ['xau','btc','oil','nasdaq','ihsg']:
+              ctx=browser.new_context(viewport={'width':390,'height':844},service_workers='block')
+              page=ctx.new_page();errors=[]
+              page.on('pageerror',lambda ex:errors.append(str(ex)[:240]))
+              page.add_init_script("window.__mmTasks=[];new PerformanceObserver(e=>{for(const x of e.getEntries())window.__mmTasks.push(Math.round(x.duration))}).observe({entryTypes:['longtask']});")
+              page.goto(base+'/assets/'+name+'-war-3d.html',wait_until='domcontentloaded',timeout=45000)
+              page.wait_for_timeout(2800)
+              d=page.evaluate("""() => ({title:document.title,helper:!!window.MMSoftwarePerformance,marketLinks:document.querySelectorAll('#war-market-selector a').length,longTasks:window.__mmTasks})""")
+              relevant=[x for x in errors if "serviceWorker" not in x or "context is sandboxed" not in x]
+              results.append({'market':name,'title':d['title'],'helper':d['helper'],'links':d['marketLinks'],'longTaskMaxMs':max(d['longTasks'] or [0]),'longTaskCount':len(d['longTasks']),'errors':relevant})
+              assert not relevant,(name,relevant)
+              assert name=='xau' or d['helper'],name+' missing optimized renderer'
+              ctx.close()
+            browser.close()
+          pathlib.Path('perf-live/browser-report.json').write_text(json.dumps(results,indent=2))
+          print(json.dumps(results))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-performance-live-verification
+          path: perf-live/
+          retention-days: 7
