@@ -70,7 +70,7 @@ async function completePasswordReset(){
  if(processing)return;
  const email=$('mmForgotEmail').value.trim(),code=$('mmForgotOtp').value.trim(),next=$('mmForgotNewPassword').value,confirm=$('mmForgotConfirmPassword').value;
  if(!forgotChallenge||email!==forgotEmail||Date.now()>=forgotExpiresAt){passwordStatus('mmForgotStatus','Kode tidak tersedia atau sudah kedaluwarsa. Kirim ulang kode.',true);return;}
- if(!/^\d{6}$/.test(code)){passwordStatus('mmForgotStatus','Masukkan kode OTP enam digit.',true);$('mmForgotOtp').focus();return;}
+ if(!/^\\d{6}$/.test(code)){passwordStatus('mmForgotStatus','Masukkan kode OTP enam digit.',true);$('mmForgotOtp').focus();return;}
  if(next.length<12||next.length>128){passwordStatus('mmForgotStatus','Password baru harus 12–128 karakter.',true);$('mmForgotNewPassword').focus();return;}
  if(next!==confirm){passwordStatus('mmForgotStatus','Ulangi password baru dengan tepat.',true);$('mmForgotConfirmPassword').focus();return;}
  processing=true;syncPasswordUi();
@@ -84,7 +84,7 @@ async function completePasswordReset(){
 $('mmForgotOpen').addEventListener('click',()=>setForgotMode(true));$('mmForgotBack').addEventListener('click',()=>setForgotMode(false));
 $('mmForgotSend').addEventListener('click',issuePasswordOtp);$('mmForgotComplete').addEventListener('click',completePasswordReset);
 $('mmForgotEmail').addEventListener('input',()=>{if(forgotChallenge&&$('mmForgotEmail').value.trim()!==forgotEmail)resetForgotChallenge();});
-$('mmForgotOtp').addEventListener('input',()=>{$('mmForgotOtp').value=$('mmForgotOtp').value.replace(/\D/g,'').slice(0,6);});
+$('mmForgotOtp').addEventListener('input',()=>{$('mmForgotOtp').value=$('mmForgotOtp').value.replace(/\\D/g,'').slice(0,6);});
 $('mmChangePasswordForm').addEventListener('submit',async event=>{
  event.preventDefault();if(processing)return;
  const oldPassword=$('mmCurrentPassword').value,newPassword=$('mmNewPassword').value,confirm=$('mmConfirmPassword').value;
