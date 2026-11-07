@@ -1,0 +1,35 @@
+name: Inspect public sidebar
+on:
+  push:
+    branches: [sidebar-3d-premium-20261108]
+    paths: ['.github/workflows/sidebar-3d-inspect.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read public homepage and local public assets only
+        run: |
+          python3 - <<'PY'
+          import pathlib,urllib.request,urllib.parse,re,json
+          out=pathlib.Path('sidebar-reference');out.mkdir()
+          home=urllib.request.urlopen('https://marketmarney.com/',timeout=25).read().decode();(out/'home.html').write_text(home)
+          assets={}
+          for x in re.findall(r'(?:src|href)=[\"\']([^\"\']+)',home):
+            u=urllib.parse.urljoin('https://marketmarney.com/',x);p=urllib.parse.urlsplit(u)
+            if p.netloc=='marketmarney.com' and p.path.startswith('/assets/') and p.path.endswith(('.css','.js')):
+              try:
+                b=urllib.request.urlopen(u,timeout=20).read(3000000);name=p.path.split('/')[-1];(out/name).write_bytes(b);assets[name]=u
+              except Exception as e:print(type(e).__name__,p.path)
+          (out/'assets.json').write_text(json.dumps(assets))
+          PY
+          cp marney-brand/branding.cjs sidebar-reference/branding.cjs
+          cp warxau-fbs/Dockerfile.ihsg warxau-fbs/install-light-theme.cjs warxau-fbs/public-theme-light.cjs sidebar-reference/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sidebar-reference
+          path: sidebar-reference
+          retention-days: 3
