@@ -1,0 +1,177 @@
+name: Marney 4.14 Final Recovery and DOM Guard
+on:
+  push:
+    branches: [android-v4.14-stability]
+    paths: ['hotfix414/**', '.github/workflows/final414.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: final414-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          run-id: 42314973932
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: base414
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare SDK
+        run: |
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Patch only guarded DOM adaptation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          assert hashlib.sha256(Path('base414/Marney414.apk').read_bytes()).hexdigest()=='7488e0a3c09f749d26b79e6a9690e55803196d41f9f6b92750351a08bb4353a5'
+          with ZipFile('base414/Marney414-Source.zip') as z:
+              assert z.testzip() is None
+              for n in z.namelist():assert not n.startswith('/') and '..' not in Path(n).parts
+              z.extractall('.')
+          PY
+          python3 hotfix414/guard.py android43
+          cp hotfix414/AdaptGuardTest.java android43/app/src/androidTest/java/com/marketmarney/mobile/
+      - name: Compile and lint
+        run: gradle --no-daemon --project-dir android43 :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - name: Verify and package
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android43/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney414-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney414-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta414'" deliver/Marney414-Package.txt
+          cp "$APK" deliver/Marney414.apk
+          cp android43/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney414-Tests.apk
+          cp android43/app/build/reports/lint-results-debug.html deliver/Marney414-Lint.html
+          cp base414/preserved414.json base414/Marney414-Panduan.md deliver/
+          echo '
+          Perbaikan tambahan final: adaptasi tampilan hanya berjalan pada dokumen yang cocok dan head/body siap. Mengatasi TypeError document.head.appendChild saat navigasi cepat. Tidak menonaktifkan pemeriksaan error.' >> deliver/Marney414-Panduan.md
+          sha256sum deliver/Marney414.apk > deliver/Marney414-SHA256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          from zipfile import ZipFile,ZIP_DEFLATED
+          for n,h in json.loads(Path('deliver/preserved414.json').read_text()).items():assert hashlib.sha256((Path('android43')/n).read_bytes()).hexdigest()==h,n
+          with ZipFile('deliver/Marney414-Source.zip','w',ZIP_DEFLATED) as z:
+              for root in [Path('android43'),Path('mobile414'),Path('hotfix414')]:
+                  for p in root.rglob('*'):
+                      if not p.is_file() or any(x in p.parts for x in ['build','.gradle','.git','__pycache__']):continue
+                      if p.suffix in ['.jks','.keystore','.ttf','.otf','.woff','.woff2'] or p.name in ['local.properties','.env']:continue
+                      z.write(p,p)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney414-Final-APK
+          path: deliver/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney414-Final-Test-APK
+          path: testapk/
+  native:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Final-Test-APK
+          path: testapk
+      - name: Prepare 22 native cases
+        run: |
+          cat > test.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality414-final-native
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney414.apk
+          adb install -r testapk/Marney414-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Stability414Test,com.marketmarney.mobile.Navigation413Test,com.marketmarney.mobile.AdaptGuardTest com.marketmarney.mobile.beta414.test/androidx.test.runner.AndroidJUnitRunner | tee quality414-final-native/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta414/files/stability-tests quality414-final-native/ || true
+          adb logcat -d -s AndroidRuntime:E > quality414-final-native/runtime.log
+          grep -Eq 'OK \(22 tests\)' quality414-final-native/instrumentation.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Final-Native-Evidence
+          path: quality414-final-native/
+  social:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Final-APK
+          path: apk
+      - name: Keep all 18 original assertions and capture exceptions
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality414-final-social')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta414').replace('apk/Marney49.apk','apk/Marney414.apk')
+          s=s.replace("PKG+'/com.marketmarney.mobile.MainActivity')","PKG+'/com.marketmarney.mobile.MainActivity','--ei','startTab','4')",1)
+          s=s.replace('Actual website service worker controls Home','Actual worker controls bundled Social').replace('Member group loads after Home with active worker','Member group loads after Social with active worker')
+          s=s.replace('checks=[];seq=0;ws=None','checks=[];seq=0;ws=None;exceptions=[]')
+          marker='  obj=json.loads(ws.recv())';assert marker in s
+          s=s.replace(marker,marker+"\n  if obj.get('method')=='Runtime.exceptionThrown':\n   exceptions.append(obj);(O/'exceptions.json').write_text(json.dumps(exceptions,indent=2))",1)
+          marker=" record('No JavaScript errors during denial',ev('__fixture49.errors.length===0'))";assert marker in s
+          s=s.replace(marker," (O/'denial-errors.json').write_text(json.dumps(ev('__fixture49.errors'),indent=2))\n"+marker,1)
+          p.write_text(s);compile(s,str(p),'exec')
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Final-Social-Evidence
+          path: quality414-final-social/
