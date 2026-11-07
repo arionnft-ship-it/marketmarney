@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "checkedAt": "2026-11-07T02:52:09.459Z",
+  "sourceCommit": "de203b76a16ba013e55b6dc48f1919b184b49dc8",
+  "publicPageSha256": "b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212",
+  "privatePageSha256": "c48ca74107a58fede035f8ccb2e9c40cac7dbddefb7695c4cf75643e57290fab",
+  "compiledScripts": 24,
+  "checks": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/akun.html",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/android/config",
+      "status": 200
+    },
+    {
+      "path": "/api/content",
+      "status": 200
+    },
+    {
+      "path": "/_railway/health",
+      "status": 200
+    }
+  ],
+  "note": "Read-only inspection; no credentials used and no synthetic prices uploaded."
+}
