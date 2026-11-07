@@ -15,7 +15,7 @@ try:
   b=p.chromium.launch(headless=True,args=['--no-sandbox'])
   def context(scheme='dark',saved=None,mobile=False):
    ctx=b.new_context(color_scheme=scheme,viewport={'width':390,'height':844} if mobile else {'width':1440,'height':1000},service_workers='block')
-   if saved is not None:ctx.add_init_script('if(!sessionStorage.getItem("theme-test-seeded")){localStorage.setItem('+json.dumps(KEY)+','+json.dumps(saved)+');sessionStorage.setItem("theme-test-seeded","1");}')
+   if saved is not None:ctx.add_init_script('if(window===window.top && location.origin==="https://marketmarney.com" && !sessionStorage.getItem("theme-test-seeded")){localStorage.setItem('+json.dumps(KEY)+','+json.dumps(saved)+');sessionStorage.setItem("theme-test-seeded","1");}')
    if not PUBLIC:
     def route_handler(route):
      u=urlsplit(route.request.url)
