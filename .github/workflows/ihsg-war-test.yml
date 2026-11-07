@@ -1,0 +1,54 @@
+name: Verify IHSG WAR
+on:
+  push:
+    branches: [ihsg-war-v1-20261108]
+    paths: ['.github/workflows/ihsg-war-test.yml','warxau-fbs/ihsg-*','warxau-fbs/start-ihsg.cjs','warxau-fbs/test-ihsg.cjs','warxau-fbs/verify-ihsg.py','warxau-fbs/Dockerfile.ihsg']
+permissions:
+  contents: read
+concurrency:
+  group: ihsg-war-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check IHSG logic and compile all inline scripts
+        run: |
+          node --check warxau-fbs/ihsg-addon.cjs
+          node --check warxau-fbs/ihsg-preload.cjs
+          node --check warxau-fbs/start-ihsg.cjs
+          node warxau-fbs/test-ihsg.cjs
+      - name: Prepare isolated fixture using existing public chat assets
+        run: |
+          mkdir -p ihsg-fixture-app/assets
+          python3 - <<'PY'
+          import urllib.request,pathlib
+          for name in ['discussion-1828.js','discussion-1828.css']:
+            with urllib.request.urlopen('https://marketmarney.com/assets/'+name,timeout=25) as r:
+              assert r.status==200
+              pathlib.Path('ihsg-fixture-app/assets/'+name).write_bytes(r.read(1000000))
+          PY
+          node warxau-fbs/test-ihsg.cjs --serve >/tmp/ihsg-fixture.log 2>&1 &
+      - name: Install Chromium test runner
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Test honest feed state, demo, chat and 5 arenas in browser
+        run: python3 warxau-fbs/verify-ihsg.py
+      - name: Build complete image preserving branding and signup
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t ihsg-war-check .
+      - name: Collect non-sensitive evidence
+        if: always()
+        run: |
+          mkdir -p ihsg-test-results/source
+          cp warxau-fbs/ihsg-* warxau-fbs/start-ihsg.cjs warxau-fbs/test-ihsg.cjs warxau-fbs/verify-ihsg.py warxau-fbs/Dockerfile.ihsg ihsg-test-results/source/
+          test ! -f /tmp/ihsg-fixture.log || cp /tmp/ihsg-fixture.log ihsg-test-results/fixture.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ihsg-war-tests
+          path: ihsg-test-results
+          retention-days: 7
