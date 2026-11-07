@@ -1,0 +1,58 @@
+name: Verify NASDAQ WAR
+on:
+  push:
+    branches: [nasdaq-war-v1-20261107]
+    paths: ['.github/workflows/nasdaq-war-test.yml','warxau-fbs/nasdaq-*','warxau-fbs/start-nasdaq.cjs','warxau-fbs/test-nasdaq.cjs','warxau-fbs/verify-nasdaq-browser.py','warxau-fbs/Dockerfile.nasdaq']
+permissions:
+  contents: write
+concurrency:
+  group: nasdaq-war-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: nasdaq-war-v1-20261107
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify quote isolation and battle accounting
+        run: |
+          node --check warxau-fbs/nasdaq-addon.cjs
+          node --check warxau-fbs/nasdaq-preload.cjs
+          node --check warxau-fbs/start-nasdaq.cjs
+          node warxau-fbs/test-nasdaq.cjs
+      - name: Prepare isolated browser fixture with public chat UI only
+        run: |
+          mkdir -p nasdaq-fixture-app/assets
+          python3 - <<'PY'
+          import urllib.request,pathlib
+          for name in ['discussion-1828.js','discussion-1828.css']:
+            with urllib.request.urlopen('https://marketmarney.com/assets/'+name,timeout=25) as r:
+              assert r.status==200
+              pathlib.Path('nasdaq-fixture-app/assets/'+name).write_bytes(r.read(1000000))
+          PY
+          node warxau-fbs/test-nasdaq.cjs --serve >/tmp/nasdaq-fixture.log 2>&1 &
+      - name: Install Chromium verification tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Test demo, missing-feed behavior and four-market navigation
+        run: python3 warxau-fbs/verify-nasdaq-browser.py
+      - name: Build full deployable image with current signup and branding
+        run: docker build -f warxau-fbs/Dockerfile.nasdaq -t nasdaq-war-check .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nasdaq-war-tests
+          path: nasdaq-test-results
+          retention-days: 7
+      - name: Record test evidence without accounts or chat contents
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add nasdaq-test-results/*.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m 'Record NASDAQ demo and unavailable-live safety checks'
+          git push origin HEAD:nasdaq-war-v1-20261107
