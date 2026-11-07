@@ -1,0 +1,63 @@
+name: Verify OIL WAR
+on:
+  push:
+    branches: [oil-war-v1-20261107]
+    paths: ['.github/workflows/oil-war-test.yml','warxau-fbs/oil-*','warxau-fbs/start-oil.cjs','warxau-fbs/test-oil.cjs','warxau-fbs/verify-oil-browser.py','warxau-fbs/Dockerfile.oil']
+permissions:
+  contents: write
+concurrency:
+  group: oil-war-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      OIL_BASE: warxau-live/dist/WEB-LIVE.html
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: oil-war-v1-20261107
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit and syntax tests
+        run: |
+          mkdir -p oil-test-results
+          node --check warxau-fbs/oil-feed.js
+          node --check warxau-fbs/oil-addon.cjs
+          node --check warxau-fbs/oil-preload.cjs
+          node --check warxau-fbs/start-oil.cjs
+          set -o pipefail
+          node --test warxau-fbs/test-oil.cjs | tee oil-test-results/unit.tap
+      - name: Prepare isolated fixture with existing public chat assets
+        run: |
+          mkdir -p oil-fixture-app/assets
+          python3 - <<'PY'
+          import pathlib,urllib.request
+          for name in ['discussion-1828.js','discussion-1828.css']:
+            with urllib.request.urlopen('https://marketmarney.com/assets/'+name,timeout=25) as r:
+              assert r.status==200
+              pathlib.Path('oil-fixture-app/assets/'+name).write_bytes(r.read(1000000))
+          PY
+          node warxau-fbs/oil-fixture-server.cjs >/tmp/oil-fixture.log 2>&1 &
+      - name: Install browser testing tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Browser fixtures and real WTI perpetual streaming
+        run: python3 warxau-fbs/verify-oil-browser.py
+      - name: Verify image preserves signup and branding
+        run: docker build -f warxau-fbs/Dockerfile.oil -t oil-war-check .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-war-tests
+          path: oil-test-results
+          retention-days: 7
+      - name: Record non-sensitive verification
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add oil-test-results/*.json oil-test-results/*.tap 2>/dev/null || true
+          git diff --cached --quiet || git commit -m 'Record OIL WAR verification without wallet or user data'
+          git push origin HEAD:oil-war-v1-20261107

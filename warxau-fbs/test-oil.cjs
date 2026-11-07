@@ -1,0 +1,33 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
+const Feed=require('./oil-feed.js'),{makeOil,BASE_SHA}=require('./oil-addon.cjs'),{patch}=require('./oil-preload.cjs');
+const path=require('node:path'),base=process.env.OIL_BASE||path.resolve(__dirname,'../base.html');
+const raw=fs.readFileSync(base),feed=fs.readFileSync(__dirname+'/oil-feed.js','utf8'),html=makeOil(raw,feed,require('./topchat.cjs').enhancePage);
+const list=s=>[...s.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean),scripts=list(html),old=list(raw.toString());
+const c={console,Date,Intl,performance};c.globalThis=c;vm.createContext(c);for(const i of [1,2,3])vm.runInContext(scripts[i],c);
+const now=Date.now(),begin=Math.floor(now/86400000)*86400000;
+const quote={coin:'xyz:CL',px:'90.123',time:now-100,tid:999};
+const bar={s:'xyz:CL',i:'1d',t:begin,T:begin+86400000-1};
+const q=(price,t)=>({symbol:'WTI-PERP',price,timestamp:t,mode:'live',provider:Feed.PROVIDER});
+test('24 scripts parse',()=>{assert.equal(scripts.length,24);for(const s of scripts)new vm.Script(s);});
+test('all original 3D scripts and textures unchanged',()=>{for(let i=4;i<=18;i++)assert.equal(scripts[i],old[i]);assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),BASE_SHA);});
+test('only oil feed and correct instrument label',()=>{assert.ok(html.includes('wss://api.hyperliquid.xyz/ws'));assert.ok(html.includes('WTI PERPETUAL'));assert.ok(!html.includes('api.gold-api.com'));assert.ok(!html.includes('ws.kraken.com'));});
+test('only HD and 0.01 visual scale',()=>{assert.ok(!html.includes('id="quality"'));assert.ok(html.includes('let destruction=new MMDestruction.Ledger({pipSize:.01})'));assert.ok(html.includes('0,01 / pip visual'));assert.ok(!html.includes('value="0.1">0,10 USD'));});
+test('wrong instrument cannot contaminate oil',()=>{for(const coin of ['BTC','xyz:BRENTOIL','XAU','xyz:WTIOIL'])assert.equal(Feed.validTrade({...quote,coin},now),null);assert.equal(c.MMCore.validate({symbol:'BTC/USD',price:90,timestamp:now,provider:'test',mode:'live'}),null);});
+test('price timestamp and hash-id preserved',()=>{const x=Feed.validTrade(quote,now);assert.equal(x.price,90.123);assert.equal(x.timestamp,quote.time);assert.equal(x.tradeId,quote.tid);});
+test('invalid stale future quotes rejected',()=>{for(const px of ['NaN','','-1','0','0xAB',null])assert.equal(Feed.validTrade({...quote,px},now),null);for(const time of [now-30001,now+5001,'x'])assert.equal(Feed.validTrade({...quote,time},now),null);});
+test('candle inclusive end becomes exclusive millisecond boundary',()=>{assert.deepEqual(Feed.candle(bar),{opensAt:begin,closesAt:begin+86400000});for(const b of [{...bar,s:'BTC'},{...bar,i:'1h'},{...bar,T:begin+86400000}])assert.equal(Feed.candle(b),null);});
+test('quote needs matching current source daily',()=>{const b=Feed.candle(bar),x=Feed.validTrade(quote,now);assert.ok(Feed.sessionFor(x,b,now));assert.equal(Feed.sessionFor(x,b,b.closesAt),null);assert.equal(Feed.sessionFor(x,null,now),null);});
+test('first quote no free troops',()=>{const l=new c.MMDestruction.Ledger({pipSize:.01});assert.equal(l.accept(q(90,now),now).events.length,0);});
+test('1.00 move triggers 20 infantry 5 tanks 2 helicopters 1 jet',()=>{const l=new c.MMDestruction.Ledger({pipSize:.01});l.accept(q(90,now-1),now);l.accept(q(91,now),now);assert.deepEqual(JSON.parse(JSON.stringify(l.snapshot().triggered.up)),{infantry:20,tank:5,heli:2,jet:1,building:0});});
+test('3.00 movement triggers building and independent sell units',()=>{const l=new c.MMDestruction.Ledger({pipSize:.01});l.accept(q(90,now-2),now);l.accept(q(93,now-1),now);l.accept(q(92.8,now),now);assert.equal(l.snapshot().triggered.up.building,1);assert.equal(l.snapshot().triggered.down.tank,1);});
+test('connection gap rebases without invented movement',()=>{const l=new c.MMDestruction.Ledger({pipSize:.01});l.accept(q(90,now-1),now);l.breakReference();assert.equal(l.accept(q(95,now),now).events.length,0);});
+test('daily closes at boundary and requires new session',()=>{let w=now;const s=new c.MMDaily.Session({wall:()=>w,mono:()=>w}),m=Feed.sessionFor(q(90,now),Feed.candle(bar),now);s.ingest(m);assert.equal(s.phase,'active');w=m.closesAt;s.tick();assert.equal(s.phase,'closed');assert.equal(s.accepts(q(90,w),m.id),false);});
+test('chat patch adds only one exact target',()=>{const s="if(kind==='analysis')return allowedAnalysis.has(target)||(typeof target==='string'&&target.startsWith('MARKET:')&&allowedAnalysis.has(target.slice(7)));";const got=patch(s);assert.ok(got.includes("target==='MARKET:HYPERLIQUID:WTI'"));assert.ok(got.endsWith(s.slice(s.indexOf('||'))));assert.throws(()=>patch('missing'));});
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function harness(){const got=[],states=[];class Socket{static list=[];constructor(){this.readyState=1;Socket.list.push(this);queueMicrotask(()=>this.onopen?.());}send(){}close(){this.readyState=3;}emit(d){this.onmessage?.({data:JSON.stringify(d)});}}
+const fetcher=async(url,o={})=>{let d;if(url==='/api/oil-war/clock')d={now:Date.now()};else {const b=JSON.parse(o.body);d=b.type==='meta'?{universe:[{name:'xyz:CL'}]}:[bar];}return {ok:true,text:async()=>JSON.stringify(d)};};
+const bridge=Feed.create({onQuote:(q,m)=>got.push({q,m}),onStatus:s=>states.push(s),Socket,fetcher});return {got,states,Socket,bridge,tr:(price,tid)=>({coin:'xyz:CL',px:String(price),time:Date.now(),tid})};}
+test('trade ids are hashes not a monotonic sequence; newest price sampled',async()=>{const h=harness();try{await wait(20);const s=h.Socket.list[0];s.emit({channel:'trades',data:[h.tr(90,999999)]});await wait(290);s.emit({channel:'trades',data:[h.tr(90.2,5)]});await wait(290);assert.equal(h.got.length,2);assert.equal(h.got[1].q.price,90.2);}finally{h.bridge.close();}});
+test('snapshot not replayed and duplicate ignored',async()=>{const h=harness();try{await wait(20);const s=h.Socket.list[0],x=h.tr(90.4,3);s.emit({channel:'trades',data:[{...x,px:'90',time:x.time-500,tid:100},x]});await wait(290);assert.equal(h.got.length,1);assert.equal(h.got[0].q.price,90.4);s.emit({channel:'trades',data:[x]});await wait(290);assert.equal(h.got.length,1);}finally{h.bridge.close();}});
+test('close cancels pending sample and error does not fabricate quote',async()=>{const h=harness();await wait(20);const s=h.Socket.list[0];s.emit({channel:'error',data:'unavailable'});assert.equal(h.states.at(-1).state,'error');assert.equal(h.got.length,0);h.bridge.close();await wait(260);assert.equal(h.got.length,0);});
