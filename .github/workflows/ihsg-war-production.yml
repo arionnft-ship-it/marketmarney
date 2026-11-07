@@ -1,0 +1,52 @@
+name: Verify deployed IHSG WAR
+on:
+  push:
+    branches: [ihsg-war-v1-20261108]
+    paths: ['.github/workflows/ihsg-war-production.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ihsg-war-production
+  cancel-in-progress: false
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chromium test tools
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Verify requested release is served
+        run: |
+          python3 - <<'PY'
+          import urllib.request,time,json
+          for n in range(12):
+            try:
+              with urllib.request.urlopen('https://marketmarney.com/api/ihsg-war/status',timeout=10) as r:
+                d=json.loads(r.read());assert d['version']=='1.0-ihsg-war' and d['liveAvailable'] is False;break
+            except Exception:
+              if n==11:raise
+              time.sleep(5)
+          PY
+      - name: Verify public routes, demo, chat and existing market regressions
+        env:
+          IHSG_TEST_URL: https://marketmarney.com
+          IHSG_TEST_OUT: ihsg-production-results
+        run: python3 warxau-fbs/verify-ihsg.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ihsg-war-production
+          path: ihsg-production-results
+          retention-days: 7
+      - name: Record non-sensitive test result only
+        if: always()
+        run: |
+          test -f ihsg-production-results/browser.json || exit 0
+          cp ihsg-production-results/browser.json ihsg-production-check.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ihsg-production-check.json
+          git diff --cached --quiet || git commit -m 'Record IHSG production demo/chat and access checks'
+          git pull --rebase origin ihsg-war-v1-20261108
+          git push origin HEAD:ihsg-war-v1-20261108

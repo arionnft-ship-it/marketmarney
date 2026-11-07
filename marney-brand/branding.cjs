@@ -1,6 +1,7 @@
 'use strict';
 // Response-only MARNEY branding. No protected app files, accounts or media are written.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
 const VERSION='marney-20261107-r2';
 const APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
 const ROOT=path.join(__dirname,'marney-brand-assets');
@@ -46,9 +47,11 @@ function enhance(html){
  return out.replace(/(<(?:body|main|header|div)\b)/i,inject+'$1');
 }
 function createBranding({assetRoot=ROOT,appRoot=APP}={}){
+ const performance=createPublicPerformance({appRoot});
  const assets=new Map();for(const [url,file]of aliases)assets.set(url,[fs.readFileSync(path.join(assetRoot,file)),mime[path.extname(file)]]);
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
  function handle(req,res){
+  if(performance.handle(req,res))return true;
   const p=String(req.url||'').split('?')[0];let asset=assets.get(p);
   if(!asset&&(p==='/manifest.webmanifest'||p==='/sw.js')){
    let raw=fs.readFileSync(path.join(appRoot,p.slice(1)),'utf8');
@@ -101,6 +104,6 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    chunks.length=0;head();restore();return original.end.call(this,out,callback);
   };
  }
- return {handle,wrap,version:VERSION};
+ return {handle,wrap,version:VERSION,optimizeHome:performance.rewriteHomeAssets};
 }
 module.exports={createBranding,enhance,versionURL,VERSION,aliases,CLIENT,CSS};

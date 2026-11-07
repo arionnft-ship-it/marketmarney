@@ -3,6 +3,7 @@
 // Existing verified public gateway is loaded exactly as before; only new private routes are added.
 const http=require('node:http'),fs=require('node:fs'),zlib=require('node:zlib'),crypto=require('node:crypto');
 const {createRelay}=require('./relay.cjs');const {privatePage}=require('./page.cjs');
+const {transformHomeHtml}=require('./performance-news.cjs');
 const PORT=Number(process.env.PORT||8080);
 const SITE='/persist/site-r1/MarketMarney-Railway-Staging/app/assets/xau-war-3d.html';
 const APPROVED='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212';
@@ -94,6 +95,8 @@ function patchHomeCard(req, res) {
     const newScript = "<script id=\"mm-social-direct-v1\">\n(function(){\n 'use strict';\n const destination='/beranda-trader.html';\n const selector='.feature-card.feature-forum';\n function enhance(){\n  for(const card of document.querySelectorAll(selector)){\n   if(card.dataset.page!=='Social Marney')card.dataset.page='Social Marney';\n   if(card.getAttribute('aria-label')!=='Buka Social Marney')card.setAttribute('aria-label','Buka Social Marney');\n   const title=card.querySelector('.feature-copy strong');\n   if(title&&title.textContent.trim()!=='SOCIAL MARNEY')title.textContent='SOCIAL MARNEY';\n   const small=card.querySelector('.feature-copy small');\n   if(small&&small.textContent.includes('Telegram atau Discord'))small.textContent='Linimasa, diskusi, dan ide trader';\n   const cta=card.querySelector('.feature-cta');\n   if(cta&&cta.textContent.includes('LIHAT KOMUNITAS'))cta.innerHTML='BUKA SOCIAL MARNEY <span aria-hidden=\"true\">↗</span>';\n  }\n }\n document.addEventListener('click',function(event){\n  const target=event.target;\n  const card=target&&target.closest?target.closest(selector+',.navbtn[data-page=\"Social Marney\"]'):null;\n  if(!card)return;\n  event.preventDefault();\n  event.stopImmediatePropagation();\n  window.location.assign(destination);\n },true);\n function start(){\n  enhance();\n  const root=document.getElementById('app');\n  if(!root)return;\n  let queued=false;\n  new MutationObserver(function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;enhance();});})\n   .observe(root,{childList:true,subtree:true});\n }\n if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});\n else start();\n})();\n</script>";
     if (/<\/head\s*>/i.test(html) && !html.includes('mm-static-news-v1')) html = html.replace(/<\/head\s*>/i, newCss + '</head>');
     if (/<\/body\s*>/i.test(html) && !html.includes('mm-social-direct-v1')) html = html.replace(/<\/body\s*>/i, newScript + '</body>');
+    html = transformHomeHtml(html);
+    if(typeof branding!=='undefined'&&branding.optimizeHome)html=branding.optimizeHome(html);
     if (html !== raw) {
       res.removeHeader('etag'); res.removeHeader('content-md5'); res.removeHeader('transfer-encoding');
       res.setHeader('content-length', Buffer.byteLength(html));

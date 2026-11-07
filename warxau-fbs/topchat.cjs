@@ -1,6 +1,7 @@
 'use strict';
 // WarXAU Arena + Social Marney chat. Response-only overlay: no on-disk app/DB changes.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {createWarXauPerformance}=require('./performance-warxau.cjs');
 const VERSION='7.8-topchat',APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
 const APPROVED='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212';
 const PAGE='/assets/xau-war-3d.html';
@@ -38,22 +39,26 @@ function enhancePage(html){
  return html.replace('</head>','<link rel="stylesheet" href="/assets/warxau-topchat.css?v=7.8">\n</head>');
 }
 function createTopChat({appRoot=APP,assetRoot=__dirname,approved=APPROVED}={}){
- let page,css,chat;const layout=fs.readFileSync(path.join(assetRoot,'topchat-layout.js'));
+ let page;const layout=fs.readFileSync(path.join(assetRoot,'topchat-layout.js'));
  const customCSS=fs.readFileSync(path.join(assetRoot,'topchat.css'),'utf8');
+ const css=Buffer.from(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.css'),'utf8')+'\n'+customCSS);
+ const chat=Buffer.from(chatSource(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.js'),'utf8')));
+ const performance=createWarXauPerformance({layoutSource:layout.toString('utf8'),chatSource:chat.toString('utf8'),cssSource:css.toString('utf8')});
  function source(){const raw=fs.readFileSync(path.join(appRoot,'assets/xau-war-3d.html'));if(sha(raw)!==approved)throw Error('WarXAU approved source changed');return raw.toString('utf8');}
  function asset(p){
-  if(p===PAGE){if(!page)page=Buffer.from(enhancePage(source()));return [page,'text/html; charset=utf-8'];}
+  if(p===PAGE){if(!page)page=Buffer.from(performance.transform(enhancePage(source())));return [page,'text/html; charset=utf-8'];}
   if(p==='/assets/warxau-topchat-layout.js')return [layout,'text/javascript; charset=utf-8'];
-  if(p==='/assets/warxau-topchat-chat.js'){if(!chat)chat=Buffer.from(chatSource(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.js'),'utf8')));return [chat,'text/javascript; charset=utf-8'];}
-  if(p==='/assets/warxau-topchat.css'){if(!css)css=Buffer.from(fs.readFileSync(path.join(appRoot,'assets/discussion-1828.css'),'utf8')+'\n'+customCSS);return [css,'text/css; charset=utf-8'];}
+  if(p==='/assets/warxau-topchat-chat.js')return [chat,'text/javascript; charset=utf-8'];
+  if(p==='/assets/warxau-topchat.css')return [css,'text/css; charset=utf-8'];
   return null;
  }
  for(const p of [PAGE,'/assets/warxau-topchat-chat.js','/assets/warxau-topchat.css'])asset(p);
  return {enhance:enhancePage,handle(req,res){
+  if(performance.handle(req,res))return true;
   const p=String(req.url||'').split('?')[0];const a=asset(p);if(!a)return false;
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405,{'Allow':'GET, HEAD','Cache-Control':'no-store'});res.end();return true;}
   res.writeHead(200,{'Content-Type':a[1],'Content-Length':a[0].length,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','Content-Security-Policy':"object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",'X-WarXAU-Layout':VERSION});
   res.end(req.method==='HEAD'?undefined:a[0]);return true;
- },metadata(){return {version:VERSION,sourceHash:approved,pageBytes:page.length,chatIntervalMs:3000,room:'MARKET:OANDA:XAUUSD'};}};
+ },metadata(){return {version:VERSION,sourceHash:approved,pageBytes:page.length,chatIntervalMs:3000,room:'MARKET:OANDA:XAUUSD',performance:performance.metadata()};}};
 }
 module.exports={createTopChat,enhancePage,chatSource,VERSION,APPROVED};
