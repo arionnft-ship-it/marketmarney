@@ -10,6 +10,7 @@ const zlib = require('node:zlib');
 const {enhancePage, APPROVED} = require('./topchat.cjs');
 const {enhance: brand} = require('../marney-brand/branding.cjs');
 const {createWarXauPerformance, PREFIX} = require('./performance-warxau.cjs');
+const {NAV: deployedNavigation} = require('./ihsg-addon.cjs');
 
 const raw = fs.readFileSync(path.join(__dirname, '../warxau-live/dist/WEB-LIVE.html'), 'utf8');
 const original = [...raw.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].map(match => match[2]);
@@ -44,9 +45,9 @@ async function tests() {
   check('delayed startup has no parser-only event dependency', original.every(source => !/DOMContentLoaded|document\.write\s*\(|document\.currentScript/.test(source)));
   assert.throws(() => performance.transform(enhanced.replace('window.MM_DEMO_ONLY=false;', 'window.MM_DEMO_ONLY=false;document.addEventListener("DOMContentLoaded",function(){});')), /parser events/);
   check('material base64 is absent from the HTML', !html.includes('window.MMAshfallAssets=') && !html.includes('"surface-atlas":"data:'));
-  check('topchat legacy parser-blocking scripts removed', !html.includes('src="/assets/warxau-topchat-layout.js') && !html.includes('src="/assets/warxau-topchat-chat.js'));
+  check('topchat legacy parser-blocking scripts removed', !html.includes('<script data-warxau-topchat=') && !html.includes('src="/assets/warxau-topchat-chat.js'));
   const external = [...html.matchAll(/<script\b([^>]*)src="([^"]+)"([^>]*)><\/script>/gi)];
-  check('ordered deferred startup and chat scripts', external.length === 2 && external.every(match => /\bdefer\b/.test(match[1] + match[3])) && external[0][2] === meta.bundlePath);
+  check('ordered deferred layout, startup and chat scripts', external.length === 3 && external.every(match => /\bdefer\b/.test(match[1] + match[3])) && external[0][2] === '/assets/warxau-topchat-layout.js?v=7.8' && external[1][2] === meta.bundlePath);
   check('bundle preload occurs before the body', html.indexOf('rel="preload" as="script"') < html.indexOf('<body'));
   check('transform is idempotent', performance.transform(html) === html);
   const privateInput = enhanced.replace('7.7-gold-api', '7.8-fbs-private');
@@ -56,6 +57,12 @@ async function tests() {
   check('unexpected material source fails without replacing existing assets', performance.metadata().bundlePath === meta.bundlePath);
 
   const server = http.createServer((req, res) => {
+    // The current deployment overrides this legacy route with the complete
+    // five-market navigation. Progressive packaging must still request it.
+    if (req.url === '/assets/warxau-topchat-layout.js?v=7.8') {
+      res.writeHead(200, {'Content-Type': 'text/javascript'});
+      res.end(layoutSource + '\n' + deployedNavigation); return;
+    }
     if (performance.handle(req, res)) return;
     res.writeHead(404); res.end('not owned');
   });
@@ -67,7 +74,28 @@ async function tests() {
     const bundle = bundleResponse.body.toString('utf8');
     new vm.Script(bundle);
     check('complete bundled JavaScript parses', true);
-    check('layout is applied before delayed arena initialization', bundle.indexOf(layoutSource) < bundle.indexOf('function start(){') && bundle.includes('requestAnimationFrame(()=>setTimeout(start,0))'));
+    check('layout is applied before delayed arena initialization', !bundle.includes(layoutSource) && html.indexOf(external[0][0]) < html.indexOf(external[1][0]) && bundle.includes('requestAnimationFrame(()=>setTimeout(start,0))'));
+    const layoutResponse = await request(base + external[0][2]);
+    const elements = new Map();
+    class Element {
+      constructor(tag) { this.tagName=tag; this.children=[]; this.dataset={}; this.attributes={}; this.style={setProperty(){}}; this.classList={contains:()=>false,remove(){},add(){}}; }
+      set id(value) { this._id=value; elements.set(value,this); }
+      get id() { return this._id; }
+      setAttribute(name,value) { this.attributes[name]=value; }
+      append(...nodes) { for(const node of nodes){node.parentElement=this;this.children.push(node);} }
+      prepend(...nodes) { for(const node of nodes)node.parentElement=this;this.children.unshift(...nodes); }
+      querySelector(selector) { return selector === '.intro' ? intro : null; }
+      getBoundingClientRect() { return {height:0}; }
+    }
+    const main=new Element('main');main.id='main';
+    const panel=new Element('section'),intro=new Element('div'),old=new Element('div');old.append(panel);
+    const layoutContext={document:{getElementById:id=>elements.get(id),querySelector:selector=>selector==='.battle-panel'?panel:null,querySelectorAll:()=>[],createElement:tag=>new Element(tag),documentElement:{dataset:{}}},location:{pathname:'/assets/xau-war-3d.html'},addEventListener(){}};
+    layoutContext.window=layoutContext;
+    vm.runInNewContext(layoutResponse.body.toString(),layoutContext);
+    const nav=elements.get('war-market-selector');
+    assert.deepEqual(nav.children.map(node=>node.textContent),['XAUUSD WAR','BTCUSD WAR','OIL WAR · WTI','NASDAQ WAR','IHSG WAR']);
+    assert.equal(nav.children[0].attributes['aria-current'],'page');
+    check('deployed layout override retains all five arena links and selected XAU state',true);
     let previous = -1;
     for (let i = 0; i < original.length; i++) {
       if ([7, 10, 13, 15, 21].includes(i)) continue;
