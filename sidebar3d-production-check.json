@@ -1,0 +1,229 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "existing sidebar available",
+      "ok": true
+    },
+    {
+      "name": "deployed marker present",
+      "ok": true
+    },
+    {
+      "name": "/assets/marney-sidebar3d-v1.css HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/marney-sidebar3d-v1.js HTTP",
+      "ok": true
+    },
+    {
+      "name": "12 sculpted SVG icons loaded",
+      "ok": true
+    },
+    {
+      "name": "light default even on dark OS",
+      "ok": true
+    },
+    {
+      "name": "original brand image retained",
+      "ok": true
+    },
+    {
+      "name": "10 original page buttons retained",
+      "ok": true
+    },
+    {
+      "name": "original menu order intact",
+      "ok": true
+    },
+    {
+      "name": "WarXAU destination unchanged",
+      "ok": true
+    },
+    {
+      "name": "About destination unchanged",
+      "ok": true
+    },
+    {
+      "name": "Instagram and TikTok destinations retained",
+      "ok": true
+    },
+    {
+      "name": "sidebar bevel shadow applied",
+      "ok": true
+    },
+    {
+      "name": "embossed gradient visible",
+      "ok": true
+    },
+    {
+      "name": "sidebar only one active item",
+      "ok": true
+    },
+    {
+      "name": "sidebar fits its column",
+      "ok": true
+    },
+    {
+      "name": "Berita icon click navigates and remains decorated",
+      "ok": true
+    },
+    {
+      "name": "Analisa icon click navigates and remains decorated",
+      "ok": true
+    },
+    {
+      "name": "Watchlist icon click navigates and remains decorated",
+      "ok": true
+    },
+    {
+      "name": "Utilities icon click navigates and remains decorated",
+      "ok": true
+    },
+    {
+      "name": "Beranda icon click navigates and remains decorated",
+      "ok": true
+    },
+    {
+      "name": "dark theme still works",
+      "ok": true
+    },
+    {
+      "name": "dark sidebar colors adapt",
+      "ok": true
+    },
+    {
+      "name": "saved dark choice persists",
+      "ok": true
+    },
+    {
+      "name": "keyboard navigation works",
+      "ok": true
+    },
+    {
+      "name": "compact desktop no sidebar overflow",
+      "ok": true
+    },
+    {
+      "name": "compact labels stay inside rows",
+      "ok": true
+    },
+    {
+      "name": "mobile drawer opens",
+      "ok": true
+    },
+    {
+      "name": "mobile 3D menu contained in viewport",
+      "ok": true
+    },
+    {
+      "name": "mobile tap closes drawer",
+      "ok": true
+    },
+    {
+      "name": "mobile route changed",
+      "ok": true
+    },
+    {
+      "name": "Escape closes drawer",
+      "ok": true
+    },
+    {
+      "name": "320 no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "768 no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "reduced-motion honored",
+      "ok": true
+    },
+    {
+      "name": "no browser JavaScript exceptions",
+      "ok": true
+    },
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "account and OTP not restyled",
+      "ok": true
+    },
+    {
+      "name": "/assets/xau-war-3d.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "xau arena not restyled",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-3d.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "btc arena not restyled",
+      "ok": true
+    },
+    {
+      "name": "/assets/oil-war-3d.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "oil arena not restyled",
+      "ok": true
+    },
+    {
+      "name": "/assets/nasdaq-war-3d.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "nasdaq arena not restyled",
+      "ok": true
+    },
+    {
+      "name": "/assets/ihsg-war-3d.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "ihsg arena not restyled",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "FBS remains private",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "mode": "production",
+  "scope": "Anonymous page/theme/navigation checks. No login, OTP email, public post or trading operation.",
+  "checkedAt": "2026-11-07T21:29:07.060767+00:00"
+}
