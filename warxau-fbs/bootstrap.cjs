@@ -7,7 +7,34 @@ const PORT=Number(process.env.PORT||8080);
 const SITE='/persist/site-r1/MarketMarney-Railway-Staging/app/assets/xau-war-3d.html';
 const APPROVED='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
-function attachToServer(server,relay,port){const emit=server.emit;server.emit=function(event,...args){if(event==='request'&&server.address()?.port===port&&relay.owns(args[0])){void relay.handle(args[0],args[1]);return true;}return emit.call(this,event,...args);};return server;}
+// Change the single community card label in the landing page response only.
+// This does not modify the on-disk website, existing gateway hash, APIs or private MT4 routes.
+function patchHomeCard(req,res){
+ const path=String(req.url||'').split('?')[0];
+ if(req.method!=='GET'||(path!=='/'&&path!=='/index.html'))return;
+ const end=res.end,write=res.write;let streamed=false;
+ res.write=function(...args){streamed=true;return write.apply(this,args);};
+ res.end=function(chunk,encoding,callback){
+  if(streamed||res.statusCode!==200||res.headersSent||res.getHeader('content-encoding')||
+   !/^text\/html\b/i.test(String(res.getHeader('content-type')||''))||
+   !(typeof chunk==='string'||Buffer.isBuffer(chunk)))return end.apply(this,arguments);
+  const original=Buffer.isBuffer(chunk)?chunk.toString('utf8'):chunk;
+  if(!/<\/html\s*>/i.test(original))return end.apply(this,arguments);
+  let html=original.replace(/KOMUNITAS MARKETMARNEY/gi,'SOCIAL MARNEY');
+  // Fallback for an asynchronously rendered card. Observe only the first 5 seconds.
+  const script='<script data-mm-social-label>(function(){'+
+   'function rename(){for(const el of document.querySelectorAll("h1,h2,h3,h4,h5,h6,strong,b,span,p")){if(!el.children.length&&el.textContent.trim().toUpperCase()==="KOMUNITAS MARKETMARNEY")el.textContent="SOCIAL MARNEY";}}'+
+   'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",rename,{once:true});else rename();'+
+   'const o=new MutationObserver(rename);o.observe(document.documentElement,{childList:true,subtree:true});setTimeout(()=>o.disconnect(),5000);'+
+   '})();</script>';
+  if(/<\/body\s*>/i.test(html)&&!html.includes('data-mm-social-label'))html=html.replace(/<\/body\s*>/i,script+'</body>');
+  if(html===original)return end.apply(this,arguments);
+  const data=Buffer.from(html,'utf8');
+  res.removeHeader('etag');res.removeHeader('content-md5');res.setHeader('content-length',data.length);
+  return end.call(this,data,typeof encoding==='function'?encoding:callback);
+ };
+}
+function attachToServer(server,relay,port){const emit=server.emit;server.emit=function(event,...args){if(event==='request'&&server.address()?.port===port){if(relay.owns(args[0])){void relay.handle(args[0],args[1]);return true;}patchHomeCard(args[0],args[1]);}return emit.call(this,event,...args);};return server;}
 function boot(){
  if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw Error('Invalid external port');
  const enc=[1,2,3,4].map(i=>process.env['MM_PUBLIC_GATEWAY_PART'+i]||'').join('');
