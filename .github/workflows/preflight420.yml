@@ -1,0 +1,59 @@
+name: Marney 4.20 Full Client Preflight
+on:
+  push:
+    branches: [android-v4.20-performance-fix]
+    paths: ['.github/workflows/preflight420.yml', 'mobile420/client-preflight.json']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '13581255651'
+          run-id: 42389241507
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: baseline419
+      - name: Prepare the original HTML and all repaired scripts
+        run: |
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0 playwright==1.56.0
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib,stat,shutil,json
+          p=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with zipfile.ZipFile(p) as z:
+              for e in z.infolist():
+                  n=Path(e.filename)
+                  assert not n.is_absolute() and '..' not in n.parts and not stat.S_ISLNK(e.external_attr>>16)
+                  if n.parts and n.parts[0]=='android417':z.extract(e,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,shutil
+          for entry in json.loads(Path('mobile420/client-preflight.json').read_text())['changedAssets']:
+              p=Path(entry['path']);assert not p.is_absolute() and '..' not in p.parts
+              source=Path('mobile420/overrides/app/src/main/assets')/p
+              assert hashlib.sha256(source.read_bytes()).hexdigest()==entry['sha256']
+              shutil.copyfile(source,Path('android419/app/src/main/assets')/p)
+          PY
+      - name: Reproduce old defects and exercise repaired real clients
+        run: |
+          timeout --signal=TERM --kill-after=10s 90s python3 -u mobile420/test_repair420.py --apk baseline419/Marney419.apk --baseline-probe --out quality420-preflight/baseline419
+          timeout --signal=TERM --kill-after=10s 260s python3 -u mobile420/test_repair420.py --assets android419/app/src/main/assets --out quality420-preflight
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney420-Full-Client-Preflight
+          path: quality420-preflight/
+          if-no-files-found: error
+          retention-days: 7

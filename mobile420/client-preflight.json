@@ -1,0 +1,33 @@
+{
+  "base": "8e934cb639e0284c85b5260c840e4eb66be437e4",
+  "changedAssets": [
+    {
+      "path": "group48/d7c93ae0fe8dc4eb.js",
+      "sha256": "815253c2c07f64af78a41f8ec181353840290facec2ab58548c7c2146b0eef3a"
+    },
+    {
+      "path": "profile49/d7c93ae0fe8dc4eb.js",
+      "sha256": "815253c2c07f64af78a41f8ec181353840290facec2ab58548c7c2146b0eef3a"
+    },
+    {
+      "path": "social411/5eab9da17fe2c659.js",
+      "sha256": "2f0c47f6ba37b1eddf2307ba27b03856e2c5ebed17337efd9fa6ff14d90076ce"
+    },
+    {
+      "path": "social411/app.js",
+      "sha256": "c901fe1275a3580db72c7493bd2f327c8e0f7de7bb53dc701a2aa4784f97a8e9"
+    },
+    {
+      "path": "social411/d7c93ae0fe8dc4eb.js",
+      "sha256": "815253c2c07f64af78a41f8ec181353840290facec2ab58548c7c2146b0eef3a"
+    },
+    {
+      "path": "social411/e1a56c3d82fdd4eb.js",
+      "sha256": "f98557526cbd61d7c7e3f1f7c8f403556f3bb88c7805381c7dd9c2a167f0e55e"
+    },
+    {
+      "path": "social44.js",
+      "sha256": "db0635ac4ea6cb81a0ca45fdedfd5bc661c1ff0a829a328c39732d38155ace2c"
+    }
+  ]
+}
