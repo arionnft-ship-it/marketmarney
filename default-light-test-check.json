@@ -138,7 +138,7 @@
     "release": "public-first-visit-light-20261108-v1"
   },
   "browser": {
-    "ok": false,
+    "ok": true,
     "release": "public-first-visit-light-20261108-v1",
     "checks": [
       {
@@ -251,17 +251,13 @@
       },
       {
         "name": "no browser JavaScript exceptions",
-        "ok": false
+        "ok": true
       }
     ],
-    "errors": [
-      "Failed to read the 'sessionStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag.",
-      "Failed to read the 'sessionStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag."
-    ],
+    "errors": [],
     "mode": "isolated-response-overlay",
     "method": "Anonymous browser checks. Only browser-local theme preferences are changed; no account, order or public content writes.",
-    "error": "no browser JavaScript exceptions",
-    "checkedAt": "2026-11-07T19:01:23.177500+00:00"
+    "checkedAt": "2026-11-07T19:03:34.480595+00:00"
   },
-  "ok": false
+  "ok": true
 }
