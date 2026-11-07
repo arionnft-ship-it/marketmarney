@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: all 24 BTC inline scripts compile
+ok 1 - all 24 BTC inline scripts compile
+  ---
+  duration_ms: 12.209809
+  type: 'test'
+  ...
+# Subtest: gold source and graphic asset remain unchanged
+ok 2 - gold source and graphic asset remain unchanged
+  ---
+  duration_ms: 9.290014
+  type: 'test'
+  ...
+# Subtest: BTC rejects XAU and USDT quote
+ok 3 - BTC rejects XAU and USDT quote
+  ---
+  duration_ms: 0.223814
+  type: 'test'
+  ...
+# Subtest: real timestamp and price preserved
+ok 4 - real timestamp and price preserved
+  ---
+  duration_ms: 0.441319
+  type: 'test'
+  ...
+# Subtest: invalid prices and identifiers rejected
+ok 5 - invalid prices and identifiers rejected
+  ---
+  duration_ms: 0.204835
+  type: 'test'
+  ...
+# Subtest: stale/future/missing source timestamp rejected
+ok 6 - stale/future/missing source timestamp rejected
+  ---
+  duration_ms: 0.184565
+  type: 'test'
+  ...
+# Subtest: daily metadata requires provider D1 UTC candle
+ok 7 - daily metadata requires provider D1 UTC candle
+  ---
+  duration_ms: 0.226087
+  type: 'test'
+  ...
+# Subtest: session stops accepting at close
+ok 8 - session stops accepting at close
+  ---
+  duration_ms: 0.158336
+  type: 'test'
+  ...
+# Subtest: BTC ledger uses $1 pip, rejects XAU
+ok 9 - BTC ledger uses $1 pip, rejects XAU
+  ---
+  duration_ms: 0.533145
+  type: 'test'
+  ...
+# Subtest: 100 USD up = 20 infantry,5 tanks,2 heli,1 jet
+ok 10 - 100 USD up = 20 infantry,5 tanks,2 heli,1 jet
+  ---
+  duration_ms: 1.072139
+  type: 'test'
+  ...
+# Subtest: downward budget is independent
+ok 11 - downward budget is independent
+  ---
+  duration_ms: 0.287559
+  type: 'test'
+  ...
+# Subtest: 300 USD destroys one structure
+ok 12 - 300 USD destroys one structure
+  ---
+  duration_ms: 0.179839
+  type: 'test'
+  ...
+# Subtest: duplicate tick ignored and gap rebased
+ok 13 - duplicate tick ignored and gap rebased
+  ---
+  duration_ms: 0.145327
+  type: 'test'
+  ...
+# Subtest: no Gold API or alternate quality control
+ok 14 - no Gold API or alternate quality control
+  ---
+  duration_ms: 5.458761
+  type: 'test'
+  ...
+# Subtest: daily session respects deadline and next provider session
+ok 15 - daily session respects deadline and next provider session
+  ---
+  duration_ms: 29.067454
+  type: 'test'
+  ...
+# Subtest: snapshot is one baseline, not history replay; duplicates ignored
+ok 16 - snapshot is one baseline, not history replay; duplicates ignored
+  ---
+  duration_ms: 622.70892
+  type: 'test'
+  ...
+# Subtest: no quote before candle metadata
+ok 17 - no quote before candle metadata
+  ---
+  duration_ms: 622.800847
+  type: 'test'
+  ...
+# Subtest: close cancels pending visual sample
+ok 18 - close cancels pending visual sample
+  ---
+  duration_ms: 321.882776
+  type: 'test'
+  ...
+# Subtest: subscription rejection never fabricates quote
+ok 19 - subscription rejection never fabricates quote
+  ---
+  duration_ms: 21.287877
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1812.36018

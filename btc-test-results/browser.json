@@ -1,0 +1,187 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "BTC fixture price accepted",
+      "ok": true
+    },
+    {
+      "name": "BTC scale one USD",
+      "ok": true
+    },
+    {
+      "name": "expected 100 USD reinforcement triggers",
+      "ok": true
+    },
+    {
+      "name": "heli and jet triggers",
+      "ok": true
+    },
+    {
+      "name": "HD only",
+      "ok": true
+    },
+    {
+      "name": "BTC chat isolated from gold",
+      "ok": true
+    },
+    {
+      "name": "both arena links present",
+      "ok": true
+    },
+    {
+      "name": "gold link preserved",
+      "ok": true
+    },
+    {
+      "name": "desktop side chat",
+      "ok": true
+    },
+    {
+      "name": "mobile chat below arena",
+      "ok": true
+    },
+    {
+      "name": "mobile no overflow",
+      "ok": true
+    },
+    {
+      "name": "demo separate",
+      "ok": true
+    },
+    {
+      "name": "daily close stops battle",
+      "ok": true
+    },
+    {
+      "name": "no fixture JavaScript errors",
+      "ok": true
+    },
+    {
+      "name": "normal 3D loop advances",
+      "ok": true
+    },
+    {
+      "name": "WebGL renderer initialized",
+      "ok": true
+    },
+    {
+      "name": "normal loop no JavaScript errors",
+      "ok": true
+    },
+    {
+      "name": "real BTC websocket source",
+      "ok": true
+    },
+    {
+      "name": "real source timestamp advances",
+      "ok": true
+    },
+    {
+      "name": "daily metadata from Kraken",
+      "ok": true
+    },
+    {
+      "name": "real price valid",
+      "ok": true
+    },
+    {
+      "name": "real feed no JavaScript errors",
+      "ok": true
+    },
+    {
+      "name": "gold default scale intact",
+      "ok": true
+    },
+    {
+      "name": "gold page links to BTC",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "scope": "Browser fixtures plus real Kraken websocket. No account login or public posts. Layout tests pause 3D; normal render checked separately.",
+  "normalRender": {
+    "fps": 1,
+    "sceneTime": 2.1,
+    "quality": "hd",
+    "renderer": "webgl2",
+    "drawCalls": 11
+  },
+  "realSamples": [
+    {
+      "price": 75871.2,
+      "timestamp": 1794062259147,
+      "provider": "Kraken \u00b7 BTC/USD spot",
+      "version": "1.0-btc-war-live",
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "kraken-btc-d1-2026-11-07",
+          "symbol": "BTC/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Kraken \u00b7 BTC/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794062261092,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 33738657
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "Kraken \u00b7 BTC/USD spot",
+        "symbol": "BTC/USD",
+        "transport": "WebSocket",
+        "receivedTrades": 7,
+        "displaySamples": 1,
+        "reconnects": 0,
+        "lastPrice": 75871.2,
+        "lastTimestamp": 1794062259147,
+        "dailyOpen": 1794009600000
+      }
+    },
+    {
+      "price": 75871.2,
+      "timestamp": 1794062262107,
+      "provider": "Kraken \u00b7 BTC/USD spot",
+      "version": "1.0-btc-war-live",
+      "points": 2,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "kraken-btc-d1-2026-11-07",
+          "symbol": "BTC/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Kraken \u00b7 BTC/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794062262290,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 33737638.80004883
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "Kraken \u00b7 BTC/USD spot",
+        "symbol": "BTC/USD",
+        "transport": "WebSocket",
+        "receivedTrades": 8,
+        "displaySamples": 2,
+        "reconnects": 0,
+        "lastPrice": 75871.2,
+        "lastTimestamp": 1794062262107,
+        "dailyOpen": 1794009600000
+      }
+    }
+  ],
+  "checkedAt": "2026-11-07T14:37:44.303396+00:00"
+}
