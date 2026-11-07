@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.marketmarney.mobile'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.marketmarney.mobile.beta421'
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        minSdk 24
+        targetSdk 36
+        versionCode 25
+        versionName '4.21.0-beta'
+    }
+
+    buildTypes {
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Google Account Picker: native Credential Manager (no embedded Google WebView).
+dependencies {
+    implementation 'androidx.credentials:credentials:1.6.0'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.6.0'
+    implementation 'com.google.android.libraries.identity.googleid:googleid:1.2.1'
+}
+dependencies { implementation "androidx.activity:activity:1.11.0" }
+
+dependencies { androidTestImplementation "androidx.test:runner:1.7.0"; androidTestImplementation "junit:junit:4.13.2" }
+
+dependencies { androidTestImplementation "androidx.test.uiautomator:uiautomator:2.3.0" }
