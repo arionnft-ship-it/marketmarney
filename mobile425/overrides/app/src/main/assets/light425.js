@@ -10,6 +10,7 @@
   var root = document.documentElement;
   var installed = false;
   var applying = false;
+  var nativeToneSent = false;
   var rootObserver = null;
   var appObserver = null;
   var bodyObserver = null;
@@ -35,11 +36,13 @@
 
   function keepStorageLight() {
     try {
-      for (var i = 0; i < explicitKeys.length; i++) localStorage.setItem(explicitKeys[i], 'light');
+      for (var i = 0; i < explicitKeys.length; i++) {
+        if (localStorage.getItem(explicitKeys[i]) !== 'light') localStorage.setItem(explicitKeys[i], 'light');
+      }
       var keys = [];
       for (var n = 0; n < localStorage.length; n++) keys.push(localStorage.key(n));
       for (var j = 0; j < keys.length; j++) {
-        if (isThemeKey(keys[j])) localStorage.setItem(keys[j], 'light');
+        if (isThemeKey(keys[j]) && localStorage.getItem(keys[j]) !== 'light') localStorage.setItem(keys[j], 'light');
       }
     } catch (ignored) {}
   }
@@ -48,9 +51,9 @@
     var controls = document.querySelectorAll(controlSelector);
     for (var i = 0; i < controls.length; i++) {
       var node = controls[i];
-      node.hidden = true;
-      node.setAttribute('aria-hidden', 'true');
-      if ('tabIndex' in node) node.tabIndex = -1;
+      if (!node.hidden) node.hidden = true;
+      if (node.getAttribute('aria-hidden') !== 'true') node.setAttribute('aria-hidden', 'true');
+      if ('tabIndex' in node && node.tabIndex !== -1) node.tabIndex = -1;
     }
     var menu = document.getElementById('mm43-create-menu');
     if (menu) {
@@ -58,9 +61,9 @@
       for (var j = 0; j < buttons.length; j++) {
         var text = String(buttons[j].textContent || '').toLowerCase();
         if (text.indexOf('tema') !== -1 || text.indexOf('theme') !== -1 || text.indexOf('gelap') !== -1) {
-          buttons[j].hidden = true;
-          buttons[j].setAttribute('aria-hidden', 'true');
-          buttons[j].tabIndex = -1;
+          if (!buttons[j].hidden) buttons[j].hidden = true;
+          if (buttons[j].getAttribute('aria-hidden') !== 'true') buttons[j].setAttribute('aria-hidden', 'true');
+          if (buttons[j].tabIndex !== -1) buttons[j].tabIndex = -1;
         }
       }
     }
@@ -70,23 +73,32 @@
     if (applying || !root) return 'light';
     applying = true;
     try {
-      root.setAttribute('data-mm-light-only', '425');
+      if (root.getAttribute('data-mm-light-only') !== '425') root.setAttribute('data-mm-light-only', '425');
       for (var i = 0; i < themeAttributes.length; i++) {
         if (root.getAttribute(themeAttributes[i]) !== 'light') root.setAttribute(themeAttributes[i], 'light');
       }
-      root.style.setProperty('color-scheme', 'light', 'important');
-      if (document.body) document.body.style.setProperty('color-scheme', 'light', 'important');
+      if (root.style.getPropertyValue('color-scheme') !== 'light' ||
+          root.style.getPropertyPriority('color-scheme') !== 'important') {
+        root.style.setProperty('color-scheme', 'light', 'important');
+      }
+      if (document.body && (document.body.style.getPropertyValue('color-scheme') !== 'light' ||
+          document.body.style.getPropertyPriority('color-scheme') !== 'important')) {
+        document.body.style.setProperty('color-scheme', 'light', 'important');
+      }
       var meta = document.querySelector('meta[name="color-scheme"]');
-      if (meta) meta.setAttribute('content', 'light');
+      if (meta && meta.getAttribute('content') !== 'light') meta.setAttribute('content', 'light');
       var themeColor = document.querySelector('meta[name="theme-color"]');
-      if (themeColor) themeColor.setAttribute('content', '#f4f6f9');
+      if (themeColor && themeColor.getAttribute('content') !== '#f4f6f9') themeColor.setAttribute('content', '#f4f6f9');
       keepStorageLight();
       hideThemeControls();
-      try {
-        if (window.MarketMarneyChrome && typeof window.MarketMarneyChrome.setTheme === 'function') {
-          window.MarketMarneyChrome.setTheme('light');
-        }
-      } catch (ignored) {}
+      if (!nativeToneSent) {
+        try {
+          if (window.MarketMarneyChrome && typeof window.MarketMarneyChrome.setTheme === 'function') {
+            window.MarketMarneyChrome.setTheme('light');
+            nativeToneSent = true;
+          }
+        } catch (ignored) {}
+      }
     } finally {
       applying = false;
     }
@@ -105,15 +117,15 @@
     if (!installed) {
       installed = true;
       rootObserver = new MutationObserver(force);
-      rootObserver.observe(root, {attributes: true, attributeFilter: themeAttributes.concat(['class', 'style'])});
+      rootObserver.observe(root, {attributes: true, attributeFilter: themeAttributes.concat(['class'])});
       if (document.body) {
         bodyObserver = new MutationObserver(function () { hideThemeControls(); });
-        bodyObserver.observe(document.body, {childList: true});
+        bodyObserver.observe(document.body, {childList: true, subtree: true});
       }
       var app = document.getElementById('app');
       if (app) {
         appObserver = new MutationObserver(function () { hideThemeControls(); });
-        appObserver.observe(app, {childList: true});
+        appObserver.observe(app, {childList: true, subtree: true});
       }
       document.addEventListener('click', blockThemeChoice, true);
       document.addEventListener('keydown', function (event) {
