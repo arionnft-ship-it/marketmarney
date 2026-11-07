@@ -5,7 +5,7 @@
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 
-const VERSION = '20261108-3';
+const VERSION = '20261108-4';
 const PREFIX = '/assets/warxau-performance/';
 const CACHE = 'public, max-age=31536000, immutable';
 const digest = data => crypto.createHash('sha256').update(data).digest('hex');
@@ -185,7 +185,8 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
     }
 
     let html = replaceOnce(input,
-      '<script data-warxau-topchat="7.8" src="/assets/warxau-topchat-layout.js?v=7.8"></script>', '');
+      '<script data-warxau-topchat="7.8" src="/assets/warxau-topchat-layout.js?v=7.8"></script>',
+      '<script defer data-warxau-topchat="7.8" src="/assets/warxau-topchat-layout.js?v=7.8"></script>');
     html = replaceOnce(html, '<script src="/assets/warxau-topchat-chat.js?v=7.8"></script>', '');
     const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
       .filter(match => !/\bsrc\s*=|\btype\s*=/i.test(match[1]));
@@ -264,10 +265,11 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
       '${p.renderWidth} × ${p.renderHeight} · ${s.fps||0} FPS · ${p.drawCalls} ${p.softwareFallback?\'poligon\':\'batch\'}');
     packagedScripts[presentationIndex] = presentation;
 
-    // Layout runs before the first paint. All original modules then run together,
-    // in their original order, after the browser gets an opportunity to paint.
-    // In particular the feed, UI handlers and theme restoration keep their order.
-    const bundle = '/* WarXAU progressive public startup ' + VERSION + '. */\n' + layoutSource +
+    // Keep the existing layout URL: the deployed arena chain overrides that
+    // route to add its market selector. Its defer script runs before this bundle.
+    // All original modules then run together, in their original order, after the
+    // browser gets an opportunity to paint the layout and market navigation.
+    const bundle = '/* WarXAU progressive public startup ' + VERSION + '. */\n' +
       '\n;(function(){\nfunction start(){\n(' + installSoftwarePerformance.toString() + ')(window);\n' + packagedScripts.join('\n;\n') +
       '\n}\nif(typeof requestAnimationFrame===\'function\')requestAnimationFrame(()=>setTimeout(start,0));else setTimeout(start,0);\n})();\n';
     const bundlePath = add(bundle, 'js', 'text/javascript; charset=utf-8');
