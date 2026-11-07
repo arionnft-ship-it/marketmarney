@@ -7,7 +7,8 @@ function enhance(html){
  if(typeof html!=='string'||!/<aside\b(?=[^>]*\bid=["']sidebar["'])[^>]*>/i.test(html)||!/<\/head\s*>/i.test(html))return html;
  if(html.includes('data-mm-sidebar3d-release="'+RELEASE+'"'))return html;
  html=html.replace(/(<aside\b(?=[^>]*\bid=["']sidebar["'])[^>]*)(>)/i,'$1 data-mm3d="'+RELEASE+'"$2');
- const inject='<link rel="stylesheet" href="/assets/marney-sidebar3d-v1.css" data-mm-sidebar3d-release="'+RELEASE+'"><script defer src="/assets/marney-sidebar3d-v1.js"></script>';
+ const motion='<style data-mm3d-accessibility>@media(prefers-reduced-motion:reduce){html #sidebar[data-mm3d] .navbtn,html #sidebar[data-mm3d] .social-link{transition:none!important;animation:none!important;}}</style>';
+ const inject='<link rel="stylesheet" href="/assets/marney-sidebar3d-v1.css" data-mm-sidebar3d-release="'+RELEASE+'">'+motion+'<script defer src="/assets/marney-sidebar3d-v1.js"></script>';
  return html.replace(/<\/head\s*>/i,inject+'</head>');
 }
 function handle(req,res){const p=String(req.url||'').split('?')[0];let asset=assets.get(p);if(!asset)return false;
