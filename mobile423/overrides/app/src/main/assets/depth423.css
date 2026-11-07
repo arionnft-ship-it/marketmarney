@@ -1,0 +1,283 @@
+/* MARNEY 4.23 — dimensional materials, painted only when a surface changes.
+   No new motion, perspective, filters, layout rules, fonts, media or requests. */
+html[data-mm-depth="423"]{
+ --mm423-base:#0a1623;
+ --mm423-ink:#eef4fa;
+ --mm423-line:#344b60;
+ --mm423-edge:#07111d;
+ --mm423-highlight:#ffffff1a;
+ --mm423-accent:#ffca76;
+ --mm423-surface:linear-gradient(145deg,#22384c 0%,#172b3d 45%,#112131 100%);
+ --mm423-hero:linear-gradient(130deg,#2c3b4c 0%,#172d41 48%,#0d1b2a 100%);
+ --mm423-header:linear-gradient(165deg,#263c50 0%,#172b3d 52%,#102131 100%);
+ --mm423-control:linear-gradient(180deg,#2b4257 0%,#1d3245 52%,#17293a 100%);
+ --mm423-well:linear-gradient(180deg,#091622 0%,#102232 100%);
+ --mm423-selected:linear-gradient(180deg,#59442b 0%,#3e3021 55%,#30271d 100%);
+ --mm423-selected-ink:#ffda9c;
+ --mm423-selected-line:#8c6734;
+ --mm423-card-shadow:inset 0 1px 0 #ffffff16,0 3px 0 #07111dcc,0 8px 16px #02070d33;
+ --mm423-header-shadow:inset 0 1px 0 #ffffff16,0 3px 0 #07111d99,0 6px 12px #02070d26;
+ --mm423-control-shadow:inset 0 1px 0 #ffffff22,0 2px 0 #060f19,0 4px 7px #02070d29;
+ --mm423-inset-shadow:inset 0 2px 4px #02070d55,inset 0 -1px 0 #ffffff0e;
+ --mm423-small-shadow:inset 0 1px 0 #ffffff24,0 2px 2px #02070d2b;
+ --mm423-gold-face:linear-gradient(180deg,#ffe1a6 0%,#ffc76b 47%,#f0a735 100%);
+ --mm423-gold-pressed:linear-gradient(180deg,#ecaa43 0%,#ffcc7b 100%);
+ --mm423-gold-shadow:inset 0 1px 0 #fff4d6,0 3px 0 #935a14,0 6px 10px #02070d33;
+ --mm423-gold-ink:#382307;
+}
+
+/* Follow the page's existing theme switch without an observer or a timer.
+   Native Social/Profile/Group keep their established light presentation. */
+html[data-mm-depth="423"][data-mm-theme="light"]:not([data-mm46-reels]),
+html[data-mm-depth="423"][data-theme="light"]:not([data-mm-theme]):not([data-mm46-reels]),
+html[data-mm-depth="423"][data-trader-theme="light"]:not([data-mm-theme]):not([data-theme]):not([data-mm46-reels]),
+html[data-mm-depth="423"][data-journal-theme="light"]:not([data-mm-theme]):not([data-theme]):not([data-trader-theme]):not([data-mm46-reels]),
+html[data-mm-depth="423"][data-mm-depth-tone="light"]:not([data-mm-theme]):not([data-theme]):not([data-trader-theme]):not([data-journal-theme]):not([data-mm46-reels]),
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]),
+html[data-mm-depth="423"][data-mm47-group]:not([data-mm46-reels]),
+html[data-mm-depth="423"][data-mm44-page="profile"]:not([data-mm46-reels]){
+ --mm423-base:#edf1f6;
+ --mm423-ink:#1b2d41;
+ --mm423-line:#cfdae5;
+ --mm423-edge:#c2cdda;
+ --mm423-highlight:#ffffff;
+ --mm423-accent:#8d5b17;
+ --mm423-surface:linear-gradient(145deg,#ffffff 0%,#fffdfa 44%,#edf2f7 100%);
+ --mm423-hero:linear-gradient(130deg,#fff6e6 0%,#fffdf8 43%,#e8eff7 100%);
+ --mm423-header:linear-gradient(110deg,#ffffff 0%,#fffaf0 66%,#edf3f9 100%);
+ --mm423-control:linear-gradient(180deg,#ffffff 0%,#f8fafc 45%,#e6edf4 100%);
+ --mm423-well:linear-gradient(180deg,#e9eef5 0%,#f9fbfd 100%);
+ --mm423-selected:linear-gradient(180deg,#fff4dc 0%,#ffe7b9 52%,#f6d296 100%);
+ --mm423-selected-ink:#73460e;
+ --mm423-selected-line:#d2ad71;
+ --mm423-card-shadow:inset 0 1px 0 #ffffff,0 3px 0 #c6d1de,0 8px 16px #1d354d12;
+ --mm423-header-shadow:inset 0 1px 0 #ffffff,0 2px 0 #d1dbe6,0 6px 12px #1d354d0d;
+ --mm423-control-shadow:inset 0 1px 0 #ffffff,0 2px 0 #c4cfdb,0 4px 7px #1d354d0d;
+ --mm423-inset-shadow:inset 0 2px 4px #20374e16,inset 0 -1px 0 #ffffff;
+ --mm423-small-shadow:inset 0 1px 0 #ffffffbd,0 2px 2px #1d354d16;
+ --mm423-gold-shadow:inset 0 1px 0 #fff8e9,0 3px 0 #b97b24,0 6px 10px #8558161a;
+}
+
+/* Public pages: the surrounding plane and raised frame share one material.
+   The headline photograph, all thumbnails and embedded charts stay intact. */
+html[data-mm-depth="423"]:is([data-mm-depth-page="index"],[data-mm-depth-page="news"],[data-mm-depth-page="account"],[data-mm-depth-page="journal"]) body{
+ background-color:var(--mm423-base)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] #app :is(.hero-premium,.terminal-window,.panel,.card,.article,.mm90-feature,.mm-tv-card,.mm-tv-feature,.mm-tv-empty,.mm85-shell,.mm86-panel,.mm87-panel,.mm88-desk,.pair-panel,.mm1816-pivot-public,.mm1818-center,.mm1816-community-card){
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-card-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] #app :is(.terminal-window,.panel:not(.headline-carousel),.card,.article,.mm90-feature,.mm-tv-card,.mm-tv-feature,.mm-tv-empty,.mm85-shell,.mm86-panel,.mm87-panel,.mm88-desk,.pair-panel,.mm1816-pivot-public,.mm1818-center,.mm1816-community-card){
+ background:var(--mm423-surface)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] #app .hero-premium{
+ background:var(--mm423-hero)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.mobilebar,.topbar,.sidebar){
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] #app :is(.terminal-bar,.terminal-stats,.mm85-tabs,.mm88-controls,.mm1815-anal-controls){
+ background:var(--mm423-control)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:inset 0 1px 0 var(--mm423-highlight)!important;
+}
+
+/* Native News document uses different markup from the public newsroom. */
+html[data-mm-depth="423"][data-mm-depth-page="news"] :is(.featured,.row,.empty){
+ background:var(--mm423-surface)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-card-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="news"] :is(.mast,.sticky){
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="news"] :is(.icon-btn,.loadmore,.chip,.save){
+ background:var(--mm423-control)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="news"] .search{
+ background:var(--mm423-well)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-inset-shadow)!important;
+}
+
+/* Public navigation and secondary controls retain their names and geometry. */
+html[data-mm-depth="423"][data-mm-depth-page="index"] #mobileToggle,
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.button.outline,.headline-arrow,.mm109-timeframe,.mm84-cats button,.pair-button,.mm85-tab,.mm88-buttons button,.mm-tv-filters button,.mm-theme-switch button),
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(.secondary,.mm80-tabs button,.mm80-themes button,.mm80-home-link),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] .j-theme button,
+html[data-mm-depth="423"][data-mm-depth-page="journal"] .btn:not(.primary):not(.danger){
+ background:var(--mm423-control)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="index"] #nav .navbtn.active,
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.mm109-timeframe.active,.mm84-cats button.active,.pair-button.active,.mm85-tab.active,.mm88-buttons button.active,.mm-tv-filters button.active,.mm-theme-switch button[aria-pressed="true"]),
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(.mm80-tabs [aria-selected="true"],.mm80-themes button[aria-pressed="true"]),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] .j-theme button[aria-pressed="true"]{
+ background:var(--mm423-selected)!important;
+ border-color:var(--mm423-selected-line)!important;
+ color:var(--mm423-selected-ink)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+
+/* Primary actions have a warm top face and a short, visible lower edge. */
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.button:not(.outline):not(.danger),.mm1879-submit,.mm1816-community-join),
+html[data-mm-depth="423"][data-mm-depth-page="news"] :is(.retry,.chip[aria-pressed="true"]),
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(#login,#register,#mm36SaveBio,#mm36Publish,#mm36UploadAvatar),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] .btn.primary:not(.danger),
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-primary:not(.danger):not(.sh-reject),.sh-primary-link,.mm44-login,.sh-msg-compose button),
+html[data-mm-depth="423"][data-mm47-group] .gm-main-btn:not(.gm-danger):not(.danger),
+html[data-mm-depth="423"][data-mm44-page="profile"] #mm46FollowBtn:not(.following){
+ background:var(--mm423-gold-face)!important;
+ border-color:#c28b36!important;
+ color:var(--mm423-gold-ink)!important;
+ box-shadow:var(--mm423-gold-shadow)!important;
+ text-shadow:0 1px 0 #fff2d17a;
+}
+
+/* Social: the cards are raised, while their media and scroll layout stay native. */
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) body{
+ background:var(--mm423-base)!important;
+}
+html[data-mm-depth="423"][data-mm44-social] :is(.mm44-social-header,.mm44-headrow,.mm44-nav),
+html[data-mm-depth="423"][data-mm47-group] .gm-room-head,
+html[data-mm-depth="423"][data-mm44-page="profile"] .mm44-profile-header{
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+}
+html[data-mm-depth="423"][data-mm44-social] .mm44-social-header,
+html[data-mm-depth="423"][data-mm47-group] .gm-room-head,
+html[data-mm-depth="423"][data-mm44-page="profile"] .mm44-profile-header{
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-post,.sh-guest,.sh-compose,.sh-connect-card,.sh-friend-card,.sh-modal-box,.sh-mobile-account-dialog),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-guest,.gm-info-card,.gm-dialog),
+html[data-mm-depth="423"][data-mm44-page="profile"] :is(.mm46-profile-card,.mm46-feed-card,.mm46-list-panel){
+ background:var(--mm423-surface)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-card-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-story-section,.sh-msg-titlebar,.sh-msg-chat-header,.sh-notice-head,.sh-msg-compose),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-compose,.gm-info-head){
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:inset 0 1px 0 var(--mm423-highlight)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(#shMessengerPane,#shNotificationPane),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-aside,.gm-info-panel){
+ background:var(--mm423-surface)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-msg-messages,.sh-dm-thread),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-messages,.gm-empty){
+ background:var(--mm423-base)!important;
+}
+
+/* These small shadows preserve incoming/outgoing and destructive-action colors. */
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-msg-bubble,.sh-dm-bubble,.sh-post-actions button,.sh-post-options),
+html[data-mm-depth="423"][data-mm47-group] .gm-bubble,
+html[data-mm-depth="423"][data-mm44-page="profile"] .mm46-avatar{
+ box-shadow:var(--mm423-small-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) #shNotificationBell,
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.mm44-nav-button,.mm44-headrow>.mm44-icon,.sh-msg-title-actions button,.sh-msg-back),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-icon-btn,.gm-filter,.gm-attach),
+html[data-mm-depth="423"][data-mm44-page="profile"] .mm46-actions>:is(a,button){
+ background:var(--mm423-control)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) .mm44-nav-button[aria-pressed="true"],
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) .sh-msg-tabs button.is-active,
+html[data-mm-depth="423"][data-mm47-group] .gm-filter.active{
+ background:var(--mm423-selected)!important;
+ border-color:var(--mm423-selected-line)!important;
+ color:var(--mm423-selected-ink)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-page="profile"] .mm46-stat-row{
+ background:var(--mm423-well)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-inset-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm44-page="profile"] #mm46FollowBtn.following{
+ background:var(--mm423-control)!important;
+ color:var(--mm423-ink)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+
+/* Account and journal: frame information panels, never values, charts or tables. */
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(.card,.mm36-card,.mm80-guide,.mm80-summary),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] :is(.panel,.kpi,.mt5-connect,.mt5-summary,.j-editor){
+ background:var(--mm423-surface)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-card-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="journal"] :is(.j-top,.j-hero){
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="account"] .mm-google-button{
+ box-shadow:inset 0 1px 0 #ffffff,0 2px 0 #d4dce5,0 4px 7px #14283c0d!important;
+}
+
+/* Only text-entry surfaces get an inset finish. Checkbox/range/file controls,
+   seek bars, media, and nested input sizing are deliberately not selected. */
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.mm1815-searchbox,.pair-search-wrap,.mm87-controls select,.mm88-field select,.mm147-sortbar select,#balance,#risk,#loss),
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(#authForm input:not([type="checkbox"]),.mm80-profile-form input[type="text"],.mm80-profile-form textarea,.mm36-zone textarea),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] :is(.field input,.field select,.j-search,.mt5-field input,.controls input,.controls select,#authForm input),
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-compose-open,.sh-msg-search,.sh-compose textarea,.sh-comments input,.sh-comments textarea,.sh-msg-compose input,.sh-friend-find input,.sh-group-create input,.sh-dm-form input),
+html[data-mm-depth="423"][data-mm47-group] :is(.gm-compose input,.gm-compose textarea,.gm-search,.gm-dialog input[type="text"],.gm-dialog textarea){
+ background:var(--mm423-well)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-inset-shadow)!important;
+}
+
+/* Reels stays edge-to-edge. Depth is restricted to existing small controls. */
+html[data-mm-depth="423"][data-mm46-reels] #shNotificationBell,
+html[data-mm-depth="423"][data-mm46-reels] :is(.mm44-nav-button,.mm44-headrow>.mm44-icon,.mm46-icon,.sh-reel-rail-btn){
+ background:linear-gradient(180deg,#243240eb,#101b27de)!important;
+ border-color:#74849442!important;
+ box-shadow:inset 0 1px 0 #ffffff26,0 2px 3px #0005!important;
+}
+html[data-mm-depth="423"][data-mm46-reels] .mm44-nav-button[aria-pressed="true"]{
+ background:var(--mm423-selected)!important;
+ color:var(--mm423-selected-ink)!important;
+ border-color:var(--mm423-selected-line)!important;
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="war"] header.site-header{
+ background:var(--mm423-header)!important;
+ border-color:var(--mm423-line)!important;
+ box-shadow:var(--mm423-header-shadow)!important;
+}
+html[data-mm-depth="423"][data-mm-depth-page="war"] header.site-header button{
+ box-shadow:var(--mm423-control-shadow)!important;
+}
+
+/* Immediate press feedback changes paint only; no moving targets or work at rest. */
+html[data-mm-depth="423"][data-mm-depth-page="index"] :is(.button:not(.outline):not(.danger),.mm1879-submit):active:not(:disabled),
+html[data-mm-depth="423"][data-mm-depth-page="news"] :is(.retry,.chip[aria-pressed="true"]):active:not(:disabled),
+html[data-mm-depth="423"][data-mm-depth-page="account"] :is(#login,#register,#mm36SaveBio,#mm36Publish):active:not(:disabled),
+html[data-mm-depth="423"][data-mm-depth-page="journal"] .btn.primary:not(.danger):active:not(:disabled),
+html[data-mm-depth="423"][data-mm44-social]:not([data-mm46-reels]) :is(.sh-primary:not(.danger):not(.sh-reject),.mm44-login,.sh-msg-compose button):active:not(:disabled),
+html[data-mm-depth="423"][data-mm47-group] .gm-main-btn:not(.gm-danger):not(.danger):active:not(:disabled),
+html[data-mm-depth="423"][data-mm44-page="profile"] #mm46FollowBtn:not(.following):active:not(:disabled){
+ background:var(--mm423-gold-pressed)!important;
+ box-shadow:inset 0 2px 4px #754a1933,0 1px 0 #ad701d!important;
+}
+html[data-mm-depth="423"] :is(button,a,input,textarea,select):focus-visible{
+ outline:2px solid var(--mm423-accent)!important;
+ outline-offset:3px!important;
+}
+html[data-mm-depth="423"] button:disabled{
+ box-shadow:none!important;
+}

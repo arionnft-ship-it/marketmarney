@@ -1,0 +1,182 @@
+name: Marney 4.23 Dimensional UI
+on:
+  push:
+    branches: [android-v4.23-depth-ui]
+    paths: ['mobile423/**', '.github/workflows/build423.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: marney423-depth-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Reconstruct verified source and apply dimensional surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          source = Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest() == '701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          assert not any(Path(name).exists() for name in ('android417', 'android419', 'android420', 'android421', 'android422', 'android423'))
+          with ZipFile(source) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0] == 'android417': archive.extract(entry, '.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420
+          python3 mobile420/prepare420.py
+          mv android420 android421
+          python3 mobile421/prepare421.py
+          mv android421 android422
+          python3 mobile422/prepare422.py
+          mv android422 android423
+          python3 mobile423/prepare423.py
+      - name: Compile APK
+        run: gradle --no-daemon --project-dir android423 :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verify package and preserved application assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliver testapk
+          APK=android423/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney423-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney423-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta423'" deliver/Marney423-Package.txt
+          grep -F "versionCode='27'" deliver/Marney423-Package.txt
+          grep -F "versionName='4.23.0-beta'" deliver/Marney423-Package.txt
+          cp "$APK" deliver/Marney423.apk
+          cp android423/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney423-Tests.apk
+          cp verified423.json mobile423/Marney423-Panduan.md deliver/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,json
+          root=Path('android423')
+          manifest=json.loads(Path('verified423.json').read_text())
+          for rel,digest in manifest['preserved'].items():
+              assert hashlib.sha256((root/rel).read_bytes()).hexdigest()==digest,rel
+          apk=Path('deliver/Marney423.apk')
+          digest=hashlib.sha256(apk.read_bytes()).hexdigest()
+          Path('deliver/Marney423-SHA256.txt').write_text(digest+'  Marney423.apk\n')
+          assets=root/'app/src/main/assets'
+          expected={'assets/'+p.relative_to(assets).as_posix():p for p in assets.rglob('*') if p.is_file()}
+          with ZipFile(apk) as archive:
+              actual={entry.filename for entry in archive.infolist() if entry.filename.startswith('assets/') and not entry.is_dir()}
+              assert actual==set(expected), 'APK asset inventory differs from prepared source'
+              for name,p in expected.items():
+                  assert archive.read(name)==p.read_bytes(),p
+          print('APK SHA-256:',digest)
+          print('Preserved source files:',len(manifest['preserved']))
+          print('Verified APK assets:',len(expected))
+          PYCODE
+      - name: Verify packaged depth styling and web navigation
+        shell: bash
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright
+          python3 mobile423/visual_check423.py --apk deliver/Marney423.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney423-Final-APK
+          path: deliver/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney423-Depth-Preview
+          path: quality423/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney423-Test-APK
+          path: testapk/
+          if-no-files-found: error
+  native-ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney423-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney423-Test-APK
+          path: testapk
+      - name: Prepare focused navigation and style guard checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apk
+          sha256sum -c Marney423-SHA256.txt
+          cd ..
+          cat > native-check.sh <<'SH'
+          set -euo pipefail
+          mkdir -p native423
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney423.apk
+          adb install -r testapk/Marney423-Tests.apk
+          adb logcat -c
+          CLASSES="com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable"
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta423.test/androidx.test.runner.AndroidJUnitRunner | tee native423/instrumentation.txt
+          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta423/files native423/app-files/ || true
+          adb logcat -d -s AndroidRuntime:E > native423/runtime.log
+          grep -F "OK (7 tests)" native423/instrumentation.txt
+          adb shell am start -n com.marketmarney.mobile.beta423/com.marketmarney.mobile.MainActivity --ei startTab 1
+          sleep 3
+          adb exec-out screencap -p > native423/news-native.png
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash native-check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney423-Native-UI
+          path: native423/
+          if-no-files-found: error
