@@ -1,0 +1,99 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "path": "/_railway/health",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/akun.html",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/auth/android/config",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/api/content",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "path": "/assets/xau-war-3d.html?v=7.7",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "sha256": "b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212"
+    },
+    {
+      "path": "/api/xau-war/mt4/health",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true,
+      "receiver": {
+        "ok": true,
+        "receiver": "ready",
+        "version": "1.0",
+        "authentication": "required",
+        "publicDisplay": false
+      }
+    },
+    {
+      "path": "/api/xau-war/mt4/status",
+      "method": "GET",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/xau-war/mt4/stream",
+      "method": "GET",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/xau-war/mt4/arena",
+      "method": "GET",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/xau-war/mt4/ingest",
+      "method": "POST",
+      "status": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "path": "/api/xau-war/mt4/monitor",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "ok": true
+    }
+  ],
+  "checkedAt": "2026-11-07T02:55:45.734429+00:00",
+  "note": "No broker credentials, relay keys or price samples sent. Real MT4 ticks still need user-side activation."
+}
