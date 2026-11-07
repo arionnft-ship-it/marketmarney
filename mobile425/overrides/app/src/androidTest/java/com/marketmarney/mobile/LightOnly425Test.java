@@ -3,6 +3,7 @@ package com.marketmarney.mobile;
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.LinearLayout;
@@ -63,6 +64,21 @@ public class LightOnly425Test {
         }
     }
 
+    private void assertLightSystemBars() {
+        int status = activity.getWindow().getStatusBarColor();
+        int navigation = activity.getWindow().getNavigationBarColor();
+        // Android 15 may enforce transparent edge-to-edge system bars. Their
+        // underlying app canvas is white and light-system-icon flags stay set.
+        assertTrue("Status bar is white or transparent", status == Color.WHITE || Color.alpha(status) == 0);
+        assertTrue("Navigation bar is white or transparent", navigation == Color.WHITE || Color.alpha(navigation) == 0);
+        int flags = activity.getWindow().getDecorView().getSystemUiVisibility();
+        assertTrue((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0);
+        assertTrue((flags & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0);
+        LinearLayout root = (LinearLayout) field("root");
+        assertTrue(root.getBackground() instanceof ColorDrawable);
+        assertEquals(Color.WHITE, ((ColorDrawable) root.getBackground()).getColor());
+    }
+
     @Before public void setup() {
         inst = InstrumentationRegistry.getInstrumentation();
         activity = (MainActivity) inst.startActivitySync(new Intent(inst.getTargetContext(), MainActivity.class)
@@ -87,11 +103,7 @@ public class LightOnly425Test {
             call("updateSocialChrome");
             assertEquals(Boolean.TRUE, field("chromeLight"));
             assertEquals(Boolean.TRUE, call("lightSocial"));
-            assertEquals(Color.WHITE, activity.getWindow().getStatusBarColor());
-            assertEquals(Color.WHITE, activity.getWindow().getNavigationBarColor());
-            int flags = activity.getWindow().getDecorView().getSystemUiVisibility();
-            assertTrue((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0);
-            assertTrue((flags & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0);
+            assertLightSystemBars();
             LinearLayout bottom = (LinearLayout) field("bottom");
             assertNotNull(bottom.getBackground());
             assertEquals(5, bottom.getChildCount());
@@ -131,8 +143,7 @@ public class LightOnly425Test {
                 throw new RuntimeException(error);
             }
             assertEquals(Boolean.TRUE, field("chromeLight"));
-            assertEquals(Color.WHITE, activity.getWindow().getStatusBarColor());
-            assertEquals(Color.WHITE, activity.getWindow().getNavigationBarColor());
+            assertLightSystemBars();
         });
     }
 }
