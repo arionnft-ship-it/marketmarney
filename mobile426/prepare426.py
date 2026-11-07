@@ -76,6 +76,11 @@ replace(main,
 replace(main,
         'lightCss=asset("light425.css");lightScript=asset("light425.js");',
         'lightCss=asset("light425.css")+"\\n"+asset("soft426.css");lightScript=asset("light425.js");')
+# startTab is documented in the shell as a UI-test-only launch extra. Production
+# launches never include it, while tests manually create the opening when needed.
+replace(main,
+        'if(state==null)showLaunchAnimation();',
+        'if(state==null&&!getIntent().hasExtra("startTab"))showLaunchAnimation();')
 
 overrides={
     "app/src/main/java/com/marketmarney/mobile/StartupOverlay.java":"StartupOverlay.java",
