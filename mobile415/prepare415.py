@@ -87,6 +87,7 @@ p=base/'app/build.gradle';g=p.read_text();assert "applicationId 'com.marketmarne
 g=g.replace("applicationId 'com.marketmarney.mobile.beta414'","applicationId 'com.marketmarney.mobile.beta415'").replace('versionCode 18','versionCode 19').replace("versionName '4.14.0-beta'","versionName '4.15.0-beta'")
 g+='\ndependencies { androidTestImplementation "androidx.test.uiautomator:uiautomator:2.3.0" }\n';p.write_text(g)
 p=base/'app/src/main/res/values/strings.xml';p.write_text(re.sub(r'(<string name="app_name">)[^<]+',r'\g<1>Marney 4.15 Galeri',p.read_text()))
+exec(compile((root/'auto_open415.py').read_text(),str(root/'auto_open415.py'),'exec'),{'base':base,'preserved':preserved,'hashlib':hashlib})
 for rel,h in preserved.items():assert hashlib.sha256((base/rel).read_bytes()).hexdigest()==h,rel
 manifest=(base/'app/src/main/AndroidManifest.xml').read_text()
 assert not any(x in manifest for x in ['READ_MEDIA_IMAGES','READ_MEDIA_VIDEO','READ_EXTERNAL_STORAGE','WRITE_EXTERNAL_STORAGE','MANAGE_EXTERNAL_STORAGE'])
