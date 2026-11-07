@@ -1,8 +1,10 @@
 name: Verify deployed 3D sidebar
 on:
-  workflow_dispatch:
+  push:
+    branches: [sidebar-3d-premium-20261108]
+    paths: ['.github/workflows/sidebar-3d-production.yml']
 permissions:
-  contents: read
+  contents: write
 jobs:
   production:
     runs-on: ubuntu-24.04
@@ -11,6 +13,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Chromium test tools
         run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Confirm requested design is served
+        run: |
+          python3 - <<'PY'
+          import urllib.request,time
+          for n in range(12):
+            try:
+              with urllib.request.urlopen('https://marketmarney.com/',timeout=15) as r:
+                assert b'data-mm-sidebar3d-release="sidebar3d-20261108-v1"' in r.read(7000000)
+                break
+            except Exception:
+              if n==11:raise
+              time.sleep(5)
+          PY
       - name: Verify deployed sidebar, theme, navigation and untouched account/arenas
         env:
           SIDEBAR_PUBLIC: '1'
@@ -22,3 +37,14 @@ jobs:
           name: sidebar3d-production
           path: sidebar3d-production
           retention-days: 7
+      - name: Record non-sensitive verification report
+        if: always()
+        run: |
+          test -f sidebar3d-production/report.json || exit 0
+          cp sidebar3d-production/report.json sidebar3d-production-check.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sidebar3d-production-check.json
+          git diff --cached --quiet || git commit -m 'Record production 3D sidebar navigation/theme verification'
+          git pull --rebase origin sidebar-3d-premium-20261108
+          git push origin HEAD:sidebar-3d-premium-20261108
