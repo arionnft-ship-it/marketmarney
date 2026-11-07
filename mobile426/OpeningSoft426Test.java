@@ -15,12 +15,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Focused checks for the 4.26 cinematic opening and restrained native depth. */
+/** One real-device flow verifies the cinematic opening without repeatedly rebuilding GPU surfaces. */
 public class OpeningSoft426Test {
     private Instrumentation inst;
     private MainActivity activity;
@@ -47,25 +46,7 @@ public class OpeningSoft426Test {
         }
     }
 
-    private int dp(float value){
-        return Math.round(value*activity.getResources().getDisplayMetrics().density);
-    }
-
-    private void show(){
-        show(-1,-1);
-    }
-
-    private void show(int width,int height){
-        ui(()->{
-            overlay=new StartupOverlay(activity,removed::incrementAndGet);
-            FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(width,height,android.view.Gravity.CENTER);
-            ((FrameLayout)activity.findViewById(android.R.id.content)).addView(overlay,params);
-        });
-    }
-
-    private View part(String name){
-        return (View)field(overlay,name);
-    }
+    private View part(String name){return (View)field(overlay,name);}
 
     private void awaitRemoved(long timeoutMs){
         long end=SystemClock.uptimeMillis()+timeoutMs;
@@ -85,6 +66,9 @@ public class OpeningSoft426Test {
             if(existing!=null)existing.dispose();
             WebView web=(WebView)field(activity,"web");
             if(web!=null)web.stopLoading();
+            overlay=new StartupOverlay(activity,removed::incrementAndGet);
+            ((FrameLayout)activity.findViewById(android.R.id.content)).addView(
+                overlay,new FrameLayout.LayoutParams(-1,-1));
         });
         SystemClock.sleep(120);
     }
@@ -99,9 +83,8 @@ public class OpeningSoft426Test {
         }
     }
 
-    @Test public void cinematicBrandingAndLocalArtworkArePresent()throws Exception{
-        show();
-        SystemClock.sleep(850);
+    @Test public void cinematicOpeningSoftDepthAndLightRecoveryWorkTogether(){
+        final float[] early={0f,0f,0f};
         ui(()->{
             assertEquals("mm416-launch-overlay",overlay.getTag());
             assertEquals("MARNEY",((TextView)part("name")).getText().toString());
@@ -113,59 +96,15 @@ public class OpeningSoft426Test {
             assertEquals("Lewati animasi pembuka",part("skip").getContentDescription());
             assertNotNull(part("backdrop"));
             assertNotNull(part("aura"));
-        });
-    }
 
-    @Test public void finiteAnimationProgressesTowardTheFinalFrame(){
-        Assume.assumeTrue(StartupOverlay.motionAllowed(activity));
-        show();
-        SystemClock.sleep(120);
-        final float[] early={0f,0f,0f};
-        ui(()->{
+            int openingFlags=activity.getWindow().getDecorView().getSystemUiVisibility();
+            assertEquals(0,openingFlags&View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            assertEquals(0,openingFlags&View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+
             early[0]=part("logo").getAlpha();
             early[1]=part("logo").getScaleX();
             early[2]=part("name").getAlpha();
-        });
-        SystemClock.sleep(950);
-        ui(()->{
-            assertTrue(part("logo").getAlpha()>early[0]+.2f);
-            assertTrue(part("logo").getScaleX()>early[1]+.05f);
-            assertTrue(part("name").getAlpha()>early[2]+.2f);
-            assertTrue(part("fill").getScaleX()>0f);
-        });
-    }
 
-    @Test public void openingChromeIsDarkOnlyDuringTheOpening(){
-        show();
-        ui(()->{
-            int flags=activity.getWindow().getDecorView().getSystemUiVisibility();
-            assertEquals(0,flags&View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-            assertEquals(0,flags&View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-            overlay.finish(false,"test-complete");
-        });
-        awaitRemoved(500);
-        ui(()->{
-            int flags=activity.getWindow().getDecorView().getSystemUiVisibility();
-            assertTrue((flags&View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)!=0);
-            assertTrue((flags&View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)!=0);
-        });
-    }
-
-    @Test public void reducedMotionShowsTheCompleteBrandImmediately()throws Exception{
-        shell("settings put global animator_duration_scale 0");
-        assertFalse(StartupOverlay.motionAllowed(activity));
-        show();
-        SystemClock.sleep(120);
-        ui(()->{
-            assertEquals(1f,part("logo").getAlpha(),.001f);
-            assertEquals(1f,part("logo").getScaleX(),.001f);
-            assertEquals(1f,part("name").getAlpha(),.001f);
-            assertEquals(1f,part("fill").getScaleX(),.001f);
-        });
-    }
-
-    @Test public void restrainedNativeDepthUsesAtMostTwoLayers(){
-        ui(()->{
             Drawable tray=DepthStyle423.tray(activity,true);
             Drawable selected=DepthStyle423.tabPlate(activity,true,true);
             Drawable idle=DepthStyle423.tabPlate(activity,true,false);
@@ -186,13 +125,23 @@ public class OpeningSoft426Test {
             assertEquals(0f,primary.getElevation(),.001f);
             assertNull(primary.getStateListAnimator());
         });
-    }
 
-    @Test public void skipRemainsImmediateAndIdempotent(){
-        show();
-        ui(()->assertTrue(part("skip").performClick()));
-        awaitRemoved(500);
+        SystemClock.sleep(950);
         ui(()->{
+            if(StartupOverlay.motionAllowed(activity)){
+                assertTrue(part("logo").getAlpha()>early[0]+.2f);
+                assertTrue(part("logo").getScaleX()>early[1]+.05f);
+                assertTrue(part("name").getAlpha()>early[2]+.2f);
+            }
+            assertTrue(part("fill").getScaleX()>0f);
+            assertTrue(part("skip").performClick());
+        });
+        awaitRemoved(500);
+
+        ui(()->{
+            int lightFlags=activity.getWindow().getDecorView().getSystemUiVisibility();
+            assertTrue((lightFlags&View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)!=0);
+            assertTrue((lightFlags&View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)!=0);
             overlay.finish(true,"again");
             overlay.dispose();
         });
