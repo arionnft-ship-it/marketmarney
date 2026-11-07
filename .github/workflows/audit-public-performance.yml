@@ -1,0 +1,89 @@
+name: Audit public MarketMarney performance
+on:
+  push:
+    branches: [fix/site-performance-audit-20261108]
+    paths: ['.github/workflows/audit-public-performance.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install playwright==1.56.0 && python -m playwright install chromium --with-deps
+      - name: Measure public pages and client-side load without account access
+        shell: bash
+        run: |
+          mkdir -p perf-report
+          python <<'PY'
+          import json,time,urllib.request,statistics,datetime
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+          base='https://marketmarney.com'
+          paths=[
+           ('Home Desktop','/',1360,850),
+           ('Home Mobile','/',390,844),
+           ('Social Mobile','/beranda-trader.html',390,844),
+           ('Account Mobile','/akun.html',390,844),
+           ('WarXAU Mobile','/assets/xau-war-3d.html',390,844),
+           ('BTC War Desktop','/assets/btc-war-3d.html',1280,850),
+           ('Market Live','/',1280,850),
+          ]
+          report={'timeUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'unauthenticated read-only pages, no form submissions','cases':[]}
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
+            for name,path,width,height in paths:
+              context=browser.new_context(viewport={'width':width,'height':height},service_workers='block',reduced_motion='reduce')
+              page=context.new_page()
+              failed=[];longtasks=[];consoleErrors=[];resp=[]
+              page.on('requestfailed',lambda req:failed.append({'url':req.url[:140],'reason':req.failure}))
+              page.on('pageerror',lambda err:consoleErrors.append(str(err)[:160]))
+              page.add_init_script("""window.__mmLongTasks=[];try{new PerformanceObserver(list=>{for(const x of list.getEntries())window.__mmLongTasks.push(Math.round(x.duration))}).observe({entryTypes:['longtask']})}catch(e){}""")
+              start=time.monotonic();goto_error=None
+              try:
+                response=page.goto(base+path,wait_until='domcontentloaded',timeout=40000)
+                page.wait_for_timeout(4200 if 'War' in name else 3200)
+                if name=='Market Live':
+                  try:
+                    page.locator('#nav [data-page="Market Live"]').click(timeout=5000)
+                    page.wait_for_timeout(3500)
+                  except Exception as e:goto_error='market live tab: '+str(e)[:180]
+              except Exception as e:goto_error=str(e)[:220]
+              elapsed=round((time.monotonic()-start)*1000)
+              try:
+                info=page.evaluate("""() => {
+                const nav=performance.getEntriesByType('navigation')[0],r=performance.getEntriesByType('resource');
+                const safe=x=>({name:new URL(x.name).pathname,transfer:Math.round(x.transferSize||0),decoded:Math.round(x.decodedBodySize||0),duration:Math.round(x.duration),type:x.initiatorType});
+                const sorted=[...r].sort((a,b)=>(b.transferSize||0)-(a.transferSize||0));
+                const slow=[...r].sort((a,b)=>b.duration-a.duration);
+                return {navigation:nav?{domContentLoaded:Math.round(nav.domContentLoadedEventEnd),ttfb:Math.round(nav.responseStart),loadedBytes:Math.round(nav.transferSize||0)}:null,
+                  fcp:Math.round(performance.getEntriesByType('paint').find(x=>x.name==='first-contentful-paint')?.startTime||0),
+                  resourceCount:r.length,transferred:Math.round(r.reduce((a,x)=>a+(x.transferSize||0),0)),
+                  jsDecoded:Math.round(r.filter(x=>/\\.js(\\?|$)/.test(x.name)).reduce((a,x)=>a+(x.decodedBodySize||0),0)),
+                  topTransfers:sorted.slice(0,12).map(safe),topSlow:slow.slice(0,12).map(safe),
+                  iframes:document.querySelectorAll('iframe').length,videoTags:document.querySelectorAll('video').length,
+                  imageTags:document.images.length,hiddenLoadingImages:[...document.images].filter(x=>x.loading!=='lazy'&&x.getBoundingClientRect().top>innerHeight).length,
+                  longTasks:window.__mmLongTasks||[],documentBytes:document.documentElement.outerHTML.length,
+                  title:document.title}};
+                """)
+              except Exception as e:info={'error':str(e)[:300]}
+              row={'name':name,'path':path,'width':width,'elapsedMs':elapsed,'navigateError':goto_error,'failedRequests':failed[:12],'jsErrors':consoleErrors[:10],'data':info}
+              report['cases'].append(row)
+              print(json.dumps({k:v for k,v in row.items() if k!='data'},ensure_ascii=False))
+              if 'data' in row:print(json.dumps({'name':name,'data':info},ensure_ascii=False)[:6500])
+              try:page.screenshot(path='perf-report/'+name.replace(' ','-')+'.png',full_page=False,timeout=15000)
+              except:pass
+              context.close()
+            browser.close()
+          Path('perf-report/report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-public-performance-audit
+          path: perf-report/
+          retention-days: 7
