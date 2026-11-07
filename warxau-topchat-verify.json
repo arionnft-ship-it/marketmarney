@@ -1,5 +1,5 @@
 {
-  "ok": true,
+  "ok": false,
   "checks": [
     {
       "name": "/assets/xau-war-3d.html?v=7.7 HTTP",
@@ -7,106 +7,10 @@
     },
     {
       "name": "approved live page checksum",
-      "ok": true
-    },
-    {
-      "name": "/assets/discussion-1828.js HTTP",
-      "ok": true
-    },
-    {
-      "name": "/assets/discussion-1828.css HTTP",
-      "ok": true
-    },
-    {
-      "name": "transformed current chat syntax",
-      "ok": true
-    },
-    {
-      "name": "all original engine/feed scripts identical",
-      "ok": true
-    },
-    {
-      "name": "all original scripts parse",
-      "ok": true
-    },
-    {
-      "name": "idempotent HTML overlay",
-      "ok": true
-    },
-    {
-      "name": "private FBS page transformation preserved",
-      "ok": true
-    },
-    {
-      "name": "private FBS layout can be enhanced",
-      "ok": true
-    },
-    {
-      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
-      "ok": true
-    },
-    {
-      "name": "existing XAU room readable without login",
-      "ok": true
-    },
-    {
-      "name": "/_railway/health HTTP",
-      "ok": true
-    },
-    {
-      "name": "/akun.html HTTP",
-      "ok": true
-    },
-    {
-      "name": "/api/community/status HTTP",
-      "ok": true
-    },
-    {
-      "name": "/api/xau-war/mt4/health HTTP",
-      "ok": true
-    },
-    {
-      "name": "/api/xau-war/mt4/arena HTTP",
-      "ok": true
-    },
-    {
-      "name": "/api/xau-war/mt4/status HTTP",
-      "ok": true
-    },
-    {
-      "name": "/api/xau-war/mt4/stream HTTP",
-      "ok": true
-    },
-    {
-      "name": "overlay route /assets/xau-war-3d.html",
-      "ok": true
-    },
-    {
-      "name": "overlay route /assets/warxau-topchat-layout.js",
-      "ok": true
-    },
-    {
-      "name": "overlay route /assets/warxau-topchat-chat.js",
-      "ok": true
-    },
-    {
-      "name": "overlay route /assets/warxau-topchat.css",
-      "ok": true
-    },
-    {
-      "name": "private endpoint not claimed by UI addon",
-      "ok": true
+      "ok": false
     }
   ],
   "scope": "read-only public inspection; isolated adapter tests; no message or account creation",
-  "originalInlineScripts": 24,
-  "originalPageSha256": "b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212",
-  "metadata": {
-    "version": "7.8-topchat",
-    "sourceHash": "b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212",
-    "pageBytes": 3209966,
-    "chatIntervalMs": 3000,
-    "room": "MARKET:OANDA:XAUUSD"
-  },
-  "checkedAt": "2026-11-07T04:14:43.076Z"
+  "error": "AssertionError [ERR_ASSERTION]: approved live page checksum\n    at check (/home/runner/work/marketmarney/marketmarney/warxau-fbs/verify-topchat.cjs:6:74)\n    at /home/runner/work/marketmarney/marketmarney/warxau-fbs/verify-topchat.cjs:11:55\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)",
+  "checkedAt": "2026-11-07T04:24:22.346Z"
 }
