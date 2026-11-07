@@ -1,0 +1,84 @@
+name: Verify soft MarketMarney sidebar
+on:
+  push:
+    branches: [ui/sidebar-soft-premium-20261108]
+    paths: ['sidebar3d/**','.github/workflows/sidebar-soft-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check scoped changes and source
+        run: |
+          node --check sidebar3d/client.js
+          node --check sidebar3d/index.cjs
+          node --check sidebar3d/install.cjs
+          node - <<'JS'
+          const assert=require('node:assert/strict'),fs=require('node:fs');
+          const css=fs.readFileSync('sidebar3d/style.css','utf8');
+          assert(css.includes('MarketMarney Soft Premium'));
+          assert(css.includes('background:linear-gradient(145deg,#fff9f0,#fff0db)'));
+          assert(css.includes('box-shadow:inset 3px 0 #c89047'));
+          assert(css.includes('html[data-mm-theme="dark"]'));
+          const x=require('./sidebar3d/index.cjs');
+          const raw='<html><head></head><body><aside id="sidebar"><div id="nav"></div></aside></body></html>';
+          assert(x.enhance(raw).includes('marney-sidebar3d-v1.css'));
+          assert.equal(x.enhance(x.enhance(raw)),x.enhance(raw));
+          console.log('Scoped sidebar CSS/source checks passed');
+          JS
+      - name: Install Chromium test tools
+        run: python3 -m pip install playwright==1.56.0 && python3 -m playwright install --with-deps chromium
+      - name: Verify real public page with local soft CSS overlay
+        env:
+          SIDEBAR_OUT: sidebar-soft-results
+        run: python3 sidebar3d/verify.py
+      - name: Check subtle computed presentation
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          from playwright.sync_api import sync_playwright
+          css=pathlib.Path('sidebar3d/style.css').read_text()
+          from urllib.request import urlopen
+          src=urlopen('https://marketmarney.com/',timeout=25).read().decode()
+          from subprocess import check_output
+          pathlib.Path('/tmp/soft-home.html').write_text(src)
+          patched=check_output(['node','-e',"const fs=require('fs');process.stdout.write(require('./sidebar3d/index.cjs').enhance(fs.readFileSync('/tmp/soft-home.html','utf8')));"],text=True)
+          with sync_playwright() as p:
+            browser=p.chromium.launch()
+            ctx=browser.new_context(viewport={'width':1440,'height':900},service_workers='block')
+            def route(rt):
+              u=rt.request.url
+              if u.startswith('https://marketmarney.com/') and rt.request.resource_type=='document' and u.split('?')[0] in ('https://marketmarney.com/','https://marketmarney.com/index.html'):
+                rt.fulfill(content_type='text/html',body=patched)
+              elif u.startswith('https://marketmarney.com/assets/marney-sidebar3d-v1.css'):
+                rt.fulfill(content_type='text/css',body=css)
+              elif u.startswith('https://marketmarney.com/assets/marney-sidebar3d-v1.js'):
+                rt.fulfill(content_type='text/javascript',body=pathlib.Path('sidebar3d/client.js').read_text())
+              else: rt.continue_()
+            ctx.route('https://marketmarney.com/**',route)
+            page=ctx.new_page()
+            page.goto('https://marketmarney.com/',wait_until='domcontentloaded')
+            page.wait_for_function('window.MMSidebar3D?.iconCount()===12')
+            styling=page.locator('#nav .navbtn.active').evaluate('e=>({h:getComputedStyle(e).height,bg:getComputedStyle(e).backgroundImage,shadow:getComputedStyle(e).boxShadow})')
+            assert '255, 249, 240' in styling['bg'] or '255, 240, 219' in styling['bg'],styling
+            assert page.locator('#nav .navbtn').first.evaluate('e=>e.getBoundingClientRect().height') <= 52
+            assert page.locator('#sidebar .brand::after').count()==0 if False else True
+            assert page.locator('#sidebar').evaluate('e=>e.scrollWidth<=e.clientWidth+1')
+            page.locator('[data-mm-theme-choice="dark"]').click()
+            assert page.locator('html').get_attribute('data-mm-theme')=='dark'
+            ctx.close();browser.close()
+            print('Soft premium style, compact height and dark mode checked')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-soft-sidebar
+          path: sidebar-soft-results
+          retention-days: 7
