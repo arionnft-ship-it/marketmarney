@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: 24 scripts parse
+ok 1 - 24 scripts parse
+  ---
+  duration_ms: 23.354014
+  type: 'test'
+  ...
+# Subtest: all original 3D scripts and textures unchanged
+ok 2 - all original 3D scripts and textures unchanged
+  ---
+  duration_ms: 2.821351
+  type: 'test'
+  ...
+# Subtest: only oil feed and correct instrument label
+ok 3 - only oil feed and correct instrument label
+  ---
+  duration_ms: 3.532013
+  type: 'test'
+  ...
+# Subtest: only HD and 0.01 visual scale
+ok 4 - only HD and 0.01 visual scale
+  ---
+  duration_ms: 2.926207
+  type: 'test'
+  ...
+# Subtest: wrong instrument cannot contaminate oil
+ok 5 - wrong instrument cannot contaminate oil
+  ---
+  duration_ms: 0.457809
+  type: 'test'
+  ...
+# Subtest: price timestamp and hash-id preserved
+ok 6 - price timestamp and hash-id preserved
+  ---
+  duration_ms: 0.292219
+  type: 'test'
+  ...
+# Subtest: invalid stale future quotes rejected
+ok 7 - invalid stale future quotes rejected
+  ---
+  duration_ms: 0.319258
+  type: 'test'
+  ...
+# Subtest: candle inclusive end becomes exclusive millisecond boundary
+ok 8 - candle inclusive end becomes exclusive millisecond boundary
+  ---
+  duration_ms: 1.204319
+  type: 'test'
+  ...
+# Subtest: quote needs matching current source daily
+ok 9 - quote needs matching current source daily
+  ---
+  duration_ms: 0.990527
+  type: 'test'
+  ...
+# Subtest: first quote no free troops
+ok 10 - first quote no free troops
+  ---
+  duration_ms: 1.168912
+  type: 'test'
+  ...
+# Subtest: 1.00 move triggers 20 infantry 5 tanks 2 helicopters 1 jet
+ok 11 - 1.00 move triggers 20 infantry 5 tanks 2 helicopters 1 jet
+  ---
+  duration_ms: 0.718708
+  type: 'test'
+  ...
+# Subtest: 3.00 movement triggers building and independent sell units
+ok 12 - 3.00 movement triggers building and independent sell units
+  ---
+  duration_ms: 0.60781
+  type: 'test'
+  ...
+# Subtest: connection gap rebases without invented movement
+ok 13 - connection gap rebases without invented movement
+  ---
+  duration_ms: 0.293941
+  type: 'test'
+  ...
+# Subtest: daily closes at boundary and requires new session
+ok 14 - daily closes at boundary and requires new session
+  ---
+  duration_ms: 48.05893
+  type: 'test'
+  ...
+# Subtest: chat patch adds only one exact target
+ok 15 - chat patch adds only one exact target
+  ---
+  duration_ms: 0.388618
+  type: 'test'
+  ...
+# Subtest: trade ids are hashes not a monotonic sequence; newest price sampled
+ok 16 - trade ids are hashes not a monotonic sequence; newest price sampled
+  ---
+  duration_ms: 602.199152
+  type: 'test'
+  ...
+# Subtest: snapshot not replayed and duplicate ignored
+ok 17 - snapshot not replayed and duplicate ignored
+  ---
+  duration_ms: 600.869998
+  type: 'test'
+  ...
+# Subtest: close cancels pending sample and error does not fabricate quote
+ok 18 - close cancels pending sample and error does not fabricate quote
+  ---
+  duration_ms: 280.973177
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1718.744385

@@ -1,0 +1,197 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "WTI stream adapter accepts fixture",
+      "ok": true
+    },
+    {
+      "name": "oil 0.01 scale",
+      "ok": true
+    },
+    {
+      "name": "one dollar triggers correct units",
+      "ok": true
+    },
+    {
+      "name": "helicopter and jet thresholds",
+      "ok": true
+    },
+    {
+      "name": "dedicated oil chat",
+      "ok": true
+    },
+    {
+      "name": "three arena links",
+      "ok": true
+    },
+    {
+      "name": "one selected oil link",
+      "ok": true
+    },
+    {
+      "name": "HD only",
+      "ok": true
+    },
+    {
+      "name": "desktop side chat",
+      "ok": true
+    },
+    {
+      "name": "perpetual distinct from FBS label",
+      "ok": true
+    },
+    {
+      "name": "mobile stacked",
+      "ok": true
+    },
+    {
+      "name": "mobile width fits",
+      "ok": true
+    },
+    {
+      "name": "daily close stops battle",
+      "ok": true
+    },
+    {
+      "name": "no fixture exceptions",
+      "ok": true
+    },
+    {
+      "name": "normal 3D render loop advances",
+      "ok": true
+    },
+    {
+      "name": "WebGL initialized",
+      "ok": true
+    },
+    {
+      "name": "normal render no exceptions",
+      "ok": true
+    },
+    {
+      "name": "actual source is WTI perpetual",
+      "ok": true
+    },
+    {
+      "name": "real source timestamp advances",
+      "ok": true
+    },
+    {
+      "name": "source coin exact",
+      "ok": true
+    },
+    {
+      "name": "daily candle from source",
+      "ok": true
+    },
+    {
+      "name": "real feed no exceptions",
+      "ok": true
+    },
+    {
+      "name": "gold pip scale unchanged",
+      "ok": true
+    },
+    {
+      "name": "gold has oil switch",
+      "ok": true
+    },
+    {
+      "name": "bitcoin pip scale unchanged",
+      "ok": true
+    },
+    {
+      "name": "bitcoin has oil switch",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "scope": "Isolated test quotes and real WTI perpetual public API. No account logins, orders, wallets or public messages.",
+  "normalRender": {
+    "fps": 4,
+    "sceneTime": 1.7999,
+    "quality": "hd",
+    "renderer": "webgl2",
+    "drawCalls": 29
+  },
+  "realSamples": [
+    {
+      "version": "1.0-oil-war-live",
+      "price": 90.095,
+      "timestamp": 1794068200881,
+      "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "hl-wti-d1-2026-11-07",
+          "symbol": "WTI-PERP",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794068201403,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 27798361.699951172
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+        "symbol": "WTI-PERP",
+        "coin": "xyz:CL",
+        "transport": "WebSocket",
+        "receivedTrades": 27,
+        "displaySamples": 1,
+        "reconnects": 0,
+        "lastPrice": 90.095,
+        "lastTimestamp": 1794068200881,
+        "dailyOpen": 1794009600000
+      }
+    },
+    {
+      "version": "1.0-oil-war-live",
+      "price": 90.095,
+      "timestamp": 1794068205714,
+      "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+      "points": 2,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "hl-wti-d1-2026-11-07",
+          "symbol": "WTI-PERP",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794068206152,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 27793840
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "trade[XYZ]/Hyperliquid \u00b7 WTI perp",
+        "symbol": "WTI-PERP",
+        "coin": "xyz:CL",
+        "transport": "WebSocket",
+        "receivedTrades": 30,
+        "displaySamples": 2,
+        "reconnects": 0,
+        "lastPrice": 90.095,
+        "lastTimestamp": 1794068205714,
+        "dailyOpen": 1794009600000
+      }
+    }
+  ],
+  "checkedAt": "2026-11-07T16:16:51.022218+00:00"
+}
