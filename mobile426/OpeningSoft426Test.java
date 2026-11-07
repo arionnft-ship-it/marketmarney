@@ -2,7 +2,6 @@ package com.marketmarney.mobile;
 
 import android.app.Instrumentation;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.ParcelFileDescriptor;
@@ -13,8 +12,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import androidx.test.platform.app.InstrumentationRegistry;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
@@ -76,17 +73,6 @@ public class OpeningSoft426Test {
         assertEquals(1,removed.get());
     }
 
-    private void screenshot(String name)throws Exception{
-        Bitmap bitmap=inst.getUiAutomation().takeScreenshot();
-        assertNotNull(bitmap);
-        File directory=new File(activity.getExternalFilesDir(null),"opening426-tests");
-        assertTrue(directory.exists()||directory.mkdirs());
-        try(FileOutputStream output=new FileOutputStream(new File(directory,name+".png"))){
-            assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,output));
-        }
-        bitmap.recycle();
-    }
-
     @Before public void setup()throws Exception{
         inst=InstrumentationRegistry.getInstrumentation();
         shell("settings put global animator_duration_scale 1");
@@ -128,7 +114,6 @@ public class OpeningSoft426Test {
             assertNotNull(part("backdrop"));
             assertNotNull(part("aura"));
         });
-        screenshot("cinematic-opening");
     }
 
     @Test public void finiteAnimationProgressesTowardTheFinalFrame(){
