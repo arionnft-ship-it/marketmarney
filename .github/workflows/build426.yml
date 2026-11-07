@@ -118,9 +118,11 @@ jobs:
               assert b'MM426_LAUNCH' in dex
               assert b'FINANCIAL INTELLIGENCE' in dex
           startup=(root/'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java').read_text()
+          main=(root/'app/src/main/java/com/marketmarney/mobile/MainActivity.java').read_text()
           depth=(root/'app/src/main/java/com/marketmarney/mobile/DepthStyle423.java').read_text()
           assert 'CinematicBackdrop' in startup and 'LogoAura' in startup
-          assert 'repeating animator' in startup
+          assert 'post(()->finish(false,"skip"))' in startup
+          assert '!getIntent().hasExtra("startTab")' in main
           assert 'restrained depth system' in depth
           print('APK SHA-256:',digest)
           print('Changed source files:',len(manifest['changed']))
@@ -153,10 +155,10 @@ jobs:
           path: testapk/
           if-no-files-found: error
 
-  native-ui:
+  opening-ui:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 13
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -166,30 +168,25 @@ jobs:
         with:
           name: Marney426-Test-APK
           path: testapk
-      - name: Prepare cinematic opening, soft-depth and regression checks
+      - name: Prepare cinematic opening checks
         shell: bash
         run: |
           set -euo pipefail
           cd apk
           sha256sum -c Marney426-SHA256.txt
           cd ..
-          cat > native-check.sh <<'SH'
+          cat > opening-check.sh <<'SH'
           set -euo pipefail
-          mkdir -p native426
+          mkdir -p opening426
           adb shell wm size 480x960
           adb shell wm density 240
           adb install -r apk/Marney426.apk
           adb install -r testapk/Marney426-Tests.apk
           adb logcat -c
-          CLASSES="com.marketmarney.mobile.OpeningSoft426Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable"
-          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta426.test/androidx.test.runner.AndroidJUnitRunner | tee native426/instrumentation.txt
-          adb logcat -d -s AndroidRuntime:E > native426/runtime.log
-          grep -E "OK \([0-9]+ tests?\)" native426/instrumentation.txt
-          test ! -s native426/runtime.log
-          adb pull /sdcard/Android/data/com.marketmarney.mobile.beta426/files/opening426-tests native426/ || true
-          adb shell am start -n com.marketmarney.mobile.beta426/com.marketmarney.mobile.MainActivity --ei startTab 1
-          sleep 3
-          adb exec-out screencap -p > native426/news-soft-native.png
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta426.test/androidx.test.runner.AndroidJUnitRunner | tee opening426/instrumentation.txt
+          adb logcat -d -s AndroidRuntime:E > opening426/runtime.log
+          grep -F "OK (1 test)" opening426/instrumentation.txt
+          test ! -s opening426/runtime.log
           SH
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
       - uses: reactivecircus/android-emulator-runner@v2
@@ -203,16 +200,73 @@ jobs:
           emulator-boot-timeout: 480
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
-          script: bash native-check.sh
+          script: bash opening-check.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Marney426-Native-UI
-          path: native426/
+          name: Marney426-Opening-UI
+          path: opening426/
+          if-no-files-found: error
+
+  regression-ui:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney426-Final-APK
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney426-Test-APK
+          path: testapk
+      - name: Prepare light-theme, navigation and gallery regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apk
+          sha256sum -c Marney426-SHA256.txt
+          cd ..
+          cat > regression-check.sh <<'SH'
+          set -euo pipefail
+          mkdir -p regression426
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r apk/Marney426.apk
+          adb install -r testapk/Marney426-Tests.apk
+          adb logcat -c
+          CLASSES="com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable"
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta426.test/androidx.test.runner.AndroidJUnitRunner | tee regression426/instrumentation.txt
+          adb logcat -d -s AndroidRuntime:E > regression426/runtime.log
+          grep -F "OK (17 tests)" regression426/instrumentation.txt
+          test ! -s regression426/runtime.log
+          adb shell am start -n com.marketmarney.mobile.beta426/com.marketmarney.mobile.MainActivity --ei startTab 1
+          sleep 3
+          adb exec-out screencap -p > regression426/news-soft-native.png
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash regression-check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney426-Regression-UI
+          path: regression426/
           if-no-files-found: error
 
   release:
-    needs: [build, native-ui]
+    needs: [build, opening-ui, regression-ui]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
