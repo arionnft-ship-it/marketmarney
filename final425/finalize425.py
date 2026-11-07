@@ -15,7 +15,7 @@ old = '''        String script="(function(){if(location.href!=="+JSONObject.quot
 new = '''        String script="(function(){if(location.href!=="+JSONObject.quote(document)+"||document.readyState!=='complete')return false;"+
             "var nav=document.getElementById('nav'),button=nav&&nav.querySelector('button[data-page=\\\""+page+"\\\"]');"+
             "if(!button||!button.isConnected)return false;"+
-            "try{button.click();return location.href==="+JSONObject.quote(document)+"&&button.isConnected;}catch(e){return false;}})()";'''
+            "try{button.click();var selected=button.classList.contains('active')||button.getAttribute('aria-current')==='page'||button.getAttribute('aria-selected')==='true';return location.href==="+JSONObject.quote(document)+"&&button.isConnected&&selected;}catch(e){return false;}})()";'''
 assert text.count(old) == 1, 'Expected the original strict shared-index router exactly once'
 source.write_text(text.replace(old, new, 1))
 
@@ -30,7 +30,7 @@ for entry in manifest['changed']:
         break
 assert matched, 'MainActivity entry missing from verified425 manifest'
 manifest['finalized'] = {
-    'sharedIndexRouter': 'supports onclick and addEventListener navigation without a WebView reload',
+    'sharedIndexRouter': 'supports onclick and addEventListener navigation, verifies selected state, and avoids a WebView reload',
     'mainActivitySha256': digest,
 }
 manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
