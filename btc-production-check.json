@@ -1,0 +1,221 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "/_railway/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/ HTTP",
+      "ok": true
+    },
+    {
+      "name": "/akun.html HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/auth/android/config HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/content HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-3d.html?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-layout.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/btc-war-chat.js?v=1.0 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/xau-war-3d.html?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/assets/warxau-topchat.css?v=7.8 HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/health HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/btc-war/clock HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/arena HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/status HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/xau-war/mt4/stream HTTP",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3ABITSTAMP%3ABTCUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "BTC community room available",
+      "ok": true
+    },
+    {
+      "name": "/api/discussions?kind=analysis&target=MARKET%3AOANDA%3AXAUUSD&sort=newest HTTP",
+      "ok": true
+    },
+    {
+      "name": "gold community room available",
+      "ok": true
+    },
+    {
+      "name": "BTC html uses Kraken only",
+      "ok": true
+    },
+    {
+      "name": "gold original source preserved",
+      "ok": true
+    },
+    {
+      "name": "private FBS not made public",
+      "ok": true
+    },
+    {
+      "name": "live source is Kraken BTC/USD",
+      "ok": true
+    },
+    {
+      "name": "new source timestamps received",
+      "ok": true
+    },
+    {
+      "name": "BTC one dollar scale",
+      "ok": true
+    },
+    {
+      "name": "daily metadata from source",
+      "ok": true
+    },
+    {
+      "name": "HD single quality",
+      "ok": true
+    },
+    {
+      "name": "BTC chat connected",
+      "ok": true
+    },
+    {
+      "name": "login required for posting",
+      "ok": true
+    },
+    {
+      "name": "desktop chat beside arena",
+      "ok": true
+    },
+    {
+      "name": "switch links for both assets",
+      "ok": true
+    },
+    {
+      "name": "mobile chat below arena",
+      "ok": true
+    },
+    {
+      "name": "mobile no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "no JavaScript exceptions",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "method": "Public HTTPS and real Kraken WebSocket; browser rendering paused for transport/layout checks. No messages, account logins or orders sent.",
+  "samples": [
+    {
+      "version": "1.0-btc-war-live",
+      "price": 75871.3,
+      "timestamp": 1794062558332,
+      "provider": "Kraken \u00b7 BTC/USD spot",
+      "points": 1,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "kraken-btc-d1-2026-11-07",
+          "symbol": "BTC/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Kraken \u00b7 BTC/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794062558728,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 33441098
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "Kraken \u00b7 BTC/USD spot",
+        "symbol": "BTC/USD",
+        "transport": "WebSocket",
+        "receivedTrades": 17,
+        "displaySamples": 1,
+        "reconnects": 0,
+        "lastPrice": 75871.3,
+        "lastTimestamp": 1794062558332,
+        "dailyOpen": 1794009600000
+      }
+    },
+    {
+      "version": "1.0-btc-war-live",
+      "price": 75871.2,
+      "timestamp": 1794062560436,
+      "provider": "Kraken \u00b7 BTC/USD spot",
+      "points": 2,
+      "daily": {
+        "phase": "active",
+        "session": {
+          "id": "kraken-btc-d1-2026-11-07",
+          "symbol": "BTC/USD",
+          "timeframe": "1day",
+          "mode": "live",
+          "provider": "Kraken \u00b7 BTC/USD spot",
+          "timezone": "UTC",
+          "opensAt": 1794009600000,
+          "closesAt": 1794096000000,
+          "serverTime": 1794062559333,
+          "confirmedClosed": false
+        },
+        "closedAt": null,
+        "reason": null,
+        "remainingMs": 33440547
+      },
+      "liveFeed": {
+        "state": "live",
+        "provider": "Kraken \u00b7 BTC/USD spot",
+        "symbol": "BTC/USD",
+        "transport": "WebSocket",
+        "receivedTrades": 21,
+        "displaySamples": 2,
+        "reconnects": 0,
+        "lastPrice": 75871.2,
+        "lastTimestamp": 1794062560436,
+        "dailyOpen": 1794009600000
+      }
+    }
+  ],
+  "btcPageSha256": "0abc1c80aaab2afafd625fabb3bff3a1b0c299406970a1da41a0f37b9f6dd001",
+  "checkedAt": "2026-11-07T14:42:42.174499+00:00"
+}
