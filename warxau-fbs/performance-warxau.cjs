@@ -5,7 +5,7 @@
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 
-const VERSION = '20261108-4';
+const VERSION = '20261108-5';
 const PREFIX = '/assets/warxau-performance/';
 const CACHE = 'public, max-age=31536000, immutable';
 const digest = data => crypto.createHash('sha256').update(data).digest('hex');
@@ -232,8 +232,11 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
       'const p=(this.fastTier()?this.programFast:this.program)||this.program;',
       'if(this.fastTier()&&!this.programFast)this.programFast=this.makeProgram(true);const p=(this.fastTier()?this.programFast:this.program)||this.program;');
     renderer = replaceOnce(renderer,
+      "fastTier(){return this.quality==='eco';}",
+      "fastTier(){return this.quality==='eco'||this.softwareGL;}");
+    renderer = replaceOnce(renderer,
       'const ratio=Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);',
-      'const ratio=this.soft?Math.min(root.devicePixelRatio||1,.85,960/r.width,540/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);');
+      'const ratio=(this.soft||this.softwareGL)?Math.min(root.devicePixelRatio||1,.8,900/r.width,500/r.height):Math.min(root.devicePixelRatio||1,1.5,1280/r.width,720/r.height);');
     packagedScripts[rendererIndex] = renderer;
 
     // The original software renderer already supports reduced meshes. Keep all
@@ -242,7 +245,7 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
     const assaultIndex = packagedScripts.findIndex(source => source.includes('this.lowLOD=this.quality===\'eco\'||u.rank>0'));
     if (assaultIndex < 0) throw Error('WarXAU software LOD contract changed');
     packagedScripts[assaultIndex] = replaceOnce(packagedScripts[assaultIndex],
-      "this.lowLOD=this.quality==='eco'||u.rank>0", "this.lowLOD=this.soft||this.quality==='eco'||u.rank>0");
+      "this.lowLOD=this.quality==='eco'||u.rank>0", "this.lowLOD=this.soft||this.softwareGL||this.quality==='eco'||u.rank>0");
     const engineIndex = packagedScripts.findIndex(source => source.includes(' renderSoftware(){'));
     if (engineIndex < 0) throw Error('WarXAU software renderer missing');
     let engine = replaceOnce(packagedScripts[engineIndex], ' renderSoftware(){',
@@ -259,7 +262,7 @@ function createWarXauPerformance({layoutSource, chatSource, cssSource}) {
     const presentationIndex = packagedScripts.findIndex(source => source.includes("$('premium-quality-label').textContent='HD';"));
     if (presentationIndex < 0) throw Error('WarXAU renderer status missing');
     let presentation = replaceOnce(packagedScripts[presentationIndex],
-      "$('premium-quality-label').textContent='HD';", "$('premium-quality-label').textContent=p.softwareFallback?'MODE RINGAN':'HD';");
+      "$('premium-quality-label').textContent='HD';", "$('premium-quality-label').textContent=(p.softwareFallback||p.softwareWebGL)?'MODE RINGAN':'HD';");
     presentation = replaceOnce(presentation,
       '${p.renderWidth} × ${p.renderHeight} · ${s.fps||0} FPS · ${p.drawCalls} batch',
       '${p.renderWidth} × ${p.renderHeight} · ${s.fps||0} FPS · ${p.drawCalls} ${p.softwareFallback?\'poligon\':\'batch\'}');
