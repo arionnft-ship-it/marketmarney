@@ -4,6 +4,7 @@ on:
     branches: [fix/site-performance-audit-20261108]
     paths:
       - 'warxau-fbs/derived-software.cjs'
+      - 'warxau-fbs/performance-warxau.cjs'
       - 'warxau-fbs/btc-addon.cjs'
       - 'warxau-fbs/oil-addon.cjs'
       - 'warxau-fbs/nasdaq-addon.cjs'
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: |
-          for f in warxau-fbs/derived-software.cjs warxau-fbs/{btc,oil,nasdaq,ihsg}-addon.cjs; do node --check "$f"; done
+          for f in warxau-fbs/derived-software.cjs warxau-fbs/performance-warxau.cjs warxau-fbs/{btc,oil,nasdaq,ihsg}-addon.cjs; do node --check "$f"; done
           node - <<'JS'
           const assert=require('node:assert/strict'),fs=require('node:fs');
           for(const market of ['btc','oil','nasdaq','ihsg']){
@@ -30,6 +31,9 @@ jobs:
             assert(s.includes(",'"+market+"')"));
           }
           assert(fs.readFileSync('warxau-fbs/Dockerfile.ihsg','utf8').includes('COPY warxau-fbs/derived-software.cjs ./'));
+          const gold=fs.readFileSync('warxau-fbs/performance-warxau.cjs','utf8');
+          assert(gold.includes("const VERSION = '20261108-5';"));
+          assert(gold.includes("fastTier(){return this.quality==='eco'||this.softwareGL;}"));
           console.log('All derived War routes are wired to audited software optimization.');
           JS
       - name: Fetch public arena pages and verify transformations, no feed mutations
