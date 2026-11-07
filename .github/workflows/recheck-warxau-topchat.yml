@@ -1,0 +1,35 @@
+name: Recheck WarXAU arena and chat
+on:
+  push:
+    branches: [warxau-arena-chat-v7-8]
+    paths: ['.github/workflows/recheck-warxau-topchat.yml']
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: warxau-arena-chat-v7-8
+      - run: python3 -m pip install playwright PyYAML && python3 -m playwright install chromium --with-deps
+      - name: Repeat original read-only public test unchanged
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml,subprocess
+          data=yaml.safe_load(Path('.github/workflows/check-warxau-topchat-public.yml').read_text())
+          steps=data['jobs']['verify-public']['steps']
+          selected=[x for x in steps if x.get('name')=='Inspect actual public page and chat without sending any messages']
+          assert len(selected)==1
+          subprocess.run(['bash','-e','-c',selected[0]['run']],check=True)
+          PY
+      - name: Save updated public verification
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add warxau-topchat-public-check.json
+          git diff --cached --quiet || git commit -m 'Verify mobile layout fix and production chat polling'
+          git push origin HEAD:warxau-arena-chat-v7-8
