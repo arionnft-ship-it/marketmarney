@@ -1,0 +1,61 @@
+name: Verify first-visit light theme
+on:
+  push:
+    branches: [default-light-first-visit-20261108]
+    paths: ['.github/workflows/default-light-test.yml','warxau-fbs/public-theme-light.cjs','warxau-fbs/install-light-theme.cjs','warxau-fbs/test-default-theme.cjs','warxau-fbs/verify-default-theme.py']
+permissions:
+  contents: write
+concurrency:
+  group: default-light-tests
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch current public theme and anonymous pages
+        run: |
+          mkdir -p theme-fixture/assets
+          python3 - <<'PY'
+          import urllib.request,pathlib
+          for name,url in [('home.html','/'),('account.html','/akun.html'),('assets/public-theme1867.js','/assets/public-theme1867.js')]:
+            with urllib.request.urlopen('https://marketmarney.com'+url,timeout=25) as r:
+              assert r.status==200
+              pathlib.Path('theme-fixture/'+name).write_bytes(r.read(5000000))
+          PY
+      - name: Unit, early paint, storage and cache tests
+        run: node warxau-fbs/test-default-theme.cjs
+      - name: Install Chromium
+        run: python3 -m pip install playwright && python3 -m playwright install chromium --with-deps
+      - name: Test actual homepage using isolated response overrides
+        run: python3 warxau-fbs/verify-default-theme.py
+      - name: Build full production image preserving all existing components
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t first-visit-light-check .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: default-light-tests
+          path: theme-test-results
+          retention-days: 7
+      - name: Record non-sensitive result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          d={}
+          for name in ['unit','browser']:
+            p=pathlib.Path('theme-test-results/'+name+'.json')
+            if p.exists():d[name]=json.loads(p.read_text())
+          d['ok']=len(d)==2 and all(v.get('ok') for v in d.values())
+          pathlib.Path('default-light-test-check.json').write_text(json.dumps(d,indent=2)+'\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add default-light-test-check.json
+          git commit -m 'Record first-visit light storage/cache/browser tests' || true
+          git pull --rebase origin default-light-first-visit-20261108
+          git push origin HEAD:default-light-first-visit-20261108
