@@ -85,13 +85,15 @@ function patchHomeCard(req, res) {
       return end.call(this, callback);
     }
     let html = raw.replace(/KOMUNITAS MARKETMARNEY/gi, 'SOCIAL MARNEY');
-    const script = '<script data-mm-social-label>(function(){' +
-      'function rename(){for(const el of document.querySelectorAll("h1,h2,h3,h4,h5,h6,strong,b,span,p")){if(!el.children.length&&el.textContent.trim().toUpperCase()==="KOMUNITAS MARKETMARNEY")el.textContent="SOCIAL MARNEY";}}' +
-      'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",rename,{once:true});else rename();' +
-      'const o=new MutationObserver(rename);o.observe(document.documentElement,{childList:true,subtree:true});setTimeout(()=>o.disconnect(),5000);' +
-      '})();</script>';
-    if (/<\/body\s*>/i.test(html) && !html.includes('data-mm-social-label'))
-      html = html.replace(/<\/body\s*>/i, script + '</body>');
+    // Keep both the homepage Social Marney card and the sidebar destination consistent.
+    html = html.replace(/(class="feature-card feature-forum"\s+data-page=")Komunitas(")/g, '$1Social Marney$2');
+    html = html.replace("if(p==='Social Marney'){location.assign('/akun.html');return}", "if(p==='Social Marney'){location.assign('/beranda-trader.html');return}");
+    html = html.replace('Bergabung di Telegram atau Discord','Linimasa, diskusi, dan ide trader');
+    html = html.replace('LIHAT KOMUNITAS','BUKA SOCIAL MARNEY');
+    const newCss = "<style id=\"mm-static-news-v1\">\n/* Only Berita Terbaru: stop continuous motion, retain manual horizontal scrolling. */\n.news-carousel{overflow-x:auto!important;overflow-y:hidden!important;mask-image:none!important;-webkit-mask-image:none!important;scroll-behavior:auto;scroll-snap-type:x proximity;scrollbar-width:thin}\n.news-carousel .news-track{animation:none!important;transform:none!important;will-change:auto!important}\n.news-carousel .news-set[aria-hidden=\"true\"]{display:none!important}\n.news-carousel .news-set .card{scroll-snap-align:start}\n</style>";
+    const newScript = "<script id=\"mm-social-direct-v1\">\n(function(){\n 'use strict';\n const destination='/beranda-trader.html';\n const selector='.feature-card.feature-forum';\n function enhance(){\n  for(const card of document.querySelectorAll(selector)){\n   if(card.dataset.page!=='Social Marney')card.dataset.page='Social Marney';\n   if(card.getAttribute('aria-label')!=='Buka Social Marney')card.setAttribute('aria-label','Buka Social Marney');\n   const title=card.querySelector('.feature-copy strong');\n   if(title&&title.textContent.trim()!=='SOCIAL MARNEY')title.textContent='SOCIAL MARNEY';\n   const small=card.querySelector('.feature-copy small');\n   if(small&&small.textContent.includes('Telegram atau Discord'))small.textContent='Linimasa, diskusi, dan ide trader';\n   const cta=card.querySelector('.feature-cta');\n   if(cta&&cta.textContent.includes('LIHAT KOMUNITAS'))cta.innerHTML='BUKA SOCIAL MARNEY <span aria-hidden=\"true\">↗</span>';\n  }\n }\n document.addEventListener('click',function(event){\n  const target=event.target;\n  const card=target&&target.closest?target.closest(selector+',.navbtn[data-page=\"Social Marney\"]'):null;\n  if(!card)return;\n  event.preventDefault();\n  event.stopImmediatePropagation();\n  window.location.assign(destination);\n },true);\n function start(){\n  enhance();\n  const root=document.getElementById('app');\n  if(!root)return;\n  let queued=false;\n  new MutationObserver(function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;enhance();});})\n   .observe(root,{childList:true,subtree:true});\n }\n if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});\n else start();\n})();\n</script>";
+    if (/<\/head\s*>/i.test(html) && !html.includes('mm-static-news-v1')) html = html.replace(/<\/head\s*>/i, newCss + '</head>');
+    if (/<\/body\s*>/i.test(html) && !html.includes('mm-social-direct-v1')) html = html.replace(/<\/body\s*>/i, newScript + '</body>');
     if (html !== raw) {
       res.removeHeader('etag'); res.removeHeader('content-md5'); res.removeHeader('transfer-encoding');
       res.setHeader('content-length', Buffer.byteLength(html));
