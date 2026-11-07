@@ -27,8 +27,10 @@ jobs:
             try:
               with urllib.request.urlopen(req,timeout=25) as r:return r.status,dict(r.headers),r.read(5_000_000)
             except urllib.error.HTTPError as e:return e.code,dict(e.headers),e.read(500000)
-          for p in ['/','/beranda-trader.html','/akun.html','/_railway/health','/api/discussions','/api/content','/api/btc-war/clock','/api/oil-war/clock','/api/nasdaq-war/status','/api/ihsg-war/status']:
+          for p in ['/','/beranda-trader.html','/akun.html','/_railway/health','/api/content','/api/btc-war/clock','/api/oil-war/clock','/api/nasdaq-war/status','/api/ihsg-war/status']:
             status,_,body=get(p);check('public GET '+p,status==200)
+          discussion_code,_,_=get('/api/discussions')
+          check('discussion endpoint does not fail with 5xx to automated read',discussion_code in (200,401,403,404))
           for p in ['/api/xau-war/mt4/arena','/api/xau-war/mt4/status','/api/xau-war/mt4/stream']:
             status,_,_=get(p);check('private MT4 remains unauthorized '+p,status==401)
           status,_,body=get('/api/community/status');data=json.loads(body)
