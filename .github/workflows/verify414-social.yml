@@ -1,0 +1,57 @@
+name: Marney 4.14 Isolated Social Regression
+on:
+  push:
+    branches: [android-v4.14-stability]
+    paths: ['.github/workflows/verify414-social.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney414-Beta-APK
+          run-id: 42314973932
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: Isolate test setup, keeping assertions and exact APK
+        run: |
+          python3 -m pip install websocket-client
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile49/test_device49.py');s=p.read_text().replace("Path('quality49-device')","Path('quality414-social')").replace('com.marketmarney.mobile.beta49','com.marketmarney.mobile.beta414').replace('apk/Marney49.apk','apk/Marney414.apk')
+          s=s.replace("PKG+'/com.marketmarney.mobile.MainActivity')","PKG+'/com.marketmarney.mobile.MainActivity','--ei','startTab','4')",1)
+          s=s.replace('Actual website service worker controls Home','Actual website worker controls bundled Social')
+          s=s.replace('Member group loads after Home with active worker','Member group loads after bundled Social with active worker')
+          anchor=" record('No JavaScript errors during denial',ev('__fixture49.errors.length===0'))"
+          extra=''' (O/'denial-errors.json').write_text(json.dumps(ev('({errors:__fixture49.errors,resources:__fixture49.resources,calls:__fixture49.calls})'),indent=2))
+          print('DENIAL_ERRORS '+json.dumps(ev('__fixture49.errors')),flush=True)
+          screenshot('group-denial')
+          '''
+          extra='\n'.join(' '+line if line and not line.startswith(' ') else line for line in extra.splitlines())+'\n'
+          assert anchor in s;s=s.replace(anchor,extra+anchor,1)
+          s=s.replace("if(e.message)__fixture49.errors.push(e.message)","if(e.message){__fixture49.errors.push(e.message);console.error('MM414_TEST_ERROR '+e.message+' '+(e.error&&e.error.stack||''))}")
+          p.write_text(s);compile(s,str(p),'exec')
+          PY
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: python3 mobile49/test_device49.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney414-Social-Final-Evidence
+          path: quality414-social/
