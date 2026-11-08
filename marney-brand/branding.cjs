@@ -1,6 +1,7 @@
 'use strict';
 // Response-only MARNEY branding. No protected app files, accounts or media are written.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const SEO=require('./seo.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
 const VERSION='marney-20261107-r2';
 const APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
@@ -51,8 +52,10 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  const assets=new Map();for(const [url,file]of aliases)assets.set(url,[fs.readFileSync(path.join(assetRoot,file)),mime[path.extname(file)]]);
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
  function handle(req,res){
+  const p=String(req.url||'').split('?')[0];
+  if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
   if(performance.handle(req,res))return true;
-  const p=String(req.url||'').split('?')[0];let asset=assets.get(p);
+  let asset=assets.get(p);
   if(!asset&&(p==='/manifest.webmanifest'||p==='/sw.js')){
    let raw=fs.readFileSync(path.join(appRoot,p.slice(1)),'utf8');
    if(p==='/manifest.webmanifest'){
@@ -75,7 +78,8 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  }
  function wrap(req,res){
   const p=String(req.url||'').split('?')[0];
-  if(req.method!=='GET'||/^\/(?:api|auth|_railway|media|uploads)(?:\/|$)/.test(p)||!(p==='/'||p.endsWith('.html')))return;
+  const seoEnabled=SEO.isPublicPage(req,p);
+  if(req.method!=='GET'||/^\/(?:api|auth|_railway|media|uploads)(?:\/|$)/.test(p)||!(p==='/'||p.endsWith('.html')||seoEnabled))return;
   req.headers['accept-encoding']='identity';
   const original={writeHead:res.writeHead,write:res.write,end:res.end};let queuedHead=false,pass=false,size=0;const chunks=[],MAX=6*1024*1024;
   function restore(){Object.assign(res,original);}
@@ -99,7 +103,8 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    if(pass){restore();return original.end.call(this,chunk,encoding,callback);}
    if(chunk!=null){const b=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk,encoding||'utf8');chunks.push(b);size+=b.length;}
    if(!ok()||size>MAX){flush();restore();return original.end.call(this,callback);}
-   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=enhance(raw),out=changed===raw?data:Buffer.from(changed);
+   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=SEO.patchHtml(enhance(raw),p,seoEnabled),out=changed===raw?data:Buffer.from(changed);
+   if(seoEnabled)SEO.clearBlockingHeader(this);
    if(changed!==raw){this.removeHeader('etag');this.removeHeader('content-md5');this.removeHeader('transfer-encoding');this.setHeader('content-length',out.length);this.setHeader('X-Marney-Brand',VERSION);}
    chunks.length=0;head();restore();return original.end.call(this,out,callback);
   };
