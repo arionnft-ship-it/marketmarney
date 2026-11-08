@@ -1,0 +1,43 @@
+name: Verify article reading layout fix
+
+on:
+  push:
+    branches: [fix/article-rich-text-reading-20261108]
+    paths:
+      - 'warxau-fbs/performance-news.cjs'
+      - 'warxau-fbs/test/performance-news.test.cjs'
+      - '.github/workflows/article-reading-fix.yml'
+  pull_request:
+    branches: [fix/site-performance-audit-20261108]
+    paths:
+      - 'warxau-fbs/performance-news.cjs'
+      - 'warxau-fbs/test/performance-news.test.cjs'
+      - '.github/workflows/article-reading-fix.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated DOM test dependencies
+        working-directory: warxau-fbs/test
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Check syntax and simulate real article renderer
+        run: |
+          node --check warxau-fbs/performance-news.cjs
+          node --test warxau-fbs/test/performance-news.test.cjs
+
+  image-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the actual Railway website image without deploying
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-news-reading-fix-test .
