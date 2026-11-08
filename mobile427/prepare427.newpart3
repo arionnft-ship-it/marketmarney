@@ -7,7 +7,7 @@
 start='    private void adapt(WebView v,String url){\n'
 end='    private void showOffline(String message){showFailure("UNAVAILABLE",message);}\n'
 new_adapt=r"""    private void adapt(WebView v,String url){
-        if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl())||url.equals(lastAdaptedDocument))return;
+        if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl()))return;
         Uri expected=Uri.parse(url);
         v.getSettings().setMediaPlaybackRequiresUserGesture(!"/beranda-trader.html".equals(expected.getPath()));
         String ready="location.protocol==='https:'&&location.hostname==='marketmarney.com'&&(!location.port||location.port==='443')&&location.pathname==="+JSONObject.quote(expected.getPath())+
