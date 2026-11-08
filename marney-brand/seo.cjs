@@ -1,6 +1,7 @@
 'use strict';
 // Public-domain SEO guard. Does not change stored application files, sessions or data.
 const ORIGIN = 'https://marketmarney.com';
+const GOOGLE_SITE_VERIFICATION = 'CxKqw5ml8va-XZ5WcsNCuYCKPCJjnSsf3F6dhGNp5ZU';
 const ROBOTS = [
   'User-agent: *',
   'Disallow: /api/',
@@ -31,6 +32,10 @@ function patchHtml(html, pathname, enabled) {
   });
   if (pathname === '/' || pathname === '/index.html') {
     result = result.replace(/https:\/\/marketmarney\.com\/index\.html(?=["'])/gi, ORIGIN + '/');
+    if (!/\bname\s*=\s*["']google-site-verification["']/i.test(result)) {
+      const tag = '<meta name="google-site-verification" content="' + GOOGLE_SITE_VERIFICATION + '">';
+      if (/<\/head\s*>/i.test(result)) result = result.replace(/<\/head\s*>/i, tag + '</head>');
+    }
   }
   return result;
 }
@@ -55,4 +60,4 @@ function sendRobots(req, res) {
   res.end(req.method === 'HEAD' ? undefined : body);
   return true;
 }
-module.exports = {ORIGIN, ROBOTS, isPublicHost, isPublicPage, patchHtml, clearBlockingHeader, sendRobots};
+module.exports = {ORIGIN, GOOGLE_SITE_VERIFICATION, ROBOTS, isPublicHost, isPublicPage, patchHtml, clearBlockingHeader, sendRobots};
