@@ -1,0 +1,53 @@
+name: Export Marney 4.26 Source
+on:
+  push:
+    branches: [android-v4.26-cinematic-opening-soft-3d]
+    paths: ['.github/workflows/export426-source.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, stat
+          source=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(source.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(source) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert not stat.S_ISLNK(entry.external_attr >> 16)
+                  if path.parts and path.parts[0]=='android417': archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420 && python3 mobile420/prepare420.py
+          mv android420 android421 && python3 mobile421/prepare421.py
+          mv android421 android422 && python3 mobile422/prepare422.py
+          mv android422 android423 && python3 mobile423/prepare423.py
+          mv android423 android424 && python3 mobile424/prepare424.py
+          mv android424 android425 && python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426 && python3 mobile426/prepare426.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Marney426-Generated-Source
+          path: |
+            android426/app/src/main/java/com/marketmarney/mobile/
+            android426/app/src/main/assets/
+            android426/app/src/main/res/values/
+            android426/app/build.gradle
+            verified426.json
+          if-no-files-found: error
