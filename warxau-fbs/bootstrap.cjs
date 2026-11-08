@@ -4,6 +4,7 @@
 const http=require('node:http'),fs=require('node:fs'),zlib=require('node:zlib'),crypto=require('node:crypto');
 const {createRelay}=require('./relay.cjs');const {privatePage}=require('./page.cjs');const {createArticlePublisher}=require('./article-publisher.cjs');const articlePublisher=createArticlePublisher();
 const {transformHomeHtml}=require('./performance-news.cjs');
+const {isCanonicalArticlePath,injectReadingWidthStyle}=require('./article-reading-width.cjs');
 const PORT=Number(process.env.PORT||8080);
 const SITE='/persist/site-r1/MarketMarney-Railway-Staging/app/assets/xau-war-3d.html';
 const APPROVED='b10cb914888c0fcc35a9acbb14c12693ea1e3c0ce1f4d8770a7b86dcfeb99212';
@@ -12,7 +13,8 @@ const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 // Capture HTML responses without changing the stored website, auth, APIs or MT4 relay.
 function patchHomeCard(req, res) {
   const path = String(req.url || '').split('?')[0];
-  if (req.method !== 'GET' || (path !== '/' && path !== '/index.html')) return;
+  const canonicalArticle=isCanonicalArticlePath(path);
+  if (req.method !== 'GET' || (path !== '/' && path !== '/index.html' && !canonicalArticle)) return;
   req.headers['accept-encoding'] = 'identity';
   const writeHead = res.writeHead, write = res.write, end = res.end;
   let pendingHead = false, pass = false, len = 0;
@@ -85,6 +87,15 @@ function patchHomeCard(req, res) {
       restore();
       return end.call(this, callback);
     }
+    if (canonicalArticle) {
+      const html=injectReadingWidthStyle(raw);
+      if(html!==raw){
+        res.removeHeader('etag');res.removeHeader('content-md5');res.removeHeader('transfer-encoding');
+        res.setHeader('content-length',Buffer.byteLength(html));
+      }
+      buffered.length=0;sendHead();restore();
+      return end.call(this,Buffer.from(html,'utf8'),callback);
+    }
     let html = raw.replace(/KOMUNITAS MARKETMARNEY/gi, 'SOCIAL MARNEY');
     // Keep both the homepage Social Marney card and the sidebar destination consistent.
     html = html.replace(/(class="feature-card feature-forum"\s+data-page=")Komunitas(")/g, '$1Social Marney$2');
@@ -99,6 +110,7 @@ function patchHomeCard(req, res) {
       html = transformHomeHtml(html);
       html = branding.optimizeHome(html);
     }
+    html=injectReadingWidthStyle(html);
     if (html !== raw) {
       res.removeHeader('etag'); res.removeHeader('content-md5'); res.removeHeader('transfer-encoding');
       res.setHeader('content-length', Buffer.byteLength(html));
