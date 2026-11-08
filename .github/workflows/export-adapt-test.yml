@@ -1,0 +1,36 @@
+name: Export Adapt Guard Test
+on:
+  push:
+    branches: [android-v4.27-speed-stability]
+    paths: ['.github/workflows/export-adapt-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract test source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as a:
+              name='android417/app/src/androidTest/java/com/marketmarney/mobile/AdaptGuardTest.java'
+              data=a.read(name)
+          Path('diagnostic').mkdir()
+          Path('diagnostic/AdaptGuardTest.java').write_bytes(data)
+          print(data.decode())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AdaptGuardTest-Source
+          path: diagnostic/AdaptGuardTest.java
+          if-no-files-found: error
