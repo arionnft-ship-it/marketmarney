@@ -70,6 +70,34 @@ document.addEventListener('click',event=>{if(event.target?.closest?.('[data-mm-p
 window.addEventListener('online',()=>{if(mmPerfNewsState==='error')void mmPerfLoadContent();});
 `;
 
+// Safely render HTML paragraphs from API-published articles and preserve plain text.
+const ARTICLE_READER = String.raw`function mmPerfArticleBody(article){
+ const rich=String(article.bodyHtml||'').trim();
+ if(rich)return safeArticleHtml(rich);
+ const raw=String(article.body||article.desc||'').trim();
+ if(!raw)return '';
+ const isHtml=/<(?:p|div|h[2-6]|ul|ol|li|blockquote|br)\b[^>]*>/i.test(raw);
+ let html='';
+ if(isHtml){
+  html=safeArticleHtml(raw);
+ }else{
+  html=raw.split(/\n\s*\n/).map(part=>part.trim()).filter(Boolean)
+   .map(part=>'<p>'+esc(part).replace(/\r?\n/g,'<br>')+'</p>').join('');
+ }
+ if(!isHtml)return html;
+ const wrapper=document.createElement('div');
+ wrapper.innerHTML=html;
+ for(const paragraph of wrapper.querySelectorAll('p')){
+  const text=paragraph.textContent.trim();
+  if(paragraph.children.length===0&&text.length<=100&&
+     (/^kesimpulan$/i.test(text)||/^(?:apa|mengapa|bagaimana|kapan|siapa|dampak|prospek)\b.{4,90}\?$/i.test(text))){
+   const heading=document.createElement('h2');heading.textContent=text;
+   paragraph.replaceWith(heading);
+  }
+ }
+ return wrapper.innerHTML;
+}`;
+
 const IMAGE_FUNCTIONS = String.raw`function mmPerfImagePath(value,width){
  let path=String(value||'');
  if(path.startsWith('https://marketmarney.com/media/'))path=path.slice('https://marketmarney.com'.length);
@@ -97,11 +125,12 @@ function transformScript(original) {
   let source = once(original, OLD_BOOT, NEW_BOOT);
   source = once(source, "let articles=JSON.parse(localStorage.getItem('mm_pro_articles')||'null')||defaultNews,forums=JSON.parse(localStorage.getItem('mm_pro_forums')||'null')||", 'let articles=[],forums=');
   source = once(source, 'const newsSearchIndex=window.MMNewsSearch1879.createIndex(articles);', 'let newsSearchIndex=window.MMNewsSearch1879.createIndex(articles);');
+  source = once(source, 'selected.bodyHtml?safeArticleHtml(selected.bodyHtml):esc(selected.body||selected.desc)', 'mmPerfArticleBody(selected)');
   const imageStart = source.indexOf('function img(a){');
   const imageEnd = source.indexOf('let mm95ArticleLang=', imageStart);
   if (imageStart === -1 || imageEnd === -1 || !source.slice(imageStart, imageEnd).includes('function imageTag(a){')) throw new Error('Homepage image contract mismatch');
   source = source.slice(0, imageStart) + IMAGE_FUNCTIONS + source.slice(imageEnd);
-  source = once(source, 'function readingMinutes(a){const raw=', 'function readingMinutes(a){if(mmPerfReadingCache.has(a))return mmPerfReadingCache.get(a);const raw=');
+  source = once(source, 'function readingMinutes(a){const raw=', ARTICLE_READER+'\nfunction readingMinutes(a){if(mmPerfReadingCache.has(a))return mmPerfReadingCache.get(a);const raw=');
   source = once(source, 'return Math.max(1,Math.ceil(words/220))}function card(a)', 'const minutes=Math.max(1,Math.ceil(words/220));mmPerfReadingCache.set(a,minutes);return minutes}function card(a)');
   source = once(source, '<div class="cardimg" style="background-image:${img(a)}">${imageTag(a)}', '<div class="cardimg" style="background-image:${mm951HasImage(a)?\'none\':img(a)}">${imageTag(a)}');
   source = once(source, '<div class="mm90-photo" style="background-image:${img(story)}">${imageTag(story)}', '<div class="mm90-photo" style="background-image:${mm951HasImage(story)?\'none\':img(story)}">${imageTag(story)}');
