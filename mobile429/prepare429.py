@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import hashlib, json, shutil
+import base64, hashlib, io, json, shutil, tarfile
 
 base = Path(__file__).resolve().parent
 root = Path('android429')
@@ -61,8 +61,12 @@ startup = 'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java'
 replace(startup, 'MM428_LAUNCH', 'MM429_LAUNCH', count=2)
 
 assets = root / 'app/src/main/assets'
-shutil.copy2(base / 'social429.css', assets / 'social429.css')
-shutil.copy2(base / 'social429.js', assets / 'social429.js')
+asset_archive=base64.b64decode((base/'assets429.tar.gz.b64').read_text(encoding='ascii'))
+with tarfile.open(fileobj=io.BytesIO(asset_archive),mode='r:gz') as archive:
+    assert set(archive.getnames())=={'social429.css','social429.js'}
+    for name in ('social429.css','social429.js'):
+        member=archive.getmember(name);assert member.isfile() and '/' not in name and '..' not in name
+        (assets/name).write_bytes(archive.extractfile(member).read())
 
 test_target = root / 'app/src/androidTest/java/com/marketmarney/mobile/Social429FullscreenTest.java'
 test_target.parent.mkdir(parents=True, exist_ok=True)
