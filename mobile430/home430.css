@@ -1,0 +1,7 @@
+/* Marney 4.30 — app-only Social home button. */
+html[data-mm429-social] .mm430-home-button{width:auto!important;min-width:42px!important;height:42px!important;min-height:42px!important;padding:0 10px!important;gap:5px!important;border:1px solid #e1e6eb!important;border-radius:13px!important;background:#f7f9fb!important;color:#26394d!important;box-shadow:none!important}
+html[data-mm429-social] .mm430-home-button svg{width:21px!important;height:21px!important;flex:none!important}
+html[data-mm429-social] .mm430-home-label{display:inline!important;font-size:11px!important;line-height:1!important;font-weight:800!important;letter-spacing:.01em!important;white-space:nowrap!important}
+html[data-mm429-social] .mm430-home-button:active{background:#fff0d4!important;color:#7c5017!important}
+html[data-mm429-social][data-mm44-view=reels] .mm430-home-button,html[data-mm429-social][data-mm46-reels] .mm430-home-button{border-color:#ffffff30!important;background:#171a20!important;color:#f3f5f7!important}
+@media(max-width:389px){html[data-mm429-social] .mm430-home-button{width:42px!important;min-width:42px!important;padding:0!important}html[data-mm429-social] .mm430-home-label{display:none!important}}
