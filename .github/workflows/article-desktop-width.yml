@@ -1,0 +1,48 @@
+name: Article desktop reading width safety
+
+on:
+  push:
+    branches: [fix/desktop-article-reading-width-20261109]
+    paths:
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/article-reading-width.cjs'
+      - 'warxau-fbs/article-reading-width.test.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/article-desktop-width.yml'
+  pull_request:
+    branches: [fix/site-performance-audit-20261108]
+    paths:
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/article-reading-width.cjs'
+      - 'warxau-fbs/article-reading-width.test.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install production dependencies
+        run: npm ci --omit=dev --no-fund --no-audit
+        working-directory: warxau-fbs
+      - name: Syntax and response-only width tests
+        run: |
+          node --check warxau-fbs/bootstrap.cjs
+          node --check warxau-fbs/article-reading-width.cjs
+          node --check warxau-fbs/article-reading-width.test.cjs
+          node --test warxau-fbs/article-reading-width.test.cjs
+
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the actual Railway Docker image without deployment
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-reading-width-test .
