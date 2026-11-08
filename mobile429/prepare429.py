@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import base64, hashlib, io, json, shutil, tarfile
+import hashlib, json, shutil
 
 base = Path(__file__).resolve().parent
 root = Path('android429')
@@ -65,15 +65,12 @@ test_root=root/'app/src/androidTest/java'
 for test_file in test_root.rglob('*.java'):
     text=test_file.read_text(encoding='utf-8')
     updated=text.replace('MarketMarney 4.28.0-beta','MarketMarney 4.29.0-beta')
-    if updated!=text:test_file.write_text(updated,encoding='utf-8')
+    if updated!=text:
+        test_file.write_text(updated,encoding='utf-8')
 
 assets = root / 'app/src/main/assets'
-asset_archive=base64.b64decode((base/'assets429.tar.gz.b64').read_text(encoding='ascii'))
-with tarfile.open(fileobj=io.BytesIO(asset_archive),mode='r:gz') as archive:
-    assert set(archive.getnames())=={'social429.css','social429.js'}
-    for name in ('social429.css','social429.js'):
-        member=archive.getmember(name);assert member.isfile() and '/' not in name and '..' not in name
-        (assets/name).write_bytes(archive.extractfile(member).read())
+shutil.copy2(base / 'social429.css', assets / 'social429.css')
+shutil.copy2(base / 'social429.js', assets / 'social429.js')
 
 test_target = root / 'app/src/androidTest/java/com/marketmarney/mobile/Social429FullscreenTest.java'
 test_target.parent.mkdir(parents=True, exist_ok=True)
