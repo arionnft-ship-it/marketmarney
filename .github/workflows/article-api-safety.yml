@@ -33,3 +33,5 @@ jobs:
           node --check warxau-fbs/article-publisher.test.cjs
       - name: Run isolated database tests
         run: node --test warxau-fbs/article-publisher.test.cjs
+      - name: Validate approved MarketMarney news payload
+        run: node -e "const {validate}=require('./warxau-fbs/article-publisher.cjs');const a=require('./warxau-fbs/articles-pending/goldman-emas-2026-11-08.json');if(validate(a).status!=='published')process.exit(1);"
