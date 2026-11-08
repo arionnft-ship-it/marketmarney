@@ -8,7 +8,6 @@ start='    private void adapt(WebView v,String url){\n'
 end='    private void showOffline(String message){showFailure("UNAVAILABLE",message);}\n'
 new_adapt=r"""    private void adapt(WebView v,String url){
         if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl())||url.equals(lastAdaptedDocument))return;
-        lastAdaptedDocument=url;
         Uri expected=Uri.parse(url);
         v.getSettings().setMediaPlaybackRequiresUserGesture(!"/beranda-trader.html".equals(expected.getPath()));
         String ready="location.protocol==='https:'&&location.hostname==='marketmarney.com'&&(!location.port||location.port==='443')&&location.pathname==="+JSONObject.quote(expected.getPath())+
@@ -26,7 +25,8 @@ new_adapt=r"""    private void adapt(WebView v,String url){
             lightScript+"\nif(window.MMLight425)window.MMLight425.install();var l=document.getElementById('mm425-light');if(!l){l=document.createElement('style');l.id='mm425-light';document.head.appendChild(l)}if(l.dataset.revision!=='427'){l.textContent="+lightCssQuoted+";l.dataset.revision='427';}document.head.appendChild(l);return window.__mm411BundledReady?'bundled':'fallback';})()";
         v.evaluateJavascript(install,result->{
             if(destroyed||v!=web||!Recovery414.sameDocument(url,v.getUrl()))return;
-            if("\"retry\"".equals(result)){lastAdaptedDocument="";v.postDelayed(()->adapt(v,url),120);return;}
+            if("\"retry\"".equals(result)){v.postDelayed(()->adapt(v,url),120);return;}
+            lastAdaptedDocument=url;
             if(!social||"\"bundled\"".equals(result))return;
             v.evaluateJavascript("(function(){if(!("+ready+")||window.__mm411BundledReady)return;"+socialStyle+"\n"+socialScript+"\n})()",null);
         });
