@@ -5,6 +5,7 @@ const {DatabaseSync}=require('node:sqlite');
 const {prepareBanner,saveBanner}=require('./article-banner.cjs');
 const ENDPOINT='/api/integrations/articles';
 const BANNER_ENDPOINT=ENDPOINT+'/banner';
+const DELETE_ENDPOINT=ENDPOINT+'/delete';
 const MAX_BODY_BYTES=7600000;
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 const strip=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
@@ -126,6 +127,45 @@ function createArticlePublisher({tokenHash=process.env.MM_ARTICLE_BEARER_SHA256,
    return updateAtomic(db,real,a,prepared);
   }finally{db.close()}
  }
+ function deleteArticle(request){
+  if(!request||typeof request!=='object'||Array.isArray(request)||request.confirm_delete!==true)
+    throw Object.assign(new Error('invalid_delete_confirmation'),{status:422});
+  const {article_id,title,source_url}=request;
+  if(typeof article_id!=='string'||!/^mm-editorial-[0-9a-f]{24}$/.test(article_id)||
+     typeof title!=='string'||title.length<20||title.length>220||
+     typeof source_url!=='string'||source_url.length>2000||!source_url.startsWith('https://'))
+    throw Object.assign(new Error('invalid_delete_target'),{status:422});
+  const {file,real}=dbPath(),db=new DatabaseSync(file,{timeout:3000});
+  const checkTarget=items=>{
+   if(!Array.isArray(items))throw Error('articles_unavailable');
+   const index=items.findIndex(a=>a&&a.id===article_id);
+   if(index<0)throw Object.assign(new Error('article_not_found'),{status:404});
+   const article=items[index];
+   if(article.title!==title||article.sourceUrl!==source_url)
+    throw Object.assign(new Error('delete_target_mismatch'),{status:409});
+   return {article,index};
+  };
+  try{
+   checkDatabase(db);
+   checkTarget(readSetting(db,'articles'));
+   backupBeforeWrite(db,real);
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    const articles=readSetting(db,'articles');
+    const {article,index}=checkTarget(articles);
+    const audit=readSetting(db,'editorial_audit')||[];
+    if(!Array.isArray(audit))throw Error('audit_schema_changed');
+    articles.splice(index,1);
+    const put=db.prepare('UPDATE settings SET value=? WHERE key=?');
+    if(put.run(JSON.stringify(articles),'articles').changes!==1)throw Error('article_update_failed');
+    const entry={at:new Date().toISOString(),action:'deleted',id:article_id,title,actor:'article-api',fromStatus:article.status||null,toStatus:null};
+    if(put.run(JSON.stringify([entry,...audit].slice(0,500)),'editorial_audit').changes!==1)throw Error('audit_update_failed');
+    db.exec('COMMIT');
+    // Image files are deliberately not unlinked: backups/other articles may reference them.
+    return {id:article_id,title,deleted:true};
+   }catch(e){try{db.exec('ROLLBACK')}catch{}throw e}
+  }finally{db.close()}
+ }
  function attachBanner(articleId,prepared,replaceBanner){
   if(typeof articleId!=='string'||!/^[A-Za-z0-9_-]{1,150}$/.test(articleId))throw Object.assign(new Error('invalid_article_id'),{status:422});
   if(typeof replaceBanner!=='boolean')throw Object.assign(new Error('invalid_replace_flag'),{status:422});
@@ -144,7 +184,7 @@ function createArticlePublisher({tokenHash=process.env.MM_ARTICLE_BEARER_SHA256,
 
 
  return {
-  owns(req){const p=String(req.url||'').split('?')[0];return p===ENDPOINT||p===BANNER_ENDPOINT},
+  owns(req){const p=String(req.url||'').split('?')[0];return p===ENDPOINT||p===BANNER_ENDPOINT||p===DELETE_ENDPOINT},
   async handle(req,res){
    if(req.method!=='POST')return json(res,405,{error:'method_not_allowed'});
    if(!authorized(req))return json(res,401,{error:'unauthorized'});
@@ -152,6 +192,10 @@ function createArticlePublisher({tokenHash=process.env.MM_ARTICLE_BEARER_SHA256,
    if(origin&&origin!=='https://marketmarney.com')return json(res,403,{error:'origin_not_allowed'});
    try{
     const p=String(req.url||'').split('?')[0],b=await readBody(req);
+    if(p===DELETE_ENDPOINT){
+     const outcome=deleteArticle(b);
+     return json(res,200,{ok:true,deleted:true,id:outcome.id,title:outcome.title});
+    }
     if(p===BANNER_ENDPOINT){
      if(!b||typeof b!=='object'||Array.isArray(b)||b.confirm_attach!==true)throw Object.assign(new Error('banner_attachment_not_confirmed'),{status:422});
      const prepared=await prepareBanner(b.banner);
