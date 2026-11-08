@@ -7,6 +7,7 @@ on:
       - 'warxau-fbs/article-banner.cjs'
       - 'warxau-fbs/article-banner.test.cjs'
       - 'warxau-fbs/article-delete.test.cjs'
+      - 'integrations/editorial-worker/index.ts'
       - 'warxau-fbs/article-publisher.test.cjs'
       - 'warxau-fbs/bootstrap.cjs'
       - 'warxau-fbs/Dockerfile.ihsg'
@@ -43,6 +44,7 @@ jobs:
           node --check warxau-fbs/bootstrap.cjs
           node --check warxau-fbs/article-publisher.test.cjs
           node --check warxau-fbs/article-delete.test.cjs
+          node -e "new (require('node:vm').Script)(require('node:fs').readFileSync('integrations/editorial-worker/index.ts','utf8'))"
       - name: Run isolated database tests
         run: node --test warxau-fbs/article-publisher.test.cjs warxau-fbs/article-banner.test.cjs warxau-fbs/article-delete.test.cjs
       - name: Validate approved MarketMarney news payload
