@@ -1,0 +1,42 @@
+                    if(now-lastRendererRecovery>=15000){lastRendererRecovery=now;open(retry);Toast.makeText(MainActivity.this,"Halaman dipulihkan otomatis",Toast.LENGTH_SHORT).show();}
+                    else showFailure("RENDER",Recovery414.message("RENDER"));
+                }else if(retained.values().remove(v)){discardView(v);}return true;
+            }''')
+
+# Replace repeated multi-call adaptation with one guarded install and a tiny fallback probe.
+start='    private void adapt(WebView v,String url){\n'
+end='    private void showOffline(String message){showFailure("UNAVAILABLE",message);}\n'
+new_adapt=r"""    private void adapt(WebView v,String url){
+        if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl())||url.equals(lastAdaptedDocument))return;
+        lastAdaptedDocument=url;
+        Uri expected=Uri.parse(url);
+        v.getSettings().setMediaPlaybackRequiresUserGesture(!"/beranda-trader.html".equals(expected.getPath()));
+        String ready="location.protocol==='https:'&&location.hostname==='marketmarney.com'&&(!location.port||location.port==='443')&&location.pathname==="+JSONObject.quote(expected.getPath())+
+            "&&location.search==="+JSONObject.quote(expected.getEncodedQuery()==null?"":"?"+expected.getEncodedQuery())+"&&document.documentElement&&document.head&&document.body";
+        String common="window.MarketMarneyApp={platform:'android',version:'4.27'};document.documentElement.dataset.mmAndroid='427';if(!document.getElementById('mm43-common')){var s=document.createElement('style');s.id='mm43-common';s.textContent='#mmInstall{display:none!important}';document.head.appendChild(s)}";
+        String homeCards="";
+        if("/".equals(expected.getPath())||"/index.html".equals(expected.getPath()))
+            homeCards="if(!document.getElementById('mm422-home')){var h=document.createElement('style');h.id='mm422-home';h.textContent='#app > .featurestrip.featurestrip-pro{display:none!important}';document.head.appendChild(h)}";
+        String path=expected.getPath();
+        boolean social="/beranda-trader.html".equals(path)||"/profil.html".equals(path)||"/grup-trader.html".equals(path);
+        String socialStyle="var ss=document.getElementById('mm43-social-style');if(!ss){ss=document.createElement('style');ss.id='mm43-social-style';document.head.appendChild(ss)}if(ss.dataset.revision!=='427'){ss.textContent="+socialCssQuoted+";ss.dataset.revision='427';}";
+        String install="(function(){if(!("+ready+"))return 'retry';"+common+"\n"+homeCards+"\n"+brandingScript+"\n"+
+            depthScript+"\nif(window.MMDepth423)window.MMDepth423.install("+depthCssQuoted+");\n"+
+            chromeScript+"\nif(window.MMChrome424)window.MMChrome424.install();\n"+
+            lightScript+"\nif(window.MMLight425)window.MMLight425.install();var l=document.getElementById('mm425-light');if(!l){l=document.createElement('style');l.id='mm425-light';document.head.appendChild(l)}if(l.dataset.revision!=='427'){l.textContent="+lightCssQuoted+";l.dataset.revision='427';}document.head.appendChild(l);return window.__mm411BundledReady?'bundled':'fallback';})()";
+        v.evaluateJavascript(install,result->{
+            if(destroyed||v!=web||!Recovery414.sameDocument(url,v.getUrl()))return;
+            if("\"retry\"".equals(result)){lastAdaptedDocument="";v.postDelayed(()->adapt(v,url),120);return;}
+            if(!social||"\"bundled\"".equals(result))return;
+            v.evaluateJavascript("(function(){if(!("+ready+")||window.__mm411BundledReady)return;"+socialStyle+"\n"+socialScript+"\n})()",null);
+        });
+    }
+"""
+replace_block(main,start,end,new_adapt)
+
+# Static APK resources are immutable; HTML/API responses remain no-store.
+replace('app/src/main/java/com/marketmarney/mobile/AppResources49.java',
+'''            Map<String,String> h=new HashMap<>();h.put("Cache-Control","no-store");h.put("X-Content-Type-Options","nosniff");h.put("X-Marney-Asset","49");''',
+'''            Map<String,String> h=new HashMap<>();
+            boolean immutable=image||file.endsWith(".css")||file.endsWith(".js");
+            h.put("Cache-Control",immutable?"public, max-age=31536000, immutable":"no-store");

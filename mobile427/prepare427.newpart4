@@ -1,0 +1,75 @@
+            h.put("X-Content-Type-Options","nosniff");h.put("X-Marney-Asset","49");''')
+
+# Replace the opening and light controller with their low-overhead implementations.
+(root/'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java').write_text(''.join((patch/f'StartupOverlay.java.part{i}').read_text() for i in range(1,4)))
+shutil.copyfile(patch/'light425.js',root/'app/src/main/assets/light425.js')
+shutil.copyfile(patch/'fast427.css',root/'app/src/main/assets/fast427.css')
+
+# Collapse dozens of local CSS/JS requests into one immutable bundle per local app page.
+assets=root/'app/src/main/assets'
+map_path=assets/'resources49-map.json'
+resource_map=json.loads(map_path.read_text())
+
+def external_tags(html:str,tag_name:str):
+    if tag_name=='link':
+        tags=list(re.finditer(r'<link\b[^>]*>',html,re.I))
+        out=[]
+        for match in tags:
+            tag=match.group(0)
+            if not re.search(r"\brel=['\"]stylesheet['\"]",tag,re.I): continue
+            href=re.search(r"\bhref=['\"]([^'\"]+)['\"]",tag,re.I)
+            if href: out.append((match,href.group(1)))
+        return out
+    out=[]
+    for match in re.finditer(r"<script\b[^>]*\bsrc=['\"]([^'\"]+)['\"][^>]*></script>",html,re.I):
+        src=re.search(r"\bsrc=['\"]([^'\"]+)['\"]",match.group(0),re.I)
+        if src: out.append((match,src.group(1)))
+    return out
+
+def bundle_page(folder:str,page_name:str,route_prefix:str,route_bundle:str):
+    page=assets/folder/page_name
+    html=page.read_text()
+    css=[item for item in external_tags(html,'link') if item[1].startswith(route_prefix) and item[1].endswith('.css')]
+    js=[item for item in external_tags(html,'script') if item[1].startswith(route_prefix) and item[1].endswith('.js')]
+    assert len(css)>=2 and len(js)>=2,(folder,len(css),len(js))
+    css_content=[]
+    for _,route in css:
+        file=resource_map[route];css_content.append(f'/* {route} */\n'+(assets/file).read_text())
+    js_content=[]
+    for _,route in js:
+        file=resource_map[route];js_content.append(f'/* {route} */\n'+(assets/file).read_text()+"\n;")
+    css_file=f'{folder}/bundle427.css';js_file=f'{folder}/bundle427.js'
+    (assets/css_file).write_text('\n'.join(css_content))
+    (assets/js_file).write_text('\n'.join(js_content))
+    css_route=route_bundle+'.css';js_route=route_bundle+'.js'
+    resource_map[css_route]=css_file;resource_map[js_route]=js_file
+    # Replace from the end so offsets remain valid.
+    replacements=[]
+    for index,(match,_) in enumerate(css): replacements.append((match.start(),match.end(),f'<link rel="stylesheet" href="{css_route}">' if index==0 else ''))
+    for index,(match,_) in enumerate(js): replacements.append((match.start(),match.end(),f'<script defer src="{js_route}"></script>' if index==0 else ''))
+    for start_pos,end_pos,value in sorted(replacements,reverse=True): html=html[:start_pos]+value+html[end_pos:]
+    page.write_text(html)
+    assert html.count(css_route)==1 and html.count(js_route)==1
+    assert not any(route in html for _,route in css+js)
+
+bundle_page('social411','page.html','/__android411/social/','/__android411/social/bundle427')
+bundle_page('group48','page.html','/__android48/group/','/__android48/group/bundle427')
+bundle_page('profile49','page.html','/__android49/profile/','/__android49/profile/bundle427')
+map_path.write_text(json.dumps(resource_map,indent=2,sort_keys=True)+'\n')
+
+# Focused performance regression checks.
+test_path=root/'app/src/androidTest/java/com/marketmarney/mobile/Performance427Test.java'
+test_path.parent.mkdir(parents=True,exist_ok=True)
+test_path.write_text((patch/'Performance427Test.java').read_text())
+shutil.copyfile(patch/'Marney427-Panduan.md',root/'README-MULAI-DISINI.md')
+
+after=inventory(root)
+changed=sorted(set(before)^set(after)|{p for p in set(before)&set(after) if before[p]!=after[p]})
+manifest={
+    'version':'4.27.0-beta','baseVersion':'4.26.0-beta',
+    'purpose':'Remove duplicate DOM monitoring, bundle local page assets, install enhancements once per document, shorten opening work, cache immutable resources, and recover one renderer crash automatically.',
+    'changed':[{'path':p,'beforeSha256':before.get(p),'afterSha256':after[p]} for p in changed],
+    'preserved':{p:d for p,d in sorted(before.items()) if p not in changed},
+}
+Path('verified427.json').write_text(json.dumps(manifest,indent=2)+'\n')
+print('Verified 4.27 speed/stability patch:',len(changed),'changed files;',len(manifest['preserved']),'unchanged files.')

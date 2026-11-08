@@ -1,0 +1,51 @@
+        android.app.ActivityManager memory=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);
+        lowRamDevice=memory!=null&&(memory.isLowRamDevice()||memory.getMemoryClass()<128);''')
+
+# One JS call when resuming rather than two queue hops.
+replace(main,
+'''        if(own(v.getUrl())){
+            v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'))}catch(e){}",null);
+            v.evaluateJavascript("try{window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);
+        }''',
+'''        if(own(v.getUrl()))v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'));window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);''')
+
+# Do not flash white system bars over the dark opening.
+replace(main,
+'''        host.addView(launchOverlay,new FrameLayout.LayoutParams(-1,-1));
+        getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);
+        int lightBars=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if(Build.VERSION.SDK_INT>=26)lightBars|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        getWindow().getDecorView().setSystemUiVisibility(lightBars);
+        launchOverlay.requestApplyInsets();''',
+'''        host.addView(launchOverlay,new FrameLayout.LayoutParams(-1,-1));
+        launchOverlay.requestApplyInsets();''')
+
+replace(main,
+'''        depthCss=asset("depth423.css");depthScript=asset("depth423.js");chromeScript=asset("chrome424.js");lightCss=asset("light425.css")+"\\n"+asset("soft426.css");lightScript=asset("light425.js");''',
+'''        depthCss=asset("depth423.css");depthScript=asset("depth423.js");chromeScript=asset("chrome424.js");lightCss=asset("light425.css")+"\\n"+asset("soft426.css")+"\\n"+asset("fast427.css");lightScript=asset("light425.js");
+        socialCssQuoted=JSONObject.quote(socialCss);depthCssQuoted=JSONObject.quote(depthCss);lightCssQuoted=JSONObject.quote(lightCss);''')
+
+replace(main,
+'''        WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setLoadsImagesAutomatically(true);''',
+'''        WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setLoadsImagesAutomatically(true);s.setCacheMode(WebSettings.LOAD_DEFAULT);''')
+
+# Reset the one-document injection guard on every main-frame navigation.
+replace(main,
+'''                if(v!=web)return;if(pendingIndexTab!=-1){navigationSequence++;pendingIndexTab=-1;}if(fileOwner==v)finishFileSelection(null);clearOffline();beginPageWait(v);progress.setVisibility(View.VISIBLE);if(own(url))lastUrl=url;''',
+'''                if(v!=web)return;lastAdaptedDocument="";if(pendingIndexTab!=-1){navigationSequence++;pendingIndexTab=-1;}if(fileOwner==v)finishFileSelection(null);clearOffline();beginPageWait(v);progress.setVisibility(View.VISIBLE);if(own(url))lastUrl=url;''')
+
+# First visible frame closes the opening; full enhancement is installed once after document completion.
+replace(main,
+'''            @Override public void onPageCommitVisible(WebView v,String url){adapt(v,url);if(v==web&&own(url)){pageReady(v,url);endLaunchAnimation(true,"first-frame");}}''',
+'''            @Override public void onPageCommitVisible(WebView v,String url){if(v==web&&own(url)){pageReady(v,url);endLaunchAnimation(true,"first-frame");}}''')
+
+# Recover one renderer crash automatically, then fail visibly if it repeats quickly.
+replace(main,
+'''            @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail detail){
+                if(v==web){dropRetained();disposeWeb();createWeb();showFailure("RENDER",Recovery414.message("RENDER"));}
+                else if(retained.values().remove(v)){discardView(v);}return true;
+            }''',
+'''            @Override public boolean onRenderProcessGone(WebView v,RenderProcessGoneDetail detail){
+                if(v==web){
+                    long now=SystemClock.uptimeMillis();String retry=Recovery414.safeRetry(lastUrl,BASE+paths[tab]);
+                    dropRetained();disposeWeb();createWeb();
