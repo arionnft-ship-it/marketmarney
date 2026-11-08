@@ -1,0 +1,27 @@
+name: Public SEO safety
+on:
+  push:
+    branches:
+      - fix/public-seo-indexing-20261109
+  pull_request:
+    branches:
+      - fix/site-performance-audit-20261108
+jobs:
+  seo-regression:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript and integration
+        run: |
+          node --check marney-brand/seo.cjs
+          node --check marney-brand/branding.cjs
+          node --check warxau-fbs/bootstrap.cjs
+          node -e "require('./marney-brand/branding.cjs')"
+          grep -q 'COPY marney-brand/branding.cjs marney-brand/seo.cjs' warxau-fbs/Dockerfile.ihsg
+      - name: SEO and private route tests
+        run: node --test marney-brand/seo.test.cjs
