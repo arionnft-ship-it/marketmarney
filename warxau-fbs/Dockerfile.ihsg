@@ -13,6 +13,7 @@ COPY warxau-fbs/derived-software.cjs ./
 COPY warxau-fbs/public-theme-light.cjs warxau-fbs/install-light-theme.cjs ./
 RUN node install-light-theme.cjs performance-runtime.cjs
 COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bootstrap.cjs ./
+COPY warxau-fbs/article-reading-width.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
 COPY warxau-fbs/article-banner.cjs ./
 COPY warxau-fbs/topchat.cjs warxau-fbs/topchat-layout.js warxau-fbs/topchat.css warxau-fbs/start-topchat.cjs ./
