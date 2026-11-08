@@ -1,11 +1,12 @@
 name: Article API safety tests
 on:
   push:
-    branches: [feature/editorial-banner-upload-20261108]
+    branches: [feature/editorial-delete-goldman-20261108]
     paths:
       - 'warxau-fbs/article-publisher.cjs'
       - 'warxau-fbs/article-banner.cjs'
       - 'warxau-fbs/article-banner.test.cjs'
+      - 'warxau-fbs/article-delete.test.cjs'
       - 'warxau-fbs/article-publisher.test.cjs'
       - 'warxau-fbs/bootstrap.cjs'
       - 'warxau-fbs/Dockerfile.ihsg'
@@ -16,6 +17,7 @@ on:
       - 'warxau-fbs/article-publisher.cjs'
       - 'warxau-fbs/article-banner.cjs'
       - 'warxau-fbs/article-banner.test.cjs'
+      - 'warxau-fbs/article-delete.test.cjs'
       - 'warxau-fbs/article-publisher.test.cjs'
       - 'warxau-fbs/bootstrap.cjs'
       - 'warxau-fbs/Dockerfile.ihsg'
@@ -40,8 +42,9 @@ jobs:
           node --check warxau-fbs/article-banner.test.cjs
           node --check warxau-fbs/bootstrap.cjs
           node --check warxau-fbs/article-publisher.test.cjs
+          node --check warxau-fbs/article-delete.test.cjs
       - name: Run isolated database tests
-        run: node --test warxau-fbs/article-publisher.test.cjs warxau-fbs/article-banner.test.cjs
+        run: node --test warxau-fbs/article-publisher.test.cjs warxau-fbs/article-banner.test.cjs warxau-fbs/article-delete.test.cjs
       - name: Validate approved MarketMarney news payload
         run: node -e "const {validate}=require('./warxau-fbs/article-publisher.cjs');const a=require('./warxau-fbs/articles-pending/goldman-emas-2026-11-08.json');if(validate(a).status!=='published')process.exit(1);"
 
