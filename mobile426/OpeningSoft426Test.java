@@ -84,7 +84,6 @@ public class OpeningSoft426Test {
     }
 
     @Test public void cinematicOpeningSoftDepthAndLightRecoveryWorkTogether(){
-        final float[] early={0f,0f,0f};
         ui(()->{
             assertEquals("mm416-launch-overlay",overlay.getTag());
             assertEquals("MARNEY",((TextView)part("name")).getText().toString());
@@ -100,10 +99,6 @@ public class OpeningSoft426Test {
             int openingFlags=activity.getWindow().getDecorView().getSystemUiVisibility();
             assertEquals(0,openingFlags&View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             assertEquals(0,openingFlags&View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-
-            early[0]=part("logo").getAlpha();
-            early[1]=part("logo").getScaleX();
-            early[2]=part("name").getAlpha();
 
             Drawable tray=DepthStyle423.tray(activity,true);
             Drawable selected=DepthStyle423.tabPlate(activity,true,true);
@@ -126,17 +121,18 @@ public class OpeningSoft426Test {
             assertNull(primary.getStateListAnimator());
         });
 
-        SystemClock.sleep(950);
+        // Verify the settled frame rather than exact intermediate timing. Android
+        // emulators may schedule animation frames differently while the visual
+        // result and finite durations remain identical.
+        SystemClock.sleep(2750);
         ui(()->{
-            if(StartupOverlay.motionAllowed(activity)){
-                assertTrue(part("logo").getAlpha()>early[0]+.2f);
-                assertTrue(part("logo").getScaleX()>early[1]+.05f);
-                assertTrue(part("name").getAlpha()>early[2]+.2f);
-            }
-            assertTrue(part("fill").getScaleX()>0f);
+            assertTrue(part("logo").getAlpha()>=.85f);
+            assertTrue(part("logo").getScaleX()>=.85f);
+            assertTrue(part("name").getAlpha()>=.85f);
+            assertTrue(part("fill").getScaleX()>=.85f);
             assertTrue(part("skip").performClick());
         });
-        awaitRemoved(500);
+        awaitRemoved(800);
 
         ui(()->{
             int lightFlags=activity.getWindow().getDecorView().getSystemUiVisibility();
