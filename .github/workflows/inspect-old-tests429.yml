@@ -1,0 +1,32 @@
+name: Inspect inherited 4.29 tests
+on:
+  push:
+    branches: [android-v4.29-social-fullscreen]
+    paths: ['.github/workflows/inspect-old-tests429.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print exact inherited report assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          z=Path('mobile419/base418-source.zip')
+          wanted=[
+            'android417/app/src/androidTest/java/com/marketmarney/mobile/Performance427Test.java',
+            'android417/app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java',
+          ]
+          with ZipFile(z) as a:
+            for name in wanted:
+              print('\n===== '+name+' =====')
+              text=a.read(name).decode()
+              for i,line in enumerate(text.splitlines(),1):
+                if 88 <= i <= 125:
+                  print(f'{i:04d}: {line}')
+          PY
