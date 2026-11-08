@@ -60,6 +60,13 @@ replace(main, "dataset.revision='428'", "dataset.revision='429'", count=2)
 startup = 'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java'
 replace(startup, 'MM428_LAUNCH', 'MM429_LAUNCH', count=2)
 
+# Keep inherited regression tests aligned with the current application report.
+test_root=root/'app/src/androidTest/java'
+for test_file in test_root.rglob('*.java'):
+    text=test_file.read_text(encoding='utf-8')
+    updated=text.replace('MarketMarney 4.28.0-beta','MarketMarney 4.29.0-beta')
+    if updated!=text:test_file.write_text(updated,encoding='utf-8')
+
 assets = root / 'app/src/main/assets'
 asset_archive=base64.b64decode((base/'assets429.tar.gz.b64').read_text(encoding='ascii'))
 with tarfile.open(fileobj=io.BytesIO(asset_archive),mode='r:gz') as archive:
