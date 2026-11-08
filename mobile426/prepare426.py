@@ -66,6 +66,9 @@ replace("app/src/main/res/values/strings.xml",
 replace("app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java",
         'assertTrue(r.contains("4.25.0-beta"))',
         'assertTrue(r.contains("4.26.0-beta"))')
+replace("app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java",
+        'assertTrue(report.contains("4.25.0-beta"))',
+        'assertTrue(report.contains("4.26.0-beta"))')
 
 main="app/src/main/java/com/marketmarney/mobile/MainActivity.java"
 replace(main,"MarketMarney 4.25.0-beta","MarketMarney 4.26.0-beta")
@@ -124,6 +127,7 @@ expected=sorted({
     "README-MULAI-DISINI.md",
     "app/build.gradle",
     "app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java",
+    "app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java",
     "app/src/androidTest/java/com/marketmarney/mobile/OpeningSoft426Test.java",
     "app/src/main/assets/soft426.css",
     "app/src/main/java/com/marketmarney/mobile/MainActivity.java",
