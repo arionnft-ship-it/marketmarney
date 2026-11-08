@@ -280,3 +280,55 @@ test('storage quota failures cannot turn a valid public response into a broken p
   assert.equal(app.document.querySelectorAll('#newsList .card').length, 1);
   assert.deepEqual(app.errors, []);
 });
+
+
+test('API-published paragraphs render as real paragraphs and headings, not literal <p> text', async t => {
+  const story = article(701, {
+    bodyHtml: null,
+    title: 'Demokrat Siap Blokir Anggaran Militer Trump US$1,5 Triliun',
+    body: '<p>MarketMarney — Perdebatan anggaran militer AS kembali memanas.</p>' +
+      '<p>Apa yang diusulkan pemerintahan Trump?</p>' +
+      '<p>Anggaran yang direncanakan mencapai US$1,5 triliun dan masih menjadi usulan.</p>' +
+      '<p>Kesimpulan</p><p>Negosiasi anggaran masih berlangsung.</p>'
+  });
+  const app = createApp('#artikel/' + story.id);
+  t.after(app.close);
+  await app.respond(payload([story]));
+  const body = app.document.querySelector('.article .articletext');
+  assert.ok(body);
+  assert.equal(body.querySelectorAll('p').length, 3);
+  assert.deepEqual([...body.querySelectorAll('h2')].map(el => el.textContent),
+    ['Apa yang diusulkan pemerintahan Trump?', 'Kesimpulan']);
+  assert.equal(body.textContent.includes('<p>'), false);
+  assert.match(body.textContent, /US\$1,5 triliun/);
+  assert.deepEqual(app.errors, []);
+});
+
+test('plain text remains escaped, uses readable line breaks and cannot inject HTML', async t => {
+  const story = article(702, { bodyHtml: null,
+    body: 'Paragraf pertama tentang pasar dan data.\n\nParagraf kedua di bawahnya.\nBaris berikutnya.'
+  });
+  const app = createApp('#artikel/' + story.id);
+  t.after(app.close);
+  await app.respond(payload([story]));
+  const body = app.document.querySelector('.article .articletext');
+  assert.equal(body.querySelectorAll('p').length, 2);
+  assert.equal(body.querySelectorAll('br').length, 1);
+  assert.match(body.textContent, /Paragraf kedua/);
+  assert.deepEqual(app.errors, []);
+});
+
+test('legacy HTML is sanitized and does not execute injected scripts or image handlers', async t => {
+  const story = article(703, { bodyHtml: null,
+    body: '<p>Ini teks <strong>aman</strong>.</p><script>window.mmHacked=1</script>' +
+      '<p><img src="javascript:alert(1)" onerror="window.mmHacked=2"> Selesai.</p>'
+  });
+  const app = createApp('#artikel/' + story.id);
+  t.after(app.close);
+  await app.respond(payload([story]));
+  const body = app.document.querySelector('.article .articletext');
+  assert.equal(body.querySelectorAll('script, img, [onerror]').length, 0);
+  assert.equal(app.window.mmHacked, undefined);
+  assert.match(body.textContent, /Ini teks aman/);
+  assert.deepEqual(app.errors, []);
+});
