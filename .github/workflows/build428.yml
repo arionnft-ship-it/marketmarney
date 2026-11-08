@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d mobile428/source.tar.gz.b64 > /tmp/mobile428-source.tar.gz
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
           echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
           tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
           python3 -m pip install --disable-pip-version-check Pillow==13.0.0
