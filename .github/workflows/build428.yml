@@ -1,0 +1,144 @@
+name: Marney 4.28 Social Speed
+on:
+  push:
+    branches: [android-v4.28-social-speed]
+    paths: ['mobile428/**', '.github/workflows/build428.yml']
+  workflow_dispatch:
+permissions: {contents: write}
+concurrency:
+  group: marney428-social-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$S"; yes | "$S" --licenses >/dev/null || true
+          "$S" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Reconstruct verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d mobile428/source.tar.gz.b64 > /tmp/mobile428-source.tar.gz
+          echo '092f3fe225296ffee199d40a5c1b43c3263ea3a3d7608c3673879685d6314f8c  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,stat
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as a:
+              assert a.testzip() is None
+              for e in a.infolist():
+                  p=Path(e.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and not stat.S_ISLNK(e.external_attr>>16)
+                  if p.parts and p.parts[0]=='android417': a.extract(e,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420; python3 mobile420/prepare420.py
+          mv android420 android421; python3 mobile421/prepare421.py
+          mv android421 android422; python3 mobile422/prepare422.py
+          mv android422 android423; python3 mobile423/prepare423.py
+          mv android423 android424; python3 mobile424/prepare424.py
+          mv android424 android425; python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426; python3 mobile426/prepare426.py
+          mv android426 android427; python3 mobile427/prepare427.py
+          mv android427 android428; python3 mobile428/prepare428.py
+          node --check android428/app/src/main/assets/social411/5eab9da17fe2c659.js
+          node --check android428/app/src/main/assets/social411/bundle427.js
+          node --check android428/app/src/main/assets/group48/4e221ebb961158b1.js
+          node --check android428/app/src/main/assets/group48/bundle427.js
+      - name: Build and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --project-dir android428 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver testapk quality428
+          APK=android428/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney428-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney428-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta428'" deliver/Marney428-Package.txt
+          grep -F "versionCode='32'" deliver/Marney428-Package.txt
+          grep -F "versionName='4.28.0-beta'" deliver/Marney428-Package.txt
+          cp "$APK" deliver/Marney428.apk
+          cp android428/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney428-Tests.apk
+          cp verified428.json mobile428/Marney428-Panduan.md deliver/
+          python3 mobile428/verify428.py android428 deliver testapk
+      - name: Prepare emulator checks
+        shell: bash
+        run: |
+          cat > check428.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality428/android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r deliver/Marney428.apk
+          adb install -r testapk/Marney428-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta428.test/androidx.test.runner.AndroidJUnitRunner | tee quality428/android/opening.txt
+          grep -F 'OK (1 test)' quality428/android/opening.txt
+          adb shell pm clear com.marketmarney.mobile.beta428 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta428.test/androidx.test.runner.AndroidJUnitRunner | tee quality428/android/regression.txt
+          grep -F 'OK (28 tests)' quality428/android/regression.txt
+          adb logcat -d -s AndroidRuntime:E > quality428/android/runtime.log
+          test ! -s quality428/android/runtime.log
+          adb shell am force-stop com.marketmarney.mobile.beta428
+          adb shell am start -W -n com.marketmarney.mobile.beta428/com.marketmarney.mobile.MainActivity --ei startTab 4 | tee quality428/android/social-cold-start.txt
+          sleep 3
+          adb exec-out screencap -p > quality428/android/social.png
+          adb shell dumpsys meminfo com.marketmarney.mobile.beta428 > quality428/android/social-meminfo.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check428.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney428-Results
+          path: |
+            deliver/
+            quality428/
+          if-no-files-found: error
+      - name: Publish permanent public download
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deliver
+          sha256sum -c Marney428-SHA256.txt
+          zip -9 Marney428.zip Marney428.apk Marney428-Panduan.md Marney428-SHA256.txt Marney428-Package.txt
+          TAG=marney-v4.28-beta
+          NOTES='Marney 4.28 Social Speed memperbaiki Social Marney: startup feed diprioritaskan, permintaan GET duplikat digabung singkat, Reels memakai satu pengendali video, pencarian tidak lagi membuat request follow per hasil, chat grup tidak merender ulang data yang sama, polling berhenti saat latar/offline dan pulih dari cache Android, serta pencarian pesan dan daftar anggota dibatasi. Website dan database aktif tidak diubah.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.28 Social Speed' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney428.apk Marney428.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney428.apk Marney428.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.28 Social Speed' --notes "$NOTES" --prerelease
+          fi
