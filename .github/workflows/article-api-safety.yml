@@ -1,0 +1,45 @@
+name: Article API safety tests
+on:
+  push:
+    branches: [feature/article-api-v1883-safe]
+    paths:
+      - 'warxau-fbs/article-publisher.cjs'
+      - 'warxau-fbs/article-publisher.test.cjs'
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/article-api-safety.yml'
+  pull_request:
+    branches: [fix/site-performance-audit-20261108]
+    paths:
+      - 'warxau-fbs/article-publisher.cjs'
+      - 'warxau-fbs/article-publisher.test.cjs'
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+permissions:
+  contents: read
+jobs:
+  offline-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source parses
+        run: |
+          node --check warxau-fbs/article-publisher.cjs
+          node --check warxau-fbs/bootstrap.cjs
+          node --check warxau-fbs/article-publisher.test.cjs
+      - name: Run isolated database tests
+        run: node --test warxau-fbs/article-publisher.test.cjs
+      - name: Validate approved MarketMarney news payload
+        run: node -e "const {validate}=require('./warxau-fbs/article-publisher.cjs');const a=require('./warxau-fbs/articles-pending/goldman-emas-2026-11-08.json');if(validate(a).status!=='published')process.exit(1);"
+
+  image-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the actual Railway image without deploying
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-article-api-test .

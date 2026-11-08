@@ -2,7 +2,7 @@
 // Normal image entry point. Original app/data/auth files remain untouched.
 // Existing verified public gateway is loaded exactly as before; only new private routes are added.
 const http=require('node:http'),fs=require('node:fs'),zlib=require('node:zlib'),crypto=require('node:crypto');
-const {createRelay}=require('./relay.cjs');const {privatePage}=require('./page.cjs');
+const {createRelay}=require('./relay.cjs');const {privatePage}=require('./page.cjs');const {createArticlePublisher}=require('./article-publisher.cjs');const articlePublisher=createArticlePublisher();
 const {transformHomeHtml}=require('./performance-news.cjs');
 const PORT=Number(process.env.PORT||8080);
 const SITE='/persist/site-r1/MarketMarney-Railway-Staging/app/assets/xau-war-3d.html';
@@ -110,7 +110,7 @@ function patchHomeCard(req, res) {
     return end.call(this, Buffer.from(html, 'utf8'), callback);
   };
 }
-function attachToServer(server,relay,port){const emit=server.emit;server.emit=function(event,...args){if(event==='request'&&server.address()?.port===port){if(relay.owns(args[0])){void relay.handle(args[0],args[1]);return true;}patchHomeCard(args[0],args[1]);}return emit.call(this,event,...args);};return server;}
+function attachToServer(server,relay,port){const emit=server.emit;server.emit=function(event,...args){if(event==='request'&&server.address()?.port===port){if(relay.owns(args[0])){void relay.handle(args[0],args[1]);return true;}if(articlePublisher?.owns(args[0])){void articlePublisher.handle(args[0],args[1]);return true;}patchHomeCard(args[0],args[1]);}return emit.call(this,event,...args);};return server;}
 function boot(){
  if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw Error('Invalid external port');
  const enc=[1,2,3,4].map(i=>process.env['MM_PUBLIC_GATEWAY_PART'+i]||'').join('');
