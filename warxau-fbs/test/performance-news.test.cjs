@@ -327,7 +327,7 @@ test('legacy HTML is sanitized and does not execute injected scripts or image ha
   t.after(app.close);
   await app.respond(payload([story]));
   const body = app.document.querySelector('.article .articletext');
-  assert.equal(body.querySelectorAll('script, img, [onerror]'), 0);
+  assert.equal(body.querySelectorAll('script, img, [onerror]').length, 0);
   assert.equal(app.window.mmHacked, undefined);
   assert.match(body.textContent, /Ini teks aman/);
   assert.deepEqual(app.errors, []);
