@@ -8,25 +8,43 @@ permissions: {contents: read}
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Print exact inherited report assertions
+      - name: Reconstruct inherited tests and print assertions
         shell: bash
         run: |
           set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0 >/dev/null
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile
+          import hashlib,stat
           z=Path('mobile419/base418-source.zip')
-          wanted=[
-            'android417/app/src/androidTest/java/com/marketmarney/mobile/Performance427Test.java',
-            'android417/app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java',
-          ]
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
           with ZipFile(z) as a:
-            for name in wanted:
-              print('\n===== '+name+' =====')
-              text=a.read(name).decode()
-              for i,line in enumerate(text.splitlines(),1):
-                if 88 <= i <= 125:
-                  print(f'{i:04d}: {line}')
+              for e in a.infolist():
+                  p=Path(e.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and not stat.S_ISLNK(e.external_attr>>16)
+                  if p.parts and p.parts[0]=='android417': a.extract(e,'.')
+          Path('android417').rename('android419')
           PY
+          python3 mobile419/prepare419.py >/dev/null
+          mv android419 android420; python3 mobile420/prepare420.py >/dev/null
+          mv android420 android421; python3 mobile421/prepare421.py >/dev/null
+          mv android421 android422; python3 mobile422/prepare422.py >/dev/null
+          mv android422 android423; python3 mobile423/prepare423.py >/dev/null
+          mv android423 android424; python3 mobile424/prepare424.py >/dev/null
+          mv android424 android425; python3 mobile425/prepare425.py >/dev/null
+          python3 final425/finalize425.py >/dev/null
+          mv android425 android426; python3 mobile426/prepare426.py >/dev/null
+          mv android426 android427; python3 mobile427/prepare427.py >/dev/null
+          mv android427 android428; python3 mobile428/prepare428.py >/dev/null
+          for f in android428/app/src/androidTest/java/com/marketmarney/mobile/Performance427Test.java android428/app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java; do
+            echo
+            echo "===== $f ====="
+            nl -ba "$f" | sed -n '88,125p'
+          done
