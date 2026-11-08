@@ -86,10 +86,10 @@ replace(main,
         if(lowRamDevice||tab==XAUWAR||reelsChrome)return false;''')
 
 replace(main,
-'''        if(state!=null)fileSequence=state.getInt("gallerySequence",4100);'',
+'''        if(state!=null)fileSequence=state.getInt("gallerySequence",4100);''',
 '''        if(state!=null)fileSequence=state.getInt("gallerySequence",4100);
         android.app.ActivityManager memory=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);
-        lowRamDevice=memory!=null&&(memory.isLowRamDevice()||memory.getMemoryClass()<128);'')
+        lowRamDevice=memory!=null&&(memory.isLowRamDevice()||memory.getMemoryClass()<128);''')
 
 # One JS call when resuming rather than two queue hops.
 replace(main,
@@ -97,7 +97,7 @@ replace(main,
             v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'))}catch(e){}",null);
             v.evaluateJavascript("try{window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);
         }''',
-'''        if(own(v.getUrl()))v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'));window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);'')
+'''        if(own(v.getUrl()))v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'));window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);''')
 
 # Do not flash white system bars over the dark opening.
 replace(main,
