@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Apply Marney 4.27 speed and stability patch to verified 4.26 source."""
+from pathlib import Path
+import hashlib
+import json
+import re
+import shutil
+import sys
+
+root=Path(sys.argv[1]) if len(sys.argv)>1 else Path('android427')
+patch=Path(__file__).resolve().parent
+
+def sha(path:Path)->str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def inventory(base:Path):
+    return {p.relative_to(base).as_posix():sha(p) for p in base.rglob('*') if p.is_file()}
+
+def replace(relative:str,old:str,new:str,count:int=1):
+    path=root/relative
+    text=path.read_text()
+    actual=text.count(old)
+    assert actual==count,f'{relative}: expected {count}, found {actual}: {old[:120]!r}'
+    path.write_text(text.replace(old,new,count))
+
+def replace_block(relative:str,start_marker:str,end_marker:str,new_block:str):
+    path=root/relative
+    text=path.read_text()
+    start=text.index(start_marker)
+    end=text.index(end_marker,start)
+    path.write_text(text[:start]+new_block+text[end:])
+
+required={
+    'app/build.gradle':[
+        "applicationId 'com.marketmarney.mobile.beta426'",
+        'versionCode 30',"versionName '4.26.0-beta'"],
+    'app/src/main/java/com/marketmarney/mobile/MainActivity.java':[
+        'MarketMarneyAndroid/4.26 AppShell','MarketMarney 4.26.0-beta',
+        'lightCss=asset("light425.css")+"\\n"+asset("soft426.css")',
+        'private void adapt(WebView v,String url)'],
+    'app/src/main/java/com/marketmarney/mobile/AppResources49.java':['Cache-Control","no-store"'],
+    'app/src/main/assets/light425.js':['window.MMLight425','bodyObserver','appObserver'],
+    'app/src/main/res/values/strings.xml':['Marney 4.26'],
+}
+for relative,markers in required.items():
+    text=(root/relative).read_text()
+    for marker in markers: assert marker in text,f'{relative} lacks {marker!r}'
+
+before=inventory(root)
+
+# Version/package/report.
+replace('app/build.gradle',"applicationId 'com.marketmarney.mobile.beta426'","applicationId 'com.marketmarney.mobile.beta427'")
+replace('app/build.gradle','versionCode 30','versionCode 31')
+replace('app/build.gradle',"versionName '4.26.0-beta'","versionName '4.27.0-beta'")
+replace('app/src/main/res/values/strings.xml','<string name="app_name">Marney 4.26</string>','<string name="app_name">Marney 4.27 Speed</string>')
+
+# Existing regression tests should identify the current release.
+for relative in [
+    'app/src/androidTest/java/com/marketmarney/mobile/Stability414Test.java',
+    'app/src/androidTest/java/com/marketmarney/mobile/LightOnly425Test.java',
+]:
+    path=root/relative
+    if path.exists():
+        text=path.read_text()
+        text=text.replace('4.26.0-beta','4.27.0-beta')
+        path.write_text(text)
+
+main='app/src/main/java/com/marketmarney/mobile/MainActivity.java'
+replace(main,'MarketMarney 4.26.0-beta','MarketMarney 4.27.0-beta')
+replace(main,'MarketMarneyAndroid/4.26 AppShell','MarketMarneyAndroid/4.27 AppShell')
+replace(main,"window.MarketMarneyApp={platform:'android',version:'4.26'};document.documentElement.dataset.mmAndroid='426';",
+             "window.MarketMarneyApp={platform:'android',version:'4.27'};document.documentElement.dataset.mmAndroid='427';")
+replace(main,
+'''    private String socialScript="", socialCss="", brandingScript="", depthCss="", depthScript="", chromeScript="", lightCss="", lightScript="";''',
+'''    private String socialScript="", socialCss="", brandingScript="", depthCss="", depthScript="", chromeScript="", lightCss="", lightScript="";
+    private String socialCssQuoted="",depthCssQuoted="",lightCssQuoted="",lastAdaptedDocument="";
+    private long lastRendererRecovery=-60000L;
+    private boolean lowRamDevice=false;''')
+
+replace(main,
+'''    private boolean canRetain(){
+        // Never retain the 3D scene offscreen: free its WebView/GPU resources.
+        if(tab==XAUWAR)return false;''',
+'''    private boolean canRetain(){
+        // Low-memory phones and Reels should not keep a second WebView/GPU surface alive.
+        if(lowRamDevice||tab==XAUWAR||reelsChrome)return false;''')
+
+replace(main,
+'''        if(state!=null)fileSequence=state.getInt("gallerySequence",4100);'',
+'''        if(state!=null)fileSequence=state.getInt("gallerySequence",4100);
+        android.app.ActivityManager memory=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);
+        lowRamDevice=memory!=null&&(memory.isLowRamDevice()||memory.getMemoryClass()<128);'')
+
+# One JS call when resuming rather than two queue hops.
+replace(main,
+'''        if(own(v.getUrl())){
+            v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'))}catch(e){}",null);
+            v.evaluateJavascript("try{window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);
+        }''',
+'''        if(own(v.getUrl()))v.evaluateJavascript("try{window.__mm45Suspended=false;window.dispatchEvent(new Event('mm45:resume'));window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);'')
+
+# Do not flash white system bars over the dark opening.
+replace(main,
+'''        host.addView(launchOverlay,new FrameLayout.LayoutParams(-1,-1));
+        getWindow().setStatusBarColor(Color.WHITE);getWindow().setNavigationBarColor(Color.WHITE);
+        int lightBars=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if(Build.VERSION.SDK_INT>=26)lightBars|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        getWindow().getDecorView().setSystemUiVisibility(lightBars);
+        launchOverlay.requestApplyInsets();''',
+'''        host.addView(launchOverlay,new FrameLayout.LayoutParams(-1,-1));
+        launchOverlay.requestApplyInsets();'')
+
+replace(main,
+'''        depthCss=asset("depth423.css");depthScript=asset("depth423.js");chromeScript=asset("chrome424.js");lightCss=asset("light425.css")+"\\n"+asset("soft426.css");lightScript=asset("light425.js");''',

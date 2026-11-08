@@ -1,0 +1,93 @@
+        skip.setBackground(sb);
+        skip.setFocusable(true);
+        skip.setClickable(true);
+        LayoutParams sp=new LayoutParams(dp(92),dp(44),Gravity.TOP|Gravity.END);
+        sp.topMargin=dp(18);
+        sp.rightMargin=dp(18);
+        addView(skip,sp);
+        skip.setOnClickListener(v->post(()->finish(false,"skip")));
+
+        footer=text("KENALI PASARNYA.",10,0xffc8ced4,true);
+        footer.setLetterSpacing(.2f);
+        LayoutParams fp=new LayoutParams(-1,dp(44),Gravity.BOTTOM);
+        fp.bottomMargin=dp(10);
+        addView(footer,fp);
+
+        animated=new View[]{logo,name,caption,description,loading,fill};
+        setOnApplyWindowInsetsListener((v,i)->{
+            int top=i.getSystemWindowInsetTop(),bottom=i.getSystemWindowInsetBottom();
+            if(Build.VERSION.SDK_INT>=30){
+                android.graphics.Insets bars=i.getInsets(WindowInsets.Type.systemBars());
+                top=bars.top;bottom=bars.bottom;
+            }
+            setPadding(0,top,0,bottom);
+            return i;
+        });
+        postDelayed(timeout,SAFETY_LIMIT_MS);
+        Log.i("MM427_LAUNCH","shown motion="+motionAllowed(context));
+    }
+
+    private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
+    private GradientDrawable round(int color,float radius){
+        GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;
+    }
+    private TextView text(String value,int size,int color,boolean bold){
+        TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(color);
+        t.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));t.setGravity(Gravity.CENTER);return t;
+    }
+    private void addText(TextView text,int margin){
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(margin);panel.addView(text,p);
+    }
+
+    private void setSystemBars(boolean opening){
+        Context context=getContext();if(!(context instanceof Activity))return;
+        Activity activity=(Activity)context;
+        int color=opening?OPENING_BG:Color.WHITE;
+        activity.getWindow().setStatusBarColor(color);
+        activity.getWindow().setNavigationBarColor(color);
+        int flags=opening?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if(Build.VERSION.SDK_INT>=26&&!opening)flags|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        activity.getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
+
+    static boolean motionAllowed(Context context){
+        try{
+            PowerManager power=(PowerManager)context.getSystemService(Context.POWER_SERVICE);
+            if(power!=null&&power.isPowerSaveMode())return false;
+            if(Settings.Global.getFloat(context.getContentResolver(),Settings.Global.ANIMATOR_DURATION_SCALE,1f)<=0f)return false;
+            return Build.VERSION.SDK_INT<26||ValueAnimator.areAnimatorsEnabled();
+        }catch(RuntimeException ignored){return false;}
+    }
+
+    @Override protected void onMeasure(int widthSpec,int heightSpec){
+        float density=getResources().getDisplayMetrics().density;
+        float width=(MeasureSpec.getSize(widthSpec)-getPaddingLeft()-getPaddingRight())/density;
+        float height=(MeasureSpec.getSize(heightSpec)-getPaddingTop()-getPaddingBottom())/density;
+        float font=getResources().getConfiguration().fontScale;
+        float fit=Math.min(1f,Math.min((width-28)/Math.max(292,236*font),(height-100)/(470+76*Math.max(0,font-1))));
+        fit=Math.max(.38f,fit);
+        if(Math.abs(fit-appliedScale)>.002f){
+            appliedScale=fit;
+            LinearLayout.LayoutParams ep=(LinearLayout.LayoutParams)emblemStage.getLayoutParams();ep.width=dp(210*fit);ep.height=dp(154*fit);
+            FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)logo.getLayoutParams();lp.width=dp(168*fit);lp.height=dp(118*fit);lp.topMargin=dp(3*fit);
+            name.setTextSize(31*fit);caption.setTextSize(10*fit);description.setTextSize(11*fit);loading.setTextSize(9*fit);
+            ((LinearLayout.LayoutParams)caption.getLayoutParams()).topMargin=dp(10*fit);
+            ((LinearLayout.LayoutParams)description.getLayoutParams()).topMargin=dp(10*fit);
+            ((LinearLayout.LayoutParams)loading.getLayoutParams()).topMargin=dp(30*fit);
+            LinearLayout.LayoutParams tp=(LinearLayout.LayoutParams)track.getLayoutParams();tp.width=dp(210*fit);tp.topMargin=dp(12*fit);
+        }
+        super.onMeasure(widthSpec,heightSpec);
+    }
+
+    @Override protected void onAttachedToWindow(){super.onAttachedToWindow();requestApplyInsets();startArtwork();}
+
+    private void startArtwork(){
+        if(started||removed||finishing)return;started=true;
+        if(!motionAllowed(getContext())){settle();return;}
+        logo.setAlpha(0f);logo.setScaleX(.84f);logo.setScaleY(.84f);logo.setTranslationY(dp(8));
+        logo.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
+            .setDuration(520).setInterpolator(new DecelerateInterpolator()).start();
+        name.setAlpha(0f);name.setTranslationY(dp(10));
+        name.animate().alpha(1f).translationY(0f).setStartDelay(190).setDuration(360).start();
+        caption.setAlpha(0f);caption.animate().alpha(1f).setStartDelay(310).setDuration(300).start();
+        description.setAlpha(0f);description.animate().alpha(1f).setStartDelay(380).setDuration(280).start();

@@ -1,0 +1,137 @@
+package com.marketmarney.mobile;
+
+import android.animation.ValueAnimator;
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
+import android.os.PowerManager;
+import android.os.SystemClock;
+import android.provider.Settings;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+/** Fast cinematic opening: static artwork, short logo reveal, no full-screen redraw loop. */
+final class StartupOverlay extends FrameLayout {
+    private static final int OPENING_BG=0xff05080d;
+    private static final int AMBER=0xffff7a18;
+    private static final int SILVER=0xffedf1f5;
+    private static final int MUTED=0xff9aa5af;
+    private static final long SAFETY_LIMIT_MS=1800;
+
+    private final Runnable onRemoved;
+    private final long shownAt=SystemClock.uptimeMillis();
+    private final Runnable timeout=()->finish(false,"safety-limit");
+    private final CinematicBackdrop backdrop;
+    private final LinearLayout panel;
+    private final FrameLayout emblemStage;
+    private final View aura;
+    private final ImageView logo;
+    private final TextView name,caption,description,loading,skip,footer;
+    private final FrameLayout track;
+    private final View fill;
+    private final View[] animated;
+    private boolean finishing=false,removed=false,started=false;
+    private float appliedScale=-1f;
+
+    StartupOverlay(Context context,Runnable callback){
+        super(context);
+        onRemoved=callback;
+        setTag("mm416-launch-overlay");
+        setClickable(true);
+        setFocusable(true);
+        setBackgroundColor(OPENING_BG);
+        setElevation(dp(4));
+        setSystemBars(true);
+
+        backdrop=new CinematicBackdrop(context);
+        addView(backdrop,new LayoutParams(-1,-1));
+
+        panel=new LinearLayout(context);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER);
+        panel.setPadding(dp(20),0,dp(20),0);
+        LayoutParams pp=new LayoutParams(-1,-2,Gravity.CENTER);
+        pp.topMargin=dp(24);
+        addView(panel,pp);
+
+        emblemStage=new FrameLayout(context);
+        emblemStage.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams ep=new LinearLayout.LayoutParams(dp(210),dp(154));
+        ep.gravity=Gravity.CENTER_HORIZONTAL;
+        panel.addView(emblemStage,ep);
+
+        aura=new LogoAura(context);
+        aura.setAlpha(.72f);
+        emblemStage.addView(aura,new FrameLayout.LayoutParams(-1,-1));
+
+        logo=new ImageView(context);
+        logo.setImageResource(R.drawable.mm_opening_monogram);
+        logo.setAdjustViewBounds(true);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        logo.setContentDescription("Logo MARNEY bercahaya oranye");
+        logo.setTag("mm416-monogram");
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(dp(168),dp(118),Gravity.CENTER);
+        lp.topMargin=dp(3);
+        emblemStage.addView(logo,lp);
+
+        name=text("MARNEY",31,SILVER,true);
+        name.setTag("mm416-name");
+        name.setSingleLine(true);
+        name.setLetterSpacing(.16f);
+        panel.addView(name,new LinearLayout.LayoutParams(-1,-2));
+
+        caption=text("MARKET  •  NEWS  •  ANALYSIS",10,AMBER,true);
+        caption.setLetterSpacing(.18f);
+        caption.setSingleLine(true);
+        addText(caption,10);
+
+        description=text("FINANCIAL INTELLIGENCE",11,MUTED,false);
+        description.setLetterSpacing(.12f);
+        description.setSingleLine(true);
+        addText(description,10);
+
+        loading=text("MENYIAPKAN APLIKASI",9,0xffc4cbd2,true);
+        loading.setLetterSpacing(.14f);
+        addText(loading,30);
+
+        track=new FrameLayout(context);
+        GradientDrawable trackShape=round(0xff252a30,50);
+        trackShape.setStroke(Math.max(1,dp(1)),0xff3b424a);
+        track.setBackground(trackShape);
+        track.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(dp(210),dp(3));
+        tp.gravity=Gravity.CENTER_HORIZONTAL;
+        tp.topMargin=dp(12);
+        panel.addView(track,tp);
+
+        fill=new View(context);
+        GradientDrawable gold=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{0xff8f3f08,AMBER,0xffffc36a});
+        gold.setCornerRadius(dp(50));
+        fill.setBackground(gold);
+        fill.setPivotX(0);
+        track.addView(fill,new LayoutParams(-1,-1));
+
+        skip=text("LEWATI",10,0xffd8dde2,true);
+        skip.setLetterSpacing(.12f);
+        skip.setContentDescription("Lewati animasi pembuka");
+        skip.setTag("mm416-skip");
+        GradientDrawable sb=round(0x6612171d,28);
+        sb.setStroke(Math.max(1,dp(1)),0x99757e87);

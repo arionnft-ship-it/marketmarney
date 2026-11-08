@@ -1,0 +1,71 @@
+        loading.setAlpha(0f);loading.animate().alpha(1f).setStartDelay(430).setDuration(250).start();
+        fill.setScaleX(0f);fill.animate().scaleX(1f).setDuration(760).setInterpolator(new DecelerateInterpolator()).start();
+    }
+
+    private void cancelArtwork(){for(View v:animated)v.animate().cancel();}
+    private void settle(){
+        cancelArtwork();for(View v:animated)v.setAlpha(1f);
+        logo.setScaleX(1f);logo.setScaleY(1f);logo.setTranslationY(0f);name.setTranslationY(0f);fill.setScaleX(1f);
+    }
+    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(!focus&&started&&!removed)settle();}
+
+    void finish(boolean fade,String reason){
+        if(finishing||removed)return;finishing=true;removeCallbacks(timeout);cancelArtwork();
+        Log.i("MM427_LAUNCH","dismiss reason="+reason+" elapsedMs="+(SystemClock.uptimeMillis()-shownAt));
+        if(fade&&motionAllowed(getContext())&&isAttachedToWindow())
+            animate().alpha(0f).setDuration(120).withEndAction(this::removeNow).start();
+        else removeNow();
+    }
+    void dispose(){if(removed)return;finishing=true;removeCallbacks(timeout);animate().cancel();cancelArtwork();removeNow();}
+    private void removeNow(){
+        if(removed)return;removed=true;removeCallbacks(timeout);cancelArtwork();
+        ViewGroup parent=(ViewGroup)getParent();if(parent!=null)parent.removeView(this);
+        setSystemBars(false);if(onRemoved!=null)onRemoved.run();
+    }
+    @Override protected void onDetachedFromWindow(){removeCallbacks(timeout);animate().cancel();cancelArtwork();super.onDetachedFromWindow();}
+
+    /** Static scene; it is not scaled or faded, so the full screen is painted only when needed. */
+    private static final class CinematicBackdrop extends View{
+        private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path jacket=new Path();
+        private Shader base,halo,jacketShade,helmetShade;
+        CinematicBackdrop(Context context){super(context);setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);}
+        @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+            if(width<=0||height<=0)return;float cx=width*.5f;
+            base=new LinearGradient(0,0,0,height,new int[]{0xff05080d,0xff0b1117,0xff020407},null,Shader.TileMode.CLAMP);
+            halo=new RadialGradient(cx,height*.43f,width*.44f,new int[]{0x52ff6a00,0x18ff7a18,0x00000000},null,Shader.TileMode.CLAMP);
+            jacketShade=new LinearGradient(cx-width*.3f,height*.34f,cx+width*.3f,height*.85f,
+                new int[]{0xff252e37,0xff11171d,0xff080c11},null,Shader.TileMode.CLAMP);
+            helmetShade=new LinearGradient(cx-width*.12f,height*.16f,cx+width*.12f,height*.34f,
+                new int[]{0xff56606a,0xff171d23,0xff080b0f},null,Shader.TileMode.CLAMP);
+            jacket.reset();jacket.moveTo(cx-width*.07f,height*.32f);
+            jacket.cubicTo(cx-width*.23f,height*.34f,cx-width*.39f,height*.42f,cx-width*.45f,height*.58f);
+            jacket.lineTo(cx-width*.48f,height*.91f);jacket.lineTo(cx+width*.48f,height*.91f);
+            jacket.lineTo(cx+width*.45f,height*.58f);
+            jacket.cubicTo(cx+width*.39f,height*.42f,cx+width*.23f,height*.34f,cx+width*.07f,height*.32f);jacket.close();
+        }
+        @Override protected void onDraw(Canvas canvas){
+            float width=getWidth(),height=getHeight(),cx=width*.5f;if(width<=0||height<=0)return;
+            paint.setStyle(Paint.Style.FILL);paint.setShader(base);canvas.drawRect(0,0,width,height,paint);
+            paint.setShader(halo);canvas.drawCircle(cx,height*.43f,width*.44f,paint);
+            paint.setShader(helmetShade);canvas.drawOval(cx-width*.12f,height*.15f,cx+width*.12f,height*.34f,paint);
+            paint.setShader(jacketShade);canvas.drawPath(jacket,paint);
+            paint.setShader(null);paint.setColor(0xff0b1015);
+            canvas.drawRoundRect(cx-width*.052f,height*.29f,cx+width*.052f,height*.39f,width*.022f,width*.022f,paint);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(1f,width*.003f));paint.setColor(0x55c7d0d8);
+            canvas.drawLine(cx,height*.39f,cx,height*.78f,paint);
+            paint.setColor(0x55ff7a18);canvas.drawLine(cx-width*.18f,height*.69f,cx+width*.18f,height*.69f,paint);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(0x66000000);canvas.drawRect(0,height*.82f,width,height,paint);
+        }
+    }
+
+    private static final class LogoAura extends View{
+        private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);private Shader glow;
+        LogoAura(Context context){super(context);setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);}
+        @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+            if(width>0&&height>0)glow=new RadialGradient(width*.5f,height*.5f,Math.max(width,height)*.48f,
+                new int[]{0x72ff5f00,0x2dff7a18,0x00000000},null,Shader.TileMode.CLAMP);
+        }
+        @Override protected void onDraw(Canvas canvas){if(glow==null)return;paint.setShader(glow);canvas.drawOval(0,getHeight()*.12f,getWidth(),getHeight()*.9f,paint);paint.setShader(null);}
+    }
+}
