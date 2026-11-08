@@ -64,7 +64,7 @@ replace(startup, 'MM428_LAUNCH', 'MM429_LAUNCH', count=2)
 test_root=root/'app/src/androidTest/java'
 for test_file in test_root.rglob('*.java'):
     text=test_file.read_text(encoding='utf-8')
-    updated=text.replace('MarketMarney 4.28.0-beta','MarketMarney 4.29.0-beta')
+    updated=text.replace('4.28.0-beta','4.29.0-beta')
     if updated!=text:
         test_file.write_text(updated,encoding='utf-8')
 
