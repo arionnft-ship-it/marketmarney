@@ -2,7 +2,10 @@
 // Optional article API for MarketMarney v18.8.3. Disabled without MM_ARTICLE_BEARER_SHA256.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {DatabaseSync}=require('node:sqlite');
+const {prepareBanner,saveBanner}=require('./article-banner.cjs');
 const ENDPOINT='/api/integrations/articles';
+const BANNER_ENDPOINT=ENDPOINT+'/banner';
+const MAX_BODY_BYTES=7600000;
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 const strip=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
 const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,9 +31,9 @@ function validate(b){
 }
 async function readBody(req){
  if(!/^application\/json(?:\s*;|$)/i.test(String(req.headers['content-type']||'')))throw Error('json_required');
- if(Number(req.headers['content-length'])>65000)throw Error('body_too_large');
+ if(Number(req.headers['content-length'])>MAX_BODY_BYTES)throw Error('body_too_large');
  const chunks=[];let size=0;
- for await(const part of req){size+=part.length;if(size>65000)throw Error('body_too_large');chunks.push(part)}
+ for await(const part of req){size+=part.length;if(size>MAX_BODY_BYTES)throw Error('body_too_large');chunks.push(part)}
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{throw Error('invalid_json')}
 }
 function createArticlePublisher({tokenHash=process.env.MM_ARTICLE_BEARER_SHA256,dataDirectory=process.env.MM_DATA_DIR,allowTestDirectory=false}={}){
@@ -50,57 +53,123 @@ function createArticlePublisher({tokenHash=process.env.MM_ARTICLE_BEARER_SHA256,
   if(!fs.statSync(file).isFile()||fs.lstatSync(file).isSymbolicLink())throw Error('sqlite_missing');
   return {file,real};
  }
- function store(a){
+
+ function checkDatabase(db){
+  const ok=db.prepare('PRAGMA quick_check').all();
+  if(ok.length!==1||Object.values(ok[0])[0]!=='ok')throw Error('sqlite_integrity_failed');
+  if(!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings'").get())throw Error('schema_mismatch');
+ }
+ function readSetting(db,key){
+  const row=db.prepare('SELECT value FROM settings WHERE key=?').get(key);
+  return row?JSON.parse(row.value):null;
+ }
+ function backupBeforeWrite(db,real){
+  const dir=path.join(real,'integration-backups');
+  if(fs.existsSync(dir)&&fs.lstatSync(dir).isSymbolicLink())throw Error('unsafe_backup_dir');
+  fs.mkdirSync(dir,{recursive:true,mode:0o700});
+  const backup=path.join(dir,'before-article-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex')+'.sqlite');
+  try{
+   db.exec("VACUUM INTO '"+backup.replace(/'/g,"''")+"'");
+   const check=new DatabaseSync(backup,{readOnly:true});
+   try{
+    const rows=check.prepare('PRAGMA quick_check').all();
+    if(rows.length!==1||Object.values(rows[0])[0]!=='ok')throw Error('backup_verification_failed');
+   }finally{check.close()}
+  }catch(e){try{fs.unlinkSync(backup)}catch{}throw Error('backup_failed')}
+ }
+ function updateAtomic(db,real,article,prepared,mode='created'){
+  let media=null;
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   const current=readSetting(db,'articles');
+   if(!Array.isArray(current)||current.length>=1000)throw Error('articles_changed');
+   const ix=current.findIndex(x=>x&&String(x.id)===article.id);
+   if(mode==='created'){
+    if(ix!==-1||current.some(x=>x&&(String(x.sourceUrl||'')===article.sourceUrl||strip(x.title||'').toLowerCase()===strip(article.title).toLowerCase())))
+     throw Object.assign(new Error('article_already_exists'),{status:409});
+    if(prepared){media=saveBanner(real,prepared);article.img=media.url}
+    current.push(article);
+   }else{
+    if(ix<0)throw Object.assign(new Error('article_not_found'),{status:404});
+    const old=current[ix],newArticle={...old};
+    if(old.img&&!article.replace_banner)throw Object.assign(new Error('banner_already_present'),{status:409});
+    media=saveBanner(real,prepared);
+    newArticle.img=media.url;
+    newArticle.bannerUpdatedAt=new Date().toISOString();
+    current[ix]=newArticle;
+    article=newArticle;
+   }
+   const history=readSetting(db,'editorial_audit')||[];
+   if(!Array.isArray(history))throw Error('audit_schema_changed');
+   const action=mode==='created'?'created':'banner:attached';
+   const audit={at:new Date().toISOString(),action,id:article.id,title:article.title,actor:'article-api',fromStatus:mode==='created'?null:article.status,toStatus:article.status};
+   const put=db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+   put.run('articles',JSON.stringify(current));
+   put.run('editorial_audit',JSON.stringify([audit,...history].slice(0,500)));
+   db.exec('COMMIT');
+   return {status:mode,id:article.id,img:article.img||''};
+  }catch(e){
+   try{db.exec('ROLLBACK')}catch{}
+   if(media)try{fs.unlinkSync(media.file)}catch{}
+   throw e;
+  }
+ }
+ function store(a,prepared){
   const {file,real}=dbPath(),db=new DatabaseSync(file,{timeout:3000});
   try{
-   const ok=db.prepare('PRAGMA quick_check').all();
-   if(ok.length!==1||Object.values(ok[0])[0]!=='ok')throw Error('sqlite_integrity_failed');
-   if(!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings'").get())throw Error('schema_mismatch');
-   const read=k=>{const r=db.prepare('SELECT value FROM settings WHERE key=?').get(k);return r?JSON.parse(r.value):null};
-   const existing=read('articles');
-   if(!Array.isArray(existing)||existing.length>=1000)throw Error('articles_unavailable_or_full');
-   const duplicate=items=>items.find(x=>x&&(String(x.id)===a.id||String(x.sourceUrl||'')===a.sourceUrl||strip(x.title||'').toLowerCase()===strip(a.title).toLowerCase()));
-   if(duplicate(existing))return {status:'duplicate',id:duplicate(existing).id};
-   const dir=path.join(real,'integration-backups');fs.mkdirSync(dir,{recursive:true,mode:0o700});
-   const backup=path.join(dir,'before-article-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex')+'.sqlite');
-   try{
-    db.exec("VACUUM INTO '"+backup.replace(/'/g,"''")+"'");
-    const check=new DatabaseSync(backup,{readOnly:true});
-    try{const rows=check.prepare('PRAGMA quick_check').all();if(rows.length!==1||Object.values(rows[0])[0]!=='ok')throw Error('backup_verification_failed')}
-    finally{check.close()}
-   }catch{try{fs.unlinkSync(backup)}catch{}throw Error('backup_failed')}
-   db.exec('BEGIN IMMEDIATE');
-   try{
-    const current=read('articles');
-    if(!Array.isArray(current)||current.length>=1000)throw Error('articles_changed');
-    const found=duplicate(current);if(found){db.exec('ROLLBACK');return {status:'duplicate',id:found.id}}
-    const history=read('editorial_audit')||[];if(!Array.isArray(history))throw Error('audit_schema_changed');
-    const audit={at:new Date().toISOString(),action:'created',id:a.id,title:a.title,actor:'article-api',fromStatus:null,toStatus:a.status};
-    const put=db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
-    put.run('articles',JSON.stringify([...current,a]));
-    put.run('editorial_audit',JSON.stringify([audit,...history].slice(0,500)));
-    db.exec('COMMIT');return {status:'created',id:a.id};
-   }catch(e){try{db.exec('ROLLBACK')}catch{}throw e}
+   checkDatabase(db);
+   const articles=readSetting(db,'articles');
+   if(!Array.isArray(articles)||articles.length>=1000)throw Error('articles_unavailable_or_full');
+   const found=articles.find(x=>x&&(String(x.id)===a.id||String(x.sourceUrl||'')===a.sourceUrl||strip(x.title||'').toLowerCase()===strip(a.title).toLowerCase()));
+   if(found)return {status:'duplicate',id:found.id};
+   backupBeforeWrite(db,real);
+   return updateAtomic(db,real,a,prepared);
   }finally{db.close()}
  }
+ function attachBanner(articleId,prepared,replaceBanner){
+  if(typeof articleId!=='string'||!/^[A-Za-z0-9_-]{1,150}$/.test(articleId))throw Object.assign(new Error('invalid_article_id'),{status:422});
+  if(typeof replaceBanner!=='boolean')throw Object.assign(new Error('invalid_replace_flag'),{status:422});
+  const {file,real}=dbPath(),db=new DatabaseSync(file,{timeout:3000});
+  try{
+   checkDatabase(db);
+   const articles=readSetting(db,'articles');
+   if(!Array.isArray(articles))throw Error('articles_unavailable');
+   const found=articles.find(x=>x&&String(x.id)===articleId);
+   if(!found)throw Object.assign(new Error('article_not_found'),{status:404});
+   if(found.img&&!replaceBanner)throw Object.assign(new Error('banner_already_present'),{status:409});
+   backupBeforeWrite(db,real);
+   return updateAtomic(db,real,{id:articleId,replace_banner:replaceBanner},prepared,'banner');
+  }finally{db.close()}
+ }
+
+
  return {
-  owns(req){return String(req.url||'').split('?')[0]===ENDPOINT},
+  owns(req){const p=String(req.url||'').split('?')[0];return p===ENDPOINT||p===BANNER_ENDPOINT},
   async handle(req,res){
    if(req.method!=='POST')return json(res,405,{error:'method_not_allowed'});
    if(!authorized(req))return json(res,401,{error:'unauthorized'});
    const origin=String(req.headers.origin||'');
    if(origin&&origin!=='https://marketmarney.com')return json(res,403,{error:'origin_not_allowed'});
    try{
-    const a=validate(await readBody(req)),result=store(a);
+    const p=String(req.url||'').split('?')[0],b=await readBody(req);
+    if(p===BANNER_ENDPOINT){
+     if(!b||typeof b!=='object'||Array.isArray(b)||b.confirm_attach!==true)throw Object.assign(new Error('banner_attachment_not_confirmed'),{status:422});
+     const prepared=await prepareBanner(b.banner);
+     const result=attachBanner(b.article_id,prepared,b.replace_banner===true);
+     return json(res,200,{ok:true,id:result.id,img:result.img,status:'banner_attached'});
+    }
+    const article=validate(b);
+    const banner=Object.hasOwn(b,'banner')?await prepareBanner(b.banner):null;
+    const result=store(article,banner);
     if(result.status==='duplicate')return json(res,409,{error:'article_already_exists',id:result.id});
-    return json(res,201,{ok:true,id:a.id,status:a.status,canonicalPath:'/berita/'+encodeURIComponent(a.id)});
+    return json(res,201,{ok:true,id:article.id,status:article.status,img:result.img,canonicalPath:'/berita/'+encodeURIComponent(article.id)});
    }catch(e){
-    const code=String(e.message||'');
-    const bad=/^(invalid_|quality_gate|wrong_category|source_https_required|source_name_required|json_required|body_too_large)/.test(code);
-    console.error('MM_ARTICLE_API_FAILED',bad?'validation':'storage_check');
-    return json(res,bad?422:503,{error:bad?code:'article_not_saved'});
+    const code=String(e.message||''),status=Number.isInteger(e.status)?e.status:/^(invalid_|quality_gate|wrong_category|source_https_required|source_name_required|json_required|body_too_large|banner_)/.test(code)?422:503;
+    console.error('MM_ARTICLE_API_FAILED',status<500?'validation':'storage_check');
+    return json(res,status,{error:status<500?code:'article_not_saved'});
    }
   }
+
  };
 }
 module.exports={createArticlePublisher,validate};
