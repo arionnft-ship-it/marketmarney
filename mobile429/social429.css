@@ -1,0 +1,59 @@
+/* Marney 4.29 — app-only Social shell. The website files and public website layout are untouched. */
+:root[data-mm429-social]{--mm429-dock-h:68px;--mm429-head-h:58px;--mm429-safe-bottom:env(safe-area-inset-bottom,0px);--mm429-amber:#b8791f;--mm429-ink:#17283b;--mm429-muted:#69788a;--mm429-line:#e3e8ed;--mm429-bg:#f4f6f8;--mm429-card:#fff;color-scheme:light}
+html[data-mm429-social],html[data-mm429-social] body{background:var(--mm429-bg)!important;color:var(--mm429-ink)!important}
+html[data-mm429-social] body{padding-bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;overscroll-behavior-y:contain}
+html[data-mm429-social] body>.sh-topbar,html[data-mm429-social] .sh-layout>.sh-left,html[data-mm429-social] .sh-layout>.sh-right,html[data-mm429-social] .sh-welcome,html[data-mm429-social] #mmInstall{display:none!important}
+html[data-mm429-social] .sh-layout{display:block!important;grid-template-columns:none!important;width:100%!important;max-width:760px!important;padding:0 0 24px!important;margin:0 auto!important;gap:0!important}
+html[data-mm429-social] .sh-center,html[data-mm429-social] #shLogged{width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0!important}
+html[data-mm429-social] .sh-panel,html[data-mm429-social] .sh-story-section,html[data-mm429-social] .sh-compose,html[data-mm429-social] .sh-post{box-shadow:none!important;border-left:0!important;border-right:0!important;border-radius:0!important}
+html[data-mm429-social] .sh-feedbar{padding-left:14px!important;padding-right:14px!important}
+html[data-mm429-social] .sh-story-section,html[data-mm429-social] .sh-compose{margin:8px 0!important}
+html[data-mm429-social] .sh-feed{gap:8px!important}
+
+/* Keep one compact Social identity row at the top. Move Social destinations to a thumb-friendly bottom dock. */
+html[data-mm429-social][data-mm47-nav]{--mm47-top:var(--mm429-head-h)!important;scroll-padding-top:var(--mm429-head-h)!important}
+html[data-mm429-social][data-mm47-nav] .mm44-social-header{display:block!important;position:fixed!important;inset:0 0 auto 0!important;height:var(--mm429-head-h)!important;min-height:var(--mm429-head-h)!important;z-index:90!important;background:#fff!important;border-bottom:1px solid var(--mm429-line)!important;box-shadow:0 2px 10px #0b253708!important;overflow:visible!important}
+html[data-mm429-social] .mm44-headrow{height:var(--mm429-head-h)!important;min-height:var(--mm429-head-h)!important;max-width:760px!important;margin:0 auto!important;padding:5px 10px!important;background:#fff!important;box-sizing:border-box!important}
+html[data-mm429-social] .mm44-wordmark{font-size:20px!important;gap:7px!important;min-width:0!important}
+html[data-mm429-social] .mm417-brand-image{width:34px!important;height:34px!important}
+html[data-mm429-social] .mm417-brand-section{font-size:18px!important;white-space:nowrap!important}
+html[data-mm429-social] .mm44-headrow>.mm44-icon,html[data-mm429-social] #shNotificationBell{width:42px!important;height:42px!important;min-height:42px!important;border-radius:50%!important}
+html[data-mm429-social] .mm44-nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:110!important;width:100%!important;max-width:none!important;height:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;min-height:var(--mm429-dock-h)!important;margin:0!important;padding:5px max(8px,env(safe-area-inset-left)) var(--mm429-safe-bottom) max(8px,env(safe-area-inset-right))!important;display:flex!important;align-items:stretch!important;justify-content:center!important;gap:0!important;background:rgba(255,255,255,.98)!important;border:0!important;border-top:1px solid var(--mm429-line)!important;box-shadow:0 -6px 22px #112b3e12!important;backdrop-filter:saturate(1.15) blur(14px);box-sizing:border-box!important}
+html[data-mm429-social] .mm44-nav-button{flex:1 1 0!important;max-width:152px!important;min-width:0!important;min-height:58px!important;padding:6px 2px 5px!important;gap:2px!important;flex-direction:column!important;border:0!important;border-radius:13px!important;background:transparent!important;color:var(--mm429-muted)!important;box-shadow:none!important;text-decoration:none!important}
+html[data-mm429-social] .mm44-nav-button svg{width:23px!important;height:23px!important}
+html[data-mm429-social] .mm44-nav-button span{font-size:10px!important;font-weight:700!important;line-height:1.1!important;white-space:nowrap!important}
+html[data-mm429-social] .mm44-nav-button[aria-pressed=true],html[data-mm429-social] .mm44-nav-button[aria-current=page]{color:#885815!important;background:#fff2d8!important}
+html[data-mm429-social][data-mm44-view=reels] .mm44-nav,html[data-mm429-social][data-mm46-reels] .mm44-nav{background:rgba(8,11,16,.97)!important;border-top-color:#ffffff24!important;box-shadow:none!important}
+html[data-mm429-social][data-mm44-view=reels] .mm44-nav-button,html[data-mm429-social][data-mm46-reels] .mm44-nav-button{color:#bac1c9!important}
+html[data-mm429-social][data-mm44-view=reels] .mm44-nav-button[aria-pressed=true],html[data-mm429-social][data-mm46-reels] .mm44-nav-button[aria-pressed=true]{color:#ffbd5b!important;background:#231d13!important}
+
+/* Give feed, messages and Reels the viewport area above the Social dock. */
+html[data-mm429-social][data-mm47-nav] body{padding-top:var(--mm429-head-h)!important;padding-bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important}
+html[data-mm429-social][data-mm47-nav] .sh-msg-pane{inset:var(--mm429-head-h) 0 calc(var(--mm429-dock-h) + var(--mm429-safe-bottom)) 0!important;top:var(--mm429-head-h)!important;bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;height:auto!important;max-height:none!important}
+html[data-mm429-social][data-mm46-reels] #shReelsPanel{inset:var(--mm429-head-h) 0 calc(var(--mm429-dock-h) + var(--mm429-safe-bottom)) 0!important;top:var(--mm429-head-h)!important;bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;height:auto!important;max-height:none!important}
+html[data-mm429-social][data-mm46-reels] #shReelFeed,html[data-mm429-social][data-mm46-reels] .sh-reel-card{height:calc(var(--mm47-vh) - var(--mm429-head-h) - var(--mm429-dock-h) - var(--mm429-safe-bottom))!important}
+
+/* Group rooms remain full screen, but no MarketMarney destination bar competes for space. */
+html[data-mm429-social][data-mm47-group] #gmApp:not([hidden]){top:var(--mm429-head-h)!important;bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;height:auto!important;max-height:none!important}
+html[data-mm429-social][data-mm47-group] .gm-info-panel{top:var(--mm429-head-h)!important;bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important;max-height:none!important}
+html[data-mm429-social][data-mm47-group] .gm-compose{padding-bottom:max(10px,env(safe-area-inset-bottom))!important}
+
+/* Public profile uses the same Social dock and more of the screen width. */
+html[data-mm429-social][data-mm44-page=profile] body{padding-top:56px!important;padding-bottom:calc(var(--mm429-dock-h) + var(--mm429-safe-bottom))!important}
+html[data-mm429-social][data-mm44-page=profile] .mm44-profile-header{height:56px!important;min-height:56px!important;padding:6px 10px!important;background:#fff!important;border-bottom:1px solid var(--mm429-line)!important;box-shadow:none!important}
+html[data-mm429-social][data-mm44-page=profile] .mm46-zone{width:min(760px,100%)!important;max-width:760px!important;margin:0 auto!important;padding:10px 0 24px!important}
+html[data-mm429-social][data-mm44-page=profile] .mm36-card{border-left:0!important;border-right:0!important;border-radius:0!important;box-shadow:none!important}
+html[data-mm429-social] .mm429-profile-nav{display:flex!important}
+
+@media(min-width:700px){
+ html[data-mm429-social] .sh-panel,html[data-mm429-social] .sh-story-section,html[data-mm429-social] .sh-compose,html[data-mm429-social] .sh-post,html[data-mm429-social][data-mm44-page=profile] .mm36-card{border-left:1px solid var(--mm429-line)!important;border-right:1px solid var(--mm429-line)!important;border-radius:16px!important}
+ html[data-mm429-social] .sh-layout{padding:10px 12px 28px!important}
+ html[data-mm429-social] .sh-feed{gap:12px!important}
+}
+@media(max-width:420px){
+ html[data-mm429-social] .mm417-brand-section{font-size:16px!important}
+ html[data-mm429-social] .mm44-headrow{padding-left:6px!important;padding-right:6px!important}
+ html[data-mm429-social] .mm44-nav-button span{font-size:9px!important}
+ html[data-mm429-social] .mm44-nav-button svg{width:22px!important;height:22px!important}
+}
+@media(prefers-reduced-motion:reduce){html[data-mm429-social] *{scroll-behavior:auto!important;transition:none!important;animation-duration:.01ms!important}}
