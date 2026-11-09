@@ -2,11 +2,12 @@
 
 const http = require('node:http');
 
-const VERSION = 'marketmarney-runtime-20261109-v4';
+const VERSION = 'marketmarney-runtime-20261109-v5';
 const HELPER = '/assets/mm-social-upload-100mb.js?v=20261109-100mb-v3';
 const HELPERS = Object.freeze([
   HELPER,
-  '/assets/mm-automatic-pivot.js?v=20261109-auto-pivot-v1'
+  '/assets/mm-automatic-pivot.js?v=20261109-auto-pivot-v1',
+  '/assets/warxau-live-stream.js?v=20261109-xau-sse-v1'
 ]);
 
 function pathnameOf(req) {
@@ -27,11 +28,11 @@ function patchServiceWorker(source) {
     replacements++;
     return 'const CORE=[' + list + missing.map(helper=>','+JSON.stringify(helper)).join('') + ']';
   });
-  if (!text.includes('MM_RUNTIME_SW_V4')) {
+  if (!text.includes('MM_RUNTIME_SW_V5')) {
     replacements++;
-    text += "\n/* MM_RUNTIME_SW_V4 */\n" +
+    text += "\n/* MM_RUNTIME_SW_V5 */\n" +
       "self.addEventListener('install',()=>{self.skipWaiting();});\n" +
-      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload|runtime|auto-pivot)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));await self.clients.claim();})());});\n";
+      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload|runtime|auto-pivot)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));for(const key of await caches.keys()){const cache=await caches.open(key);for(const request of await cache.keys()){const url=new URL(request.url);if(url.pathname==='/assets/xau-war-3d.html'||url.pathname==='/assets/warxau-live-stream.js')await cache.delete(request);}}await self.clients.claim();})());});\n";
   }
   return { output: text, replacements };
 }
