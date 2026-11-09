@@ -4,17 +4,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = '/persist/site-r1/MarketMarney-Railway-Staging/app';
+const FILE_HINT = /(?:pivot|anal|market|chart|trading|price|quote|candle|ohlc|feed|home|admin|server|warxau|xau|gold)/i;
 const TERMS = [
-  /pivot/ig,
-  /support/ig,
-  /resistance/ig,
-  /analisa/ig,
-  /ohlc/ig,
-  /candle/ig,
-  /\bhigh\b/ig,
-  /\blow\b/ig,
-  /\bclose\b/ig,
-  /tradingview/ig,
+  /mm1816-admin-settings/ig,
+  /pivot(?:\s+point)?/ig,
+  /OANDA:XAUUSD/ig,
+  /XAUUSD/ig,
+  /(?:ohlc|candles?|bars?|klines?|history|timeseries)/ig,
+  /(?:previous|yesterday|daily|weekly)[^\n]{0,80}(?:high|low|close)/ig,
+  /(?:high|low|close)[^\n]{0,100}(?:high|low|close)/ig,
+  /(?:query1\.finance|twelvedata|stooq|finnhub|alphavantage|polygon|metals-api|tradingview|oanda)/ig,
   /\/api\/[a-z0-9_?&=\-/.]+/ig,
   /fetch\s*\(/ig
 ];
@@ -23,43 +22,43 @@ function clean(value) {
   return String(value)
     .replace(/[A-Za-z0-9_+\-/=]{64,}/g, '[redacted-long-token]')
     .replace(/\s+/g, ' ')
-    .slice(0, 640);
+    .slice(0, 900);
 }
 
-function matches(label, text) {
-  const out = [];
+function scanMatches(text) {
+  const output = [];
   const seen = new Set();
   for (const pattern of TERMS) {
     pattern.lastIndex = 0;
     let match;
     let count = 0;
-    while ((match = pattern.exec(text)) && count < 8 && out.length < 70) {
+    while ((match = pattern.exec(text)) && count < 12 && output.length < 50) {
       count++;
-      const from = Math.max(0, match.index - 220);
-      const to = Math.min(text.length, match.index + match[0].length + 360);
+      const from = Math.max(0, match.index - 300);
+      const to = Math.min(text.length, match.index + match[0].length + 520);
       const snippet = clean(text.slice(from, to));
-      const key = match[0].toLowerCase() + '|' + snippet;
+      const key = snippet.toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
-        out.push({ term: match[0], snippet });
+        output.push({ term: match[0], snippet });
       }
       if (!match[0].length) pattern.lastIndex++;
     }
   }
-  return out.length ? { source: label, matches: out } : null;
+  return output;
 }
 
-function scan() {
+function run() {
   if (process.env.MM_PIVOT_PROBE !== '1') return;
-  const reports = [];
+  const candidates = [];
   let visited = 0;
   function walk(dir, depth) {
-    if (depth > 6 || reports.length >= 60 || visited >= 1200) return;
+    if (depth > 7 || visited >= 1600) return;
     let entries;
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
     catch { return; }
     for (const entry of entries) {
-      if (reports.length >= 60 || visited >= 1200) return;
+      if (visited >= 1600) return;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!/node_modules|uploads|media|backup|cache/i.test(entry.name)) walk(full, depth + 1);
@@ -70,16 +69,25 @@ function scan() {
       let stat;
       try { stat = fs.statSync(full); }
       catch { continue; }
-      if (!stat.isFile() || stat.size > 6 * 1024 * 1024) continue;
+      if (!stat.isFile() || stat.size > 7 * 1024 * 1024) continue;
+      const relative = path.relative(ROOT, full);
       let text;
       try { text = fs.readFileSync(full, 'utf8'); }
       catch { continue; }
-      const report = matches(path.relative(ROOT, full), text);
-      if (report) reports.push({ ...report, bytes: stat.size });
+      const hits = scanMatches(text);
+      if (FILE_HINT.test(relative) || hits.length) candidates.push({ relative, bytes: stat.size, hits });
     }
   }
   walk(ROOT, 0);
-  console.log('MM_PIVOT_PROBE ' + JSON.stringify({ visited, reports }));
+  const names = candidates.map(item => ({file:item.relative,bytes:item.bytes,hits:item.hits.length})).slice(0,160);
+  console.log('MM_PIVOT_FILES ' + JSON.stringify({visited,names}));
+  let emitted = 0;
+  for (const item of candidates) {
+    if (!item.hits.length || emitted >= 45) continue;
+    emitted++;
+    console.log('MM_PIVOT_FILE ' + JSON.stringify({file:item.relative,bytes:item.bytes,hits:item.hits.slice(0,16)}));
+  }
+  console.log('MM_PIVOT_PROBE_DONE ' + JSON.stringify({visited,candidates:candidates.length,emitted}));
 }
 
-setTimeout(scan, 1500).unref();
+setTimeout(run, 1200).unref();
