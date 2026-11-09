@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const VERSION = '20261109-100mb-v1';
+const VERSION = '20261109-100mb-v3';
+const CACHE_BUST = 'mm-social-upload-100mb-20261109-v3';
 const MAX_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_REQUEST_BYTES = 110 * 1024 * 1024;
 const ASSET_PATH = '/assets/mm-social-upload-100mb.js';
@@ -16,7 +17,7 @@ const SOCIAL_PAGES = new Set([
   '/community.html',
   '/profil.html'
 ]);
-const SOCIAL_UPLOAD_PATH = /(?:story|reel|post|feed|media|upload|community|social)/i;
+const SOCIAL_UPLOAD_PATH = /(?:story|reel|post|feed|media|upload|community|social|trader-profiles)/i;
 
 const CLIENT = String.raw`(function(){
 'use strict';
@@ -37,10 +38,10 @@ function validate(files,reset){
  toast('File “'+(bad.name||'media')+'” berukuran '+format(bad.size)+'. Maksimal '+LABEL+' per file.');
  return false;
 }
-function inspectFormData(body){
- if(!(body instanceof FormData))return true;
- const files=[];for(const value of body.values())if(value instanceof File)files.push(value);
- return validate(files);
+function validateBody(body){
+ if(body instanceof FormData){const files=[];for(const value of body.values())if(value instanceof File||value instanceof Blob)files.push(value);return validate(files)}
+ if(body instanceof File||body instanceof Blob)return validate([body]);
+ return true;
 }
 function updateCopy(root){
  const walker=document.createTreeWalker(root||document.body,NodeFilter.SHOW_TEXT);
@@ -48,7 +49,7 @@ function updateCopy(root){
  for(const node of nodes){
   const old=node.nodeValue||'';let next=old;
   next=next.replace(/Foto\s*maks\.?\s*2\s*MB\s*[•|·-]\s*Video\s*MP4\s*maks\.?\s*12\s*MB/gi,'Maksimal 100 MB per file');
-  next=next.replace(/maks\.?\s*(?:2|12)\s*MB/gi,'maks. 100 MB');
+  next=next.replace(/maks(?:imal)?\.?\s*(?:2|12|20|30)\s*MB/gi,'maksimal 100 MB');
   if(next!==old)node.nodeValue=next;
  }
 }
@@ -59,8 +60,7 @@ function enhance(root){
   if(!input.getAttribute('aria-description'))input.setAttribute('aria-description','Maksimal 100 MB per file');
  }
  updateCopy(root&&root.nodeType===1?root:document.body);
- const story=document.getElementById('mm81-story-upload-file');
- if(story)story.setAttribute('accept','image/jpeg,image/png,image/gif,image/webp,video/mp4,.jpg,.jpeg,.png,.gif,.webp,.mp4');
+ for(const story of document.querySelectorAll('#shStoryFile,#mm81-story-upload-file'))story.setAttribute('accept','image/jpeg,image/png,image/gif,image/webp,video/mp4,.jpg,.jpeg,.png,.gif,.webp,.mp4');
 }
 document.addEventListener('change',function(event){
  const input=event.target&&event.target.closest?event.target.closest('input[type="file"]'):null;
@@ -76,12 +76,12 @@ document.addEventListener('submit',function(event){
 },true);
 const nativeFetch=window.fetch;
 if(nativeFetch)window.fetch=function(input,init){
- if(init&&init.body instanceof FormData&&!inspectFormData(init.body))return Promise.reject(new Error('MEDIA_FILE_TOO_LARGE_100MB'));
+ if(init&&!validateBody(init.body))return Promise.reject(new Error('MEDIA_FILE_TOO_LARGE_100MB'));
  return nativeFetch.apply(this,arguments);
 };
 const nativeSend=XMLHttpRequest.prototype.send;
 XMLHttpRequest.prototype.send=function(body){
- if(body instanceof FormData&&!inspectFormData(body)){try{this.abort()}catch(e){};return}
+ if(!validateBody(body)){try{this.abort()}catch(e){};return}
  return nativeSend.apply(this,arguments);
 };
 function start(){
@@ -106,7 +106,7 @@ function isSocialPage(req, pathname) {
 function isLikelyUpload(req, pathname) {
   if (!req || !['POST', 'PUT', 'PATCH'].includes(req.method)) return false;
   const type = String(req.headers && req.headers['content-type'] || '');
-  return /multipart\/form-data|application\/octet-stream/i.test(type) &&
+  return /multipart\/form-data|application\/octet-stream|image\/(?:jpeg|png|webp|gif)|video\/mp4/i.test(type) &&
     (/^\/api\//i.test(pathname) || SOCIAL_UPLOAD_PATH.test(pathname));
 }
 
@@ -120,7 +120,7 @@ function sendAsset(req, res) {
   const etag = '"' + crypto.createHash('sha256').update(body).digest('hex') + '"';
   const headers = {
     'Content-Type': 'text/javascript; charset=utf-8',
-    'Cache-Control': 'public, max-age=300',
+    'Cache-Control': 'no-cache, max-age=0, must-revalidate',
     'X-Content-Type-Options': 'nosniff',
     'X-MarketMarney-Upload-Limit': String(MAX_FILE_BYTES),
     ETag: etag
@@ -152,6 +152,11 @@ function rejectOversizeRequest(req, res) {
   });
   res.end(body);
   return true;
+}
+
+function versionSocialAssets(html) {
+  return html.replace(/(\bsrc=["'])([^"']*\/assets\/(?:social-home-\d+|trader-profiles-\d+)\.js)(?:\?[^"']*)?(["'])/gi,
+    '$1$2?v=' + CACHE_BUST + '$3');
 }
 
 function wrapSocialHtml(req, res) {
@@ -189,11 +194,13 @@ function wrapSocialHtml(req, res) {
     const data=Buffer.concat(chunks,size),raw=data.toString('utf8');
     if(!/<\/html\s*>/i.test(raw)){flush();restore();return original.end.call(this,callback)}
     let html=raw.replace(/Foto\s*maks\.?\s*2\s*MB\s*[•|·-]\s*Video\s*MP4\s*maks\.?\s*12\s*MB/gi,'Maksimal 100 MB per file');
+    html=versionSocialAssets(html);
     if(!html.includes(ASSET_PATH))html=html.replace(/<\/body\s*>/i,'<script defer src="'+ASSET_PATH+'?v='+VERSION+'"></script></body>');
     const out=Buffer.from(html,'utf8');
     if(!out.equals(data)){
       this.removeHeader('etag');this.removeHeader('content-md5');this.removeHeader('transfer-encoding');
       this.setHeader('content-length',out.length);this.setHeader('X-MarketMarney-Upload-Limit',String(MAX_FILE_BYTES));
+      this.setHeader('Cache-Control','no-store, max-age=0');this.setHeader('Pragma','no-cache');
     }
     chunks.length=0;sendHead();restore();return original.end.call(this,out,callback);
   };
@@ -257,6 +264,6 @@ http.createServer=function(...args){
   return server;
 };
 
-console.log('MM_SOCIAL_UPLOAD_POLICY_READY '+JSON.stringify({version:VERSION,maxFileBytes:MAX_FILE_BYTES,maxRequestBytes:MAX_REQUEST_BYTES,pages:[...SOCIAL_PAGES]}));
+console.log('MM_SOCIAL_UPLOAD_POLICY_READY '+JSON.stringify({version:VERSION,maxFileBytes:MAX_FILE_BYTES,maxRequestBytes:MAX_REQUEST_BYTES,cacheBust:CACHE_BUST,pages:[...SOCIAL_PAGES]}));
 
-module.exports={VERSION,MAX_FILE_BYTES,MAX_REQUEST_BYTES,ASSET_PATH,CLIENT,isSocialPage,isLikelyUpload,sendAsset,rejectOversizeRequest,wrapSocialHtml,collectMatches,scanStaticFiles};
+module.exports={VERSION,CACHE_BUST,MAX_FILE_BYTES,MAX_REQUEST_BYTES,ASSET_PATH,CLIENT,isSocialPage,isLikelyUpload,sendAsset,rejectOversizeRequest,versionSocialAssets,wrapSocialHtml,collectMatches,scanStaticFiles};
