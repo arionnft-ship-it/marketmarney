@@ -7,8 +7,12 @@ assert.equal(policy.MAX_FILE_BYTES, 104857600);
 assert.equal(policy.MAX_REQUEST_BYTES, 115343360);
 assert.match(policy.CLIENT, /Maksimal 100 MB per file/);
 assert.match(policy.CLIENT, /104857600/);
+assert.match(policy.CLIENT, /body instanceof File\|\|body instanceof Blob/);
 assert.equal(policy.isLikelyUpload({method:'POST',headers:{'content-type':'multipart/form-data; boundary=x'}},'/api/story'),true);
+assert.equal(policy.isLikelyUpload({method:'POST',headers:{'content-type':'video/mp4'}},'/api/trader-profiles/video'),true);
+assert.equal(policy.isLikelyUpload({method:'POST',headers:{'content-type':'image/webp'}},'/api/trader-profiles/image'),true);
 assert.equal(policy.isLikelyUpload({method:'GET',headers:{'content-type':'multipart/form-data'}},'/api/story'),false);
+assert.match(policy.versionSocialAssets('<script src="/assets/social-home-1846.js"></script>'),/social-home-1846\.js\?v=mm-social-upload-100mb-20261109-v3/);
 
 function response(){
   const headers=new Map();
@@ -42,7 +46,7 @@ function response(){
 }
 
 {
-  const req={method:'POST',url:'/api/story/upload',headers:{'content-type':'multipart/form-data; boundary=x','content-length':String(100*1024*1024)}};
+  const req={method:'POST',url:'/api/trader-profiles/video?kind=reel',headers:{'content-type':'video/mp4','content-length':String(100*1024*1024)}};
   const res=response();
   assert.equal(policy.rejectOversizeRequest(req,res),false);
 }
@@ -54,11 +58,13 @@ function response(){
   policy.wrapSocialHtml(req,res);
   res.setHeader('content-type','text/html; charset=utf-8');
   res.writeHead(200);
-  res.end('<!doctype html><html><body><p>Foto maks. 2 MB • Video MP4 maks. 12 MB</p></body></html>');
+  res.end('<!doctype html><html><body><p>Foto maks. 2 MB • Video MP4 maks. 12 MB</p><script src="/assets/social-home-1846.js"></script></body></html>');
   const body=res.body();
   assert.match(body,/Maksimal 100 MB per file/);
   assert.match(body,/mm-social-upload-100mb\.js/);
+  assert.match(body,/social-home-1846\.js\?v=mm-social-upload-100mb-20261109-v3/);
   assert.equal(Number(res.getHeader('x-marketmarney-upload-limit')),104857600);
+  assert.match(res.getHeader('cache-control'),/no-store/);
 }
 
-console.log(JSON.stringify({ok:true,maxFileBytes:policy.MAX_FILE_BYTES,maxRequestBytes:policy.MAX_REQUEST_BYTES}));
+console.log(JSON.stringify({ok:true,maxFileBytes:policy.MAX_FILE_BYTES,maxRequestBytes:policy.MAX_REQUEST_BYTES,cacheBust:policy.CACHE_BUST}));
