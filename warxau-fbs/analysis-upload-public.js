@@ -24,15 +24,23 @@ async function refresh(panel){
  catch(e){panel.querySelector('.mm-analysis-cards').textContent='Daftar analisa belum bisa dimuat. Coba muat ulang halaman.';}finally{ongoing=false;}
 }
 function mount(){
- const shell=document.querySelector('.mm87-shell.mm1815-anal-shell');if(!shell||!shell.parentNode)return;
+ const shell=document.querySelector('.mm87-shell.mm1815-anal-shell');if(!shell)return;
+ // Both existing cards are children of the analysis shell. Keep the published
+ // analysis section BETWEEN the indicator guide and the Pivot Points card.
+ const guide=shell.querySelector(':scope > .mm87-info');
+ const pivot=shell.querySelector(':scope > .mm1816-pivot-public');
+ if(!guide||!pivot)return;
+ const children=Array.from(shell.children);
+ if(children.indexOf(guide)<0||children.indexOf(pivot)<=children.indexOf(guide))return;
  let panel=document.getElementById(ID);
- if(!panel){panel=document.createElement('section');panel.id=ID;panel.className='mm-analysis-public';panel.innerHTML='<div class="mm-analysis-public-head"><div><span class="mm-analysis-eyebrow">MARKETMARNEY / TECHNICAL DESK</span><h2>Publikasi Analisa Market</h2><p>Analisa teknikal dari redaksi MarketMarney. Level bukan harga real-time atau rekomendasi trading.</p></div><span class="mm-analysis-public-count">Memuat...</span></div><div class="mm-analysis-cards" aria-live="polite"></div>';shell.parentNode.insertBefore(panel,shell);}
+ if(!panel){panel=document.createElement('section');panel.id=ID;panel.className='mm-analysis-public';panel.innerHTML='<div class="mm-analysis-public-head"><div><span class="mm-analysis-eyebrow">MARKETMARNEY / TECHNICAL DESK</span><h2>Publikasi Analisa Market</h2><p>Analisa teknikal dari redaksi MarketMarney. Level bukan harga real-time atau rekomendasi trading.</p></div><span class="mm-analysis-public-count">Memuat...</span></div><div class="mm-analysis-cards" aria-live="polite"></div>';}
+ if(panel.parentNode!==shell||panel.nextElementSibling!==pivot)shell.insertBefore(panel,pivot);
  if(Date.now()-last>30000)refresh(panel);
 }
 let queued=false;
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount();});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 const root=document.getElementById('app')||document.body;
-new MutationObserver(records=>{if(records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.mm87-shell')||n.querySelector?.('.mm87-shell')))))schedule();}).observe(root,{subtree:true,childList:true});
+new MutationObserver(records=>{if(records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.mm87-shell,.mm87-info,.mm1816-pivot-public')||n.querySelector?.('.mm87-shell,.mm87-info,.mm1816-pivot-public')))))schedule();}).observe(root,{subtree:true,childList:true});
 document.addEventListener('click',e=>{const b=e.target.closest?.('.navbtn,.feature-card');if(b&&/analisa/i.test(b.textContent||b.dataset?.page||''))setTimeout(schedule,180);},true);
 })();

@@ -52,3 +52,56 @@ test('public script filters published analysis only',()=>{
  assert.match(s,/\/api\/content/);
  assert.doesNotMatch(s,/PUT|POST/);
 });
+
+test('published analysis appears between indicator guide and pivot card',()=>{
+ const source=assets().get('/assets/mm-analysis-public-v1.js').body.toString();
+ const guide={nodeType:1,textContent:'Panduan interpretasi indikator'};
+ const pivot={nodeType:1,textContent:'Pivot Points'};
+ let panel=null;
+ const shell={
+  children:[guide,pivot],parentNode:{},
+  querySelector(selector){
+   if(selector===':scope > .mm87-info')return guide;
+   if(selector===':scope > .mm1816-pivot-public')return pivot;
+   return null;
+  },
+  insertBefore(node,before){
+   if(node.parentNode&&node.parentNode.children){
+    const previous=node.parentNode.children.indexOf(node);
+    if(previous!==-1)node.parentNode.children.splice(previous,1);
+   }
+   const position=this.children.indexOf(before);
+   assert.ok(position>=0,'pivot anchor must be present');
+   this.children.splice(position,0,node);
+   node.parentNode=this;
+  }
+ };
+ const root={},document={
+  readyState:'complete',
+  querySelector(selector){return selector==='.mm87-shell.mm1815-anal-shell'?shell:null;},
+  getElementById(id){return id==='app'?root:id==='mm-analysis-public-v1'?panel:null;},
+  createElement(tag){
+   const node={tagName:tag,nodeType:1,parentNode:null,id:'',innerHTML:'',className:''};
+   Object.defineProperty(node,'nextElementSibling',{get(){const i=node.parentNode?.children?.indexOf(node);return i>=0?node.parentNode.children[i+1]||null:null;}});
+   panel=node;return node;
+  },
+  addEventListener(){},
+  body:root
+ };
+ const context={
+  document,MutationObserver:class{observe(){}},requestAnimationFrame:callback=>callback(),
+  setTimeout(){},fetch:()=>new Promise(()=>{}),AbortSignal:{timeout(){return null;}},
+ };
+ vm.runInNewContext(source,context);
+ assert.ok(panel,'analysis panel created');
+ assert.equal(shell.children.length,3,'existing cards preserved');
+ assert.equal(shell.children[0],guide,'indicator guide remains first');
+ assert.equal(shell.children[1],panel,'analysis section placed after guide');
+ assert.equal(shell.children[2],pivot,'pivot card stays after analysis');
+ assert.equal(panel.parentNode,shell);
+ assert.equal(panel.nextElementSibling,pivot);
+});
+test('analysis integration cache version changes to refresh previously loaded homepages',()=>{
+ assert.equal(VERSION,'20261110-v2');
+ assert.match(injectHtml(html,'/'),/mm-analysis-public-v1\.js\?v=20261110-v2/);
+});

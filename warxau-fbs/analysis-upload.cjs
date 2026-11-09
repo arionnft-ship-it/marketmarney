@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
-const VERSION='20261110-v1';
+const VERSION='20261110-v2';
 const sources=[
  ['/assets/mm-analysis-admin-v1.js','analysis-upload-admin.js','text/javascript; charset=utf-8'],
  ['/assets/mm-analysis-public-v1.js','analysis-upload-public.js','text/javascript; charset=utf-8'],
