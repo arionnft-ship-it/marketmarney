@@ -49,29 +49,27 @@ public class Reels433LayoutTest {
     @Test public void reelsUsesOneCompactHeaderAndLightDock()throws Exception{
         String ready="";
         for(int retry=0;retry<70;retry++){
-            ready=js("(function(){return JSON.stringify({shell:document.documentElement.dataset.mm429Social||'',toolbar:!!document.getElementById('mm46-toolbar')});})()");
-            if(ready.contains("429")&&ready.contains("true"))break;
+            ready=js("(function(){return JSON.stringify({shell:document.documentElement.dataset.mm429Social||'',toolbar:!!document.getElementById('mm46-toolbar'),fixed:!!document.querySelector('[aria-label=\\\"Kembali ke Media\\\"]')&&!!document.querySelector('[aria-label=\\\"Unggah Reel\\\"]')});})()");
+            if(ready.contains("429")&&ready.contains("\\\"toolbar\\\":true")&&ready.contains("\\\"fixed\\\":true"))break;
             SystemClock.sleep(120);
         }
         assertTrue(ready,ready.contains("429"));
-        js("(function(){var h=document.documentElement,logged=document.getElementById('shLogged');if(logged)logged.hidden=false;h.dataset.mmAuthState='authenticated';h.dataset.mm429Social='429';h.dataset.mm47Nav='47';h.dataset.mm44View='reels';h.setAttribute('data-mm46-reels','');window.dispatchEvent(new Event('mm45:resume'));return true;})()");
-        String state="";
-        for(int retry=0;retry<50;retry++){
-            state=js("(function(){var h=document.documentElement,head=document.getElementById('mm44-social-header'),bar=document.getElementById('mm46-toolbar'),panel=document.getElementById('shReelsPanel'),nav=document.querySelector('.mm44-nav'),back=bar&&bar.querySelector('[aria-label=\\\"Kembali ke Media\\\"]'),add=bar&&bar.querySelector('[aria-label=\\\"Unggah Reel\\\"]');if(!head||!bar||!panel||!nav)return JSON.stringify({ready:false});var hc=getComputedStyle(head),bc=getComputedStyle(bar),nc=getComputedStyle(nav),br=bar.getBoundingClientRect(),pr=panel.getBoundingClientRect(),nr=nav.getBoundingClientRect(),rgb=(nc.backgroundColor.match(/\\d+/g)||[]).map(Number);return JSON.stringify({ready:h.dataset.mm433Reels==='433'&&h.hasAttribute('data-mm46-reels'),header:hc.display,toolbar:bc.display,toolbarH:Math.round(br.height),panelTop:Math.round(pr.top),panelBottom:Math.round(pr.bottom),dockTop:Math.round(nr.top),navLight:rgb.length>=3&&rgb[0]>220&&rgb[1]>220&&rgb[2]>220,back:!!back,add:!!add,icons:bar.querySelectorAll('.mm46-icon svg').length});})()");
-            if(state.contains("\\\"ready\\\":true"))break;
-            SystemClock.sleep(120);
-        }
+        assertTrue(ready,ready.contains("\\\"toolbar\\\":true"));
+        assertTrue(ready,ready.contains("\\\"fixed\\\":true"));
+
+        // Measure the exact signed-in Reels state synchronously. This prevents the
+        // guest-session fixture from reverting the view between two JS callbacks.
+        String state=js("(function(){var h=document.documentElement,logged=document.getElementById('shLogged'),head=document.getElementById('mm44-social-header'),bar=document.getElementById('mm46-toolbar'),panel=document.getElementById('shReelsPanel'),nav=document.querySelector('.mm44-nav');if(!logged||!head||!bar||!panel||!nav)return JSON.stringify({ready:false,missing:true});logged.removeAttribute('hidden');try{Object.defineProperty(logged,'hidden',{configurable:true,get:function(){return false;},set:function(){}});}catch(ignore){logged.hidden=false;}h.dataset.mmAuthState='authenticated';h.dataset.mm429Social='429';h.dataset.mm47Nav='47';h.dataset.mm44View='reels';h.dataset.mm433Reels='433';h.setAttribute('data-mm46-reels','');var back=bar.querySelector('[aria-label=\\\"Kembali ke Media\\\"]'),add=bar.querySelector('[aria-label=\\\"Unggah Reel\\\"]'),hc=getComputedStyle(head),bc=getComputedStyle(bar),nc=getComputedStyle(nav),br=bar.getBoundingClientRect(),pr=panel.getBoundingClientRect(),nr=nav.getBoundingClientRect(),rgb=(nc.backgroundColor.match(/\\d+/g)||[]).map(Number);return JSON.stringify({ready:true,header:hc.display,toolbar:bc.display,toolbarOk:br.height>=40&&br.height<90,panelTopOk:Math.abs(pr.top)<2,panelDockOk:Math.abs(pr.bottom-nr.top)<3,navLight:rgb.length>=3&&rgb[0]>220&&rgb[1]>220&&rgb[2]>220,back:!!back,add:!!add,icons:bar.querySelectorAll('.mm46-icon svg').length});})()");
         assertTrue(state,state.contains("\\\"ready\\\":true"));
         assertTrue(state,state.contains("\\\"header\\\":\\\"none\\\""));
         assertTrue(state,state.contains("\\\"toolbar\\\":\\\"flex\\\""));
+        assertTrue(state,state.contains("\\\"toolbarOk\\\":true"));
+        assertTrue(state,state.contains("\\\"panelTopOk\\\":true"));
+        assertTrue(state,state.contains("\\\"panelDockOk\\\":true"));
         assertTrue(state,state.contains("\\\"navLight\\\":true"));
         assertTrue(state,state.contains("\\\"back\\\":true"));
         assertTrue(state,state.contains("\\\"add\\\":true"));
         assertTrue(state,state.contains("\\\"icons\\\":3"));
-        String geometry=js("(function(){var b=document.getElementById('mm46-toolbar').getBoundingClientRect(),p=document.getElementById('shReelsPanel').getBoundingClientRect(),n=document.querySelector('.mm44-nav').getBoundingClientRect();return JSON.stringify({toolbarOk:b.height>=40&&b.height<90,panelTopOk:Math.abs(p.top)<2,panelDockOk:Math.abs(p.bottom-n.top)<3});})()");
-        assertTrue(geometry,geometry.contains("\\\"toolbarOk\\\":true"));
-        assertTrue(geometry,geometry.contains("\\\"panelTopOk\\\":true"));
-        assertTrue(geometry,geometry.contains("\\\"panelDockOk\\\":true"));
     }
 
     @Test public void repairedReelsAssetsArePackaged()throws Exception{
