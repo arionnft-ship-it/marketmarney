@@ -55,6 +55,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  function handle(req,res){
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
+  if(p==='/ads.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendAdsTxt(req,res);
   if(performance.handle(req,res))return true;
   let asset=assets.get(p);
   if(!asset&&(p==='/manifest.webmanifest'||p==='/sw.js')){
