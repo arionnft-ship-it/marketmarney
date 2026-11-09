@@ -9,6 +9,8 @@ function homeMarkup(){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="
 function mount(){
  var row=document.querySelector('#mm44-social-header .mm44-headrow');
  if(!row){if(++attempt<50)setTimeout(mount,100);return;}
+ var existing=row.querySelector('.mm430-home-button');
+ if(existing){existing.setAttribute('aria-label','Kembali ke Beranda');existing.title='Kembali ke Beranda';H.dataset.mm430Home='ready';window.__mm430HomeButton=true;return;}
  var original=Array.prototype.find.call(row.children,function(node){return node.classList&&node.classList.contains('mm44-icon')&&/Buat postingan/i.test(node.getAttribute('aria-label')||'');});
  if(!original){if(++attempt<50)setTimeout(mount,100);return;}
  var home=original.cloneNode(false); // clone removes the old create-menu click listener.
