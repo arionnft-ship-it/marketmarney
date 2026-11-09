@@ -2,7 +2,7 @@
 
 const http = require('node:http');
 
-const VERSION = '20261109-auto-pivot-internal-v1';
+const VERSION = '20261109-auto-pivot-internal-v2';
 const INTERNAL_PORT = Number(process.env.MM_INTERNAL_APP_PORT || 8000);
 const PIVOT_AGENT = /^MarketMarney-Automatic-Pivot\//;
 const INTERNAL_PATH = /^\/api\/(?:market\/ohlc|pivot-public)(?:\?|$)/;
@@ -30,7 +30,9 @@ function rewriteOptions(options) {
     const lower = key.toLowerCase();
     if (lower === 'host' || lower === 'x-real-ip' || lower === 'x-forwarded-for' || lower === 'x-forwarded-proto' || lower === 'forwarded') delete headers[key];
   }
-  headers.Host = '127.0.0.1:' + INTERNAL_PORT;
+  headers.Host = 'marketmarney.com';
+  headers['X-Forwarded-Proto'] = 'https';
+  headers['X-Real-IP'] = '127.0.0.1';
   return {
     ...options,
     hostname: '127.0.0.1',
@@ -46,6 +48,6 @@ http.request = function(...args) {
   return nativeRequest.apply(this,args);
 };
 
-console.log('MM_AUTOMATIC_PIVOT_INTERNAL_ROUTE_READY '+JSON.stringify({version:VERSION,internalPort:INTERNAL_PORT,paths:['/api/market/ohlc','/api/pivot-public']}));
+console.log('MM_AUTOMATIC_PIVOT_INTERNAL_ROUTE_READY '+JSON.stringify({version:VERSION,internalPort:INTERNAL_PORT,host:'marketmarney.com',paths:['/api/market/ohlc','/api/pivot-public']}));
 
 module.exports={VERSION,INTERNAL_PORT,shouldRewrite,rewriteOptions};
