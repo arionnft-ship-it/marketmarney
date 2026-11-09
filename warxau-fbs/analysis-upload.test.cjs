@@ -125,7 +125,7 @@ test('news listings exclude analysis while dedicated analysis cards keep their s
  assert.deepEqual(fixtures.map(x=>Boolean(sandbox.check(x))),fixtures.map(x=>Boolean(isNewsListingArticle(x))));
  const fs=require('node:fs'),path=require('node:path');
  const homepage=fs.readFileSync(path.join(__dirname,'performance-news.cjs'),'utf8');
- assert.match(homepage,/data\\.articles\\.filter\\(mmPerfIsNewsListingArticle\\)/);
+ assert.ok(homepage.includes('data.articles.filter(mmPerfIsNewsListingArticle)'));
  const marketAnalysis=fs.readFileSync(path.join(__dirname,'analysis-upload-public.js'),'utf8');
- assert.match(marketAnalysis,/show\\(panel,doc\\.articles\\)/);
+ assert.ok(marketAnalysis.includes('show(panel,doc.articles)'));
 });
