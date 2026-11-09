@@ -47,7 +47,7 @@ function createTopChat({appRoot=APP,assetRoot=__dirname,approved=APPROVED}={}){
  const performance=createWarXauPerformance({layoutSource:layout.toString('utf8'),chatSource:chat.toString('utf8'),cssSource:css.toString('utf8')});
  function source(){const raw=fs.readFileSync(path.join(appRoot,'assets/xau-war-3d.html'));if(sha(raw)!==approved)throw Error('WarXAU approved source changed');return raw.toString('utf8');}
  function asset(p){
-  if(p===PAGE){if(!page){const optimized=performance.transform(enhancePage(source()));page=Buffer.from(enhanceXauLivePage(optimized));}return [page,'text/html; charset=utf-8'];}
+  if(p===PAGE){if(!page){const liveSource=enhanceXauLivePage(enhancePage(source()));page=Buffer.from(performance.transform(liveSource));}return [page,'text/html; charset=utf-8'];}
   if(p==='/assets/warxau-topchat-layout.js')return [layout,'text/javascript; charset=utf-8'];
   if(p==='/assets/warxau-topchat-chat.js')return [chat,'text/javascript; charset=utf-8'];
   if(p==='/assets/warxau-topchat.css')return [css,'text/css; charset=utf-8'];
