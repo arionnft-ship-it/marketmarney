@@ -12,7 +12,7 @@ COPY warxau-fbs/performance-runtime.cjs warxau-fbs/performance-news.cjs warxau-f
 COPY warxau-fbs/derived-software.cjs ./
 COPY warxau-fbs/public-theme-light.cjs warxau-fbs/install-light-theme.cjs ./
 RUN node install-light-theme.cjs performance-runtime.cjs
-COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bootstrap.cjs ./
+COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bootstrap.cjs warxau-fbs/social-upload-preload.cjs warxau-fbs/social-upload-preload.test.cjs warxau-fbs/social-upload-runtime-patch.cjs warxau-fbs/social-upload-runtime-patch.test.cjs ./
 COPY warxau-fbs/article-reading-width.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
 COPY warxau-fbs/article-banner.cjs ./
@@ -28,6 +28,7 @@ COPY sidebar3d ./sidebar3d
 COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
 RUN node signup/otp/install.cjs && node signup/otp/activation.cjs && node signup/password/install.cjs && node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs && node sidebar3d/install.cjs branding.cjs
 RUN for file in *.cjs *.js signup/*.cjs signup/otp/*.cjs signup/password/*.cjs sidebar3d/*.cjs sidebar3d/*.js; do node --check "$file" || exit 1; done
+RUN node social-upload-preload.test.cjs && node social-upload-runtime-patch.test.cjs
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs"
+ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs --require=/opt/warxau-fbs/social-upload-preload.cjs --require=/opt/warxau-fbs/social-upload-runtime-patch.cjs"
 CMD ["node", "/opt/warxau-fbs/start-ihsg.cjs"]
