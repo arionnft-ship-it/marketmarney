@@ -1,0 +1,148 @@
+name: Marney 4.30 Social Home Button
+on:
+  push:
+    branches: [android-v4.30-social-home-button]
+    paths: ['mobile430/**', '.github/workflows/build430.yml']
+  workflow_dispatch:
+permissions: {contents: write}
+concurrency:
+  group: marney430-home-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$S"; yes | "$S" --licenses >/dev/null || true
+          "$S" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Reconstruct verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,stat
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as a:
+              assert a.testzip() is None
+              for e in a.infolist():
+                  p=Path(e.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and not stat.S_ISLNK(e.external_attr>>16)
+                  if p.parts and p.parts[0]=='android417': a.extract(e,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420; python3 mobile420/prepare420.py
+          mv android420 android421; python3 mobile421/prepare421.py
+          mv android421 android422; python3 mobile422/prepare422.py
+          mv android422 android423; python3 mobile423/prepare423.py
+          mv android423 android424; python3 mobile424/prepare424.py
+          mv android424 android425; python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426; python3 mobile426/prepare426.py
+          mv android426 android427; python3 mobile427/prepare427.py
+          mv android427 android428; python3 mobile428/prepare428.py
+          mv android428 android429; python3 mobile429/prepare429.py
+          mv android429 android430; python3 mobile430/prepare430.py
+          node --check android430/app/src/main/assets/social411/5eab9da17fe2c659.js
+          node --check android430/app/src/main/assets/social411/bundle427.js
+          node --check android430/app/src/main/assets/group48/4e221ebb961158b1.js
+          node --check android430/app/src/main/assets/group48/bundle427.js
+          node --check android430/app/src/main/assets/social429.js
+          node --check android430/app/src/main/assets/home430.js
+      - name: Build and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --project-dir android430 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver testapk quality430
+          APK=android430/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney430-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney430-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta430'" deliver/Marney430-Package.txt
+          grep -F "versionCode='34'" deliver/Marney430-Package.txt
+          grep -F "versionName='4.30.0-beta'" deliver/Marney430-Package.txt
+          cp "$APK" deliver/Marney430.apk
+          cp android430/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney430-Tests.apk
+          cp verified430.json mobile430/Marney430-Panduan.md deliver/
+          python3 mobile430/verify430.py android430 deliver testapk
+      - name: Prepare emulator checks
+        shell: bash
+        run: |
+          cat > check430.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality430/android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r deliver/Marney430.apk
+          adb install -r testapk/Marney430-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta430.test/androidx.test.runner.AndroidJUnitRunner | tee quality430/android/opening.txt
+          grep -F 'OK (1 test)' quality430/android/opening.txt
+          adb shell pm clear com.marketmarney.mobile.beta430 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social430HomeButtonTest,com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta430.test/androidx.test.runner.AndroidJUnitRunner | tee quality430/android/regression.txt
+          grep -F 'OK (35 tests)' quality430/android/regression.txt
+          adb logcat -d -s AndroidRuntime:E > quality430/android/runtime.log
+          test ! -s quality430/android/runtime.log
+          adb shell am force-stop com.marketmarney.mobile.beta430
+          adb shell am start -W -n com.marketmarney.mobile.beta430/com.marketmarney.mobile.MainActivity --ei startTab 4 | tee quality430/android/social-cold-start.txt
+          sleep 4
+          adb exec-out screencap -p > quality430/android/social-home-button.png
+          adb shell dumpsys meminfo com.marketmarney.mobile.beta430 > quality430/android/social-meminfo.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check430.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney430-Results
+          path: |
+            deliver/
+            quality430/
+          if-no-files-found: error
+      - name: Publish permanent public download
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deliver
+          sha256sum -c Marney430-SHA256.txt
+          zip -9 Marney430.zip Marney430.apk Marney430-Panduan.md Marney430-SHA256.txt Marney430-Package.txt
+          TAG=marney-v4.30-beta
+          NOTES='Marney 4.30 mengganti tombol tambah di kiri header Media Marney menjadi tombol Beranda. Tombol ini kembali ke Beranda asli aplikasi dan memunculkan lagi lima menu utama. Pembuatan postingan tetap tersedia dari composer, Story, Reels, dan menu Social. Perubahan hanya berlaku di aplikasi Android; website dan database publik tidak diubah.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.30 Social Home Button' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney430.apk Marney430.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney430.apk Marney430.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.30 Social Home Button' --notes "$NOTES" --prerelease
+          fi
