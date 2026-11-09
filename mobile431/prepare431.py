@@ -55,6 +55,7 @@ for test_file in test_root.rglob('*.java'):
 
 shutil.copy2(base/'StartupOverlay.java',root/'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java')
 shutil.copy2(base/'OpeningSoft426Test.java',root/'app/src/androidTest/java/com/marketmarney/mobile/OpeningSoft426Test.java')
+shutil.copy2(base/'Social430HomeButtonTest.java',root/'app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java')
 shutil.copy2(base/'Marney431-Panduan.md',root/'README-MULAI-DISINI.md')
 
 after=snapshot()
@@ -66,6 +67,7 @@ expected={
     'app/src/main/java/com/marketmarney/mobile/StartupOverlay.java',
     'app/src/main/res/values/strings.xml',
     'app/src/androidTest/java/com/marketmarney/mobile/OpeningSoft426Test.java',
+    'app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java',
 }
 expected.update(version_tests)
 assert changed==sorted(expected),{
