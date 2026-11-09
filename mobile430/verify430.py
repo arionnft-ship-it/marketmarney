@@ -28,7 +28,7 @@ with ZipFile(testapk/'Marney430-Tests.apk') as tests:
     dex=b''.join(tests.read(name) for name in tests.namelist() if name.endswith('.dex'))
     assert b'Social430HomeButtonTest' in dex
 main=(root/'app/src/main/java/com/marketmarney/mobile/MainActivity.java').read_text()
-js=(assets/'home430.js').read_text();css=(assets/'home430.css').read_text()
+js=(assets/'home430.js').read_text();css=(assets/'home430.css').read_text();social=(assets/'social411/app.js').read_text()
 checks=[
     '"mm-app-home".equals(h)' in main,
     'navigate(HOME);return true;' in main,
@@ -38,6 +38,10 @@ checks=[
     'cloneNode(false)' in js,
     'mm430-home-button' in css,
     'mm430-home-label' in css,
+    "button('Kembali ke Beranda','home'" in social,
+    "node('span','mm430-home-label','Beranda')" in social,
+    "location.assign('/index.html#mm-app-home')" in social,
+    "button('Buat postingan, Story atau Reels','plus'" not in social,
 ]
 assert all(checks),checks
 Path('quality430').mkdir(exist_ok=True)
