@@ -3,6 +3,10 @@
 const ORIGIN = 'https://marketmarney.com';
 const BRAND_RELEASE = 'marney-20261109-r3';
 const GOOGLE_SITE_VERIFICATION = 'CxKqw5ml8va-XZ5WcsNCuYCKPCJjnSsf3F6dhGNp5ZU';
+// Official AdSense publisher ID shown in the owner's account.
+const ADSENSE_CLIENT = 'ca-pub-4691344602211954';
+const ADSENSE_SNIPPET = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT + '" crossorigin="anonymous"></script>';
+const ADS_TXT = 'google.com, pub-4691344602211954, DIRECT, f08c47fec0942fa0\n';
 const ROBOTS = [
   'User-agent: *',
   'Disallow: /api/',
@@ -66,6 +70,10 @@ function patchHtml(html, pathname, enabled) {
     if (/<\/head\s*>/i.test(result)) result = result.replace(/<\/head\s*>/i, BRAND_HEAD + '</head>');
     else result = BRAND_HEAD + result;
   }
+  // Install site-verification snippet on every publicly indexable page.
+  if (!result.includes('client=' + ADSENSE_CLIENT) && /<\/head\s*>/i.test(result)) {
+    result = result.replace(/<\/head\s*>/i, ADSENSE_SNIPPET + '</head>');
+  }
   return result;
 }
 function clearBlockingHeader(res) {
@@ -89,4 +97,19 @@ function sendRobots(req, res) {
   res.end(req.method === 'HEAD' ? undefined : body);
   return true;
 }
-module.exports = {ORIGIN, BRAND_RELEASE, BRAND_HEAD, GOOGLE_SITE_VERIFICATION, ROBOTS, isPublicHost, isPublicPage, patchHtml, clearBlockingHeader, sendRobots};
+function sendAdsTxt(req, res) {
+  if (!['GET','HEAD'].includes(req.method)) {
+    res.writeHead(405, {'Allow': 'GET, HEAD', 'Cache-Control': 'no-store'});
+    res.end(); return true;
+  }
+  const body = Buffer.from(ADS_TXT, 'utf8');
+  res.writeHead(200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'public, max-age=300',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Length': body.length
+  });
+  res.end(req.method === 'HEAD' ? undefined : body);
+  return true;
+}
+module.exports = {ORIGIN, BRAND_RELEASE, BRAND_HEAD, GOOGLE_SITE_VERIFICATION, ROBOTS, ADSENSE_CLIENT, ADSENSE_SNIPPET, ADS_TXT, isPublicHost, isPublicPage, patchHtml, clearBlockingHeader, sendRobots, sendAdsTxt};
