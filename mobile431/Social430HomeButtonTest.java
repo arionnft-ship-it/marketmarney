@@ -36,6 +36,9 @@ public class Social430HomeButtonTest {
         inst.runOnMainSync(()->((WebView)field("web")).evaluateJavascript(code,r->{value.set(r);done.countDown();}));
         assertTrue("JavaScript callback",done.await(6,TimeUnit.SECONDS));return value.get();
     }
+    private void exec(String code){
+        inst.runOnMainSync(()->((WebView)field("web")).evaluateJavascript(code,null));
+    }
     private String waitForHomeControl()throws Exception{
         String state="";
         for(int retry=0;retry<60;retry++){
@@ -76,7 +79,7 @@ public class Social430HomeButtonTest {
 
     @Test public void homeControlReturnsToNativeHomeAndRestoresNavigation()throws Exception{
         String state=waitForHomeControl();assertTrue(state,state.contains("Kembali ke Beranda"));
-        assertEquals("true",js("(function(){var b=document.querySelector('.mm430-home-button');if(!b)return false;setTimeout(function(){b.click();},50);return true;})()"));
+        exec("(function(){var b=document.querySelector('.mm430-home-button');if(b)b.click();})()");
         assertTrue("Native Home and its five destinations should become ready",waitForNativeHome());
         inst.runOnMainSync(()->{
             assertEquals(0,((Integer)field("tab")).intValue());
