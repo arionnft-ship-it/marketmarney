@@ -142,9 +142,9 @@ jobs:
           sha256sum -c Marney430-SHA256.txt
           zip -9 Marney430.zip Marney430.apk Marney430-Panduan.md Marney430-SHA256.txt Marney430-Package.txt
           TAG=marney-v4.30-beta
-          NOTES='Marney 4.30 mengganti tombol tambah di kiri header Media Marney menjadi tombol Beranda. Tombol ini kembali ke Beranda asli aplikasi dan memunculkan lagi lima menu utama. Pembuatan postingan tetap tersedia dari composer, Story, Reels, dan menu Social. Perubahan hanya berlaku di aplikasi Android; website dan database publik tidak diubah.'
+          NOTES='Marney 4.30 mengganti tombol tambah di kiri header Media Marney menjadi tombol Beranda sejak header pertama kali tampil. Tombol ini kembali ke Beranda asli aplikasi dan memunculkan lagi lima menu utama. Pembuatan postingan tetap tersedia dari composer, Story, Reels, dan menu Social. Perubahan hanya berlaku di aplikasi Android; website dan database publik tidak diubah.'
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Marney 4.30 Social Home Button' --notes "$NOTES" --prerelease
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.30 Social Home Button' --notes "$NOTES" --prerelease
             gh release upload "$TAG" Marney430.apk Marney430.zip --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" Marney430.apk Marney430.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Marney 4.30 Social Home Button' --notes "$NOTES" --prerelease
