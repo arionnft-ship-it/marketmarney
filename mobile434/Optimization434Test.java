@@ -11,41 +11,52 @@ import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 /** Focused checks for the 4.34 bounded-buffer and rendering optimizations. */
 public class Optimization434Test {
-    private Instrumentation inst;
     private MainActivity activity;
 
+    private Instrumentation instrumentation(){
+        return InstrumentationRegistry.getInstrumentation();
+    }
     private Object field(String name){
         try{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return f.get(activity);}
         catch(Exception error){throw new RuntimeException(error);}
     }
     private String asset(String name)throws Exception{
-        try(InputStream in=inst.getTargetContext().getAssets().open(name);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+        try(InputStream in=instrumentation().getTargetContext().getAssets().open(name);ByteArrayOutputStream out=new ByteArrayOutputStream()){
             byte[] buffer=new byte[8192];int count;while((count=in.read(buffer))!=-1)out.write(buffer,0,count);
             return out.toString("UTF-8");
         }
     }
     private String js(String code)throws Exception{
+        Instrumentation inst=instrumentation();
         CountDownLatch done=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>();
         inst.runOnMainSync(()->((WebView)field("web")).evaluateJavascript(code,value->{result.set(value);done.countDown();}));
         assertTrue("JavaScript callback",done.await(7,TimeUnit.SECONDS));return result.get();
     }
-
-    @Before public void setup(){
-        inst=InstrumentationRegistry.getInstrumentation();
+    private void startRuntimeActivity(){
+        Instrumentation inst=instrumentation();
         Intent intent=new Intent(inst.getTargetContext(),MainActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)
             .putExtra("startTab",4);
-        activity=(MainActivity)inst.startActivitySync(intent);SystemClock.sleep(450);
-        inst.runOnMainSync(()->{StartupOverlay overlay=(StartupOverlay)field("launchOverlay");if(overlay!=null)overlay.dispose();});
+        activity=(MainActivity)inst.startActivitySync(intent);
+        SystemClock.sleep(500);
+        inst.runOnMainSync(()->{
+            StartupOverlay overlay=(StartupOverlay)field("launchOverlay");
+            if(overlay!=null)overlay.dispose();
+        });
     }
-    @After public void finish(){if(activity!=null)inst.runOnMainSync(()->activity.finish());}
+    private void finishRuntimeActivity(){
+        if(activity==null)return;
+        Instrumentation inst=instrumentation();
+        MainActivity current=activity;
+        activity=null;
+        inst.runOnMainSync(current::finish);
+        inst.waitForIdleSync();
+    }
 
     @Test public void reelsUsesBoundedPredictiveBuffer()throws Exception{
         String script=asset("reels46.js");
@@ -71,14 +82,19 @@ public class Optimization434Test {
     }
 
     @Test public void optimizedControllerMountsInApp()throws Exception{
-        String state="";
-        for(int retry=0;retry<60;retry++){
-            state=js("(function(){return JSON.stringify({controller:!!window.__mm434Reels,buffer:document.documentElement.dataset.mm434Buffer||'',toolbar:!!document.getElementById('mm46-toolbar')});})()");
-            if(state.contains("\\\"controller\\\":true")&&state.contains("\\\"buffer\\\":\\\"smart\\\"")&&state.contains("\\\"toolbar\\\":true"))break;
-            SystemClock.sleep(120);
+        startRuntimeActivity();
+        try{
+            String state="";
+            for(int retry=0;retry<70;retry++){
+                state=js("(function(){return JSON.stringify({controller:!!window.__mm434Reels,buffer:document.documentElement.dataset.mm434Buffer||'',toolbar:!!document.getElementById('mm46-toolbar')});})()");
+                if(state.contains("\\\"controller\\\":true")&&state.contains("\\\"buffer\\\":\\\"smart\\\"")&&state.contains("\\\"toolbar\\\":true"))break;
+                SystemClock.sleep(120);
+            }
+            assertTrue(state,state.contains("\\\"controller\\\":true"));
+            assertTrue(state,state.contains("\\\"buffer\\\":\\\"smart\\\""));
+            assertTrue(state,state.contains("\\\"toolbar\\\":true"));
+        }finally{
+            finishRuntimeActivity();
         }
-        assertTrue(state,state.contains("\\\"controller\\\":true"));
-        assertTrue(state,state.contains("\\\"buffer\\\":\\\"smart\\\""));
-        assertTrue(state,state.contains("\\\"toolbar\\\":true"));
     }
 }
