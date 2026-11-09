@@ -19,7 +19,9 @@ assert.equal(route.shouldRewrite(source),true);
 const rewritten = route.rewriteOptions(source);
 assert.equal(rewritten.hostname,'127.0.0.1');
 assert.equal(rewritten.port,route.INTERNAL_PORT);
-assert.equal(rewritten.headers.Host,'127.0.0.1:'+route.INTERNAL_PORT);
+assert.equal(rewritten.headers.Host,'marketmarney.com');
+assert.equal(rewritten.headers['X-Forwarded-Proto'],'https');
+assert.equal(rewritten.headers['X-Real-IP'],'127.0.0.1');
 assert.equal(rewritten.headers['X-Forwarded-For'],undefined);
 assert.equal(source.port,8080);
 
@@ -27,4 +29,4 @@ assert.equal(route.shouldRewrite({...source,path:'/api/content'}),false);
 assert.equal(route.shouldRewrite({...source,headers:{'User-Agent':'Other-Agent'}}),false);
 assert.equal(route.shouldRewrite({...source,hostname:'marketmarney.com'}),false);
 
-console.log(JSON.stringify({ok:true,version:route.VERSION,internalPort:route.INTERNAL_PORT}));
+console.log(JSON.stringify({ok:true,version:route.VERSION,internalPort:route.INTERNAL_PORT,host:'marketmarney.com'}));
