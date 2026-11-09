@@ -1,0 +1,33 @@
+/* MarketMarney 4.34 — low-overhead rendering without changing the light visual direction. */
+html[data-mm429-social] .mm44-nav,
+html[data-mm429-social] .mm44-social-header,
+html[data-mm429-social] .mm46-toolbar{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-mm429-social] .mm44-nav{background:#fff!important}
+html[data-mm429-social] .sh-feed,
+html[data-mm429-social] #shReelFeed{overscroll-behavior-y:contain;touch-action:pan-y}
+html[data-mm429-social][data-mm46-reels] video.sh-reel-video{
+  backface-visibility:hidden;
+  transform:translateZ(0);
+  image-rendering:auto;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-card,
+html[data-mm429-social][data-mm46-reels] .sh-reel-stage{contain:layout paint style}
+@supports (content-visibility:auto){
+  html[data-mm429-social] .sh-feed>.sh-post{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 560px;
+  }
+  html[data-mm429-social] .sh-dm-user,
+  html[data-mm429-social] .sh-group-item,
+  html[data-mm429-social] .sh-search-user,
+  html[data-mm429-social] .sh-explore-grid>a{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 72px;
+  }
+}
+@media(max-width:520px){
+  html[data-mm429-social] .sh-post{box-shadow:none!important}
+}
