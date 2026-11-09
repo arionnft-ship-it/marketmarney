@@ -1,0 +1,287 @@
+/* MarketMarney 4.33 — compact, readable and truly full-screen Reels in the Android app. */
+:root[data-mm429-social][data-mm46-reels]{
+ --mm433-dock:calc(var(--mm429-dock-h,68px) + var(--mm429-safe-bottom,env(safe-area-inset-bottom,0px)));
+ --mm433-toolbar:58px;
+ --mm433-orange:#f47400;
+ --mm433-ink:#17283b;
+ --mm433-muted:#63758a;
+ --mm433-line:#dce4ec;
+ --mm46-fit:cover;
+ color-scheme:light!important;
+}
+
+/* Reels owns the viewport. The normal Social header must never remain above it. */
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] .mm44-social-header,
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] #mm44-social-header{
+ display:none!important;
+ visibility:hidden!important;
+ pointer-events:none!important;
+ height:0!important;
+ min-height:0!important;
+ max-height:0!important;
+ overflow:hidden!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] body{
+ padding-top:0!important;
+ padding-bottom:var(--mm433-dock)!important;
+ overflow:hidden!important;
+ background:#080b10!important;
+}
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] #shReelsPanel{
+ display:block!important;
+ position:fixed!important;
+ inset:0 0 var(--mm433-dock) 0!important;
+ top:0!important;
+ right:0!important;
+ bottom:var(--mm433-dock)!important;
+ left:0!important;
+ width:100%!important;
+ height:auto!important;
+ min-height:0!important;
+ max-height:none!important;
+ margin:0!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+ background:#080b10!important;
+ overflow:hidden!important;
+}
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] #shReelFeed{
+ position:absolute!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important;
+ min-height:0!important;
+ max-height:none!important;
+ margin:0!important;
+ padding:0!important;
+ background:#080b10!important;
+}
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] .sh-reel-card{
+ width:100%!important;
+ height:100%!important;
+ min-height:100%!important;
+ max-height:none!important;
+ margin:0!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+ background:#080b10!important;
+}
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] .sh-reel-stage,
+html[data-mm429-social][data-mm47-nav][data-mm46-reels] video.sh-reel-video{
+ width:100%!important;
+ height:100%!important;
+ min-height:100%!important;
+ max-height:none!important;
+ border-radius:0!important;
+ background:#080b10!important;
+}
+
+/* One compact toolbar overlays the video instead of creating a second white row. */
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-toolbar{
+ display:flex!important;
+ position:absolute!important;
+ inset:0 0 auto 0!important;
+ min-height:var(--mm433-toolbar)!important;
+ height:auto!important;
+ padding:7px 10px 14px!important;
+ align-items:center!important;
+ gap:7px!important;
+ z-index:30!important;
+ background:linear-gradient(180deg,rgba(255,255,255,.97) 0%,rgba(255,255,255,.90) 66%,rgba(255,255,255,0) 100%)!important;
+ border:0!important;
+ box-shadow:none!important;
+ color:var(--mm433-ink)!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-icon{
+ display:inline-grid!important;
+ place-items:center!important;
+ width:40px!important;
+ min-width:40px!important;
+ height:40px!important;
+ min-height:40px!important;
+ padding:9px!important;
+ border:1px solid rgba(210,220,230,.92)!important;
+ border-radius:13px!important;
+ background:rgba(255,255,255,.94)!important;
+ color:var(--mm433-ink)!important;
+ box-shadow:0 2px 7px rgba(24,50,74,.13)!important;
+ opacity:1!important;
+}
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-icon:active{
+ transform:scale(.97)!important;
+ background:#fff4e8!important;
+ border-color:#efc69d!important;
+ box-shadow:0 1px 3px rgba(24,50,74,.12)!important;
+}
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-icon svg{
+ display:block!important;
+ width:22px!important;
+ height:22px!important;
+ color:inherit!important;
+ stroke:currentColor!important;
+ fill:none!important;
+ opacity:1!important;
+ filter:none!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-brand{
+ display:flex!important;
+ flex:1 1 auto!important;
+ min-width:0!important;
+ align-items:center!important;
+ gap:7px!important;
+ color:var(--mm433-ink)!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-brand-mark{
+ display:grid!important;
+ place-items:center!important;
+ width:32px!important;
+ min-width:32px!important;
+ height:32px!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ overflow:visible!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-brand .mm417-brand-image{
+ display:block!important;
+ width:32px!important;
+ height:32px!important;
+ object-fit:contain!important;
+ opacity:1!important;
+ filter:none!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-brand strong{
+ overflow:hidden!important;
+ text-overflow:ellipsis!important;
+ white-space:nowrap!important;
+ color:var(--mm433-ink)!important;
+ font-size:18px!important;
+ line-height:1.1!important;
+ font-weight:800!important;
+ letter-spacing:-.35px!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-brand small{display:none!important}
+
+/* Keep information and actions readable without large dark 3D blocks. */
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .sh-reel-rail{
+ right:8px!important;
+ bottom:44px!important;
+ width:56px!important;
+ gap:9px!important;
+}
+html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .sh-reel-rail-btn{
+ width:52px!important;
+ min-width:52px!important;
+ min-height:52px!important;
+ padding:6px 4px!important;
+ gap:2px!important;
+ border:1px solid rgba(215,224,233,.88)!important;
+ border-radius:16px!important;
+ background:rgba(255,255,255,.91)!important;
+ color:var(--mm433-ink)!important;
+ box-shadow:0 2px 8px rgba(0,0,0,.16)!important;
+ text-shadow:none!important;
+ opacity:1!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-rail-btn .sh-reel-rail-icon{
+ width:25px!important;
+ height:25px!important;
+ color:inherit!important;
+ opacity:1!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-rail-btn strong{
+ color:inherit!important;
+ font-size:11px!important;
+ text-shadow:none!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-rail-btn small{
+ color:#526579!important;
+ font-size:8px!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-rail-btn[aria-pressed=true][data-mm46-action=like]{
+ color:var(--mm433-orange)!important;
+ border-color:#ffc48d!important;
+ background:#fff3e6!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-bottom{
+ left:16px!important;
+ right:74px!important;
+ bottom:28px!important;
+ gap:7px!important;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-meta strong,
+html[data-mm429-social][data-mm46-reels] .sh-reel-caption{
+ text-shadow:0 1px 3px rgba(0,0,0,.82)!important;
+}
+html[data-mm429-social][data-mm46-reels] .mm46-seek{
+ left:12px!important;
+ width:calc(100% - 24px)!important;
+ bottom:0!important;
+ accent-color:var(--mm433-orange)!important;
+}
+
+/* The Reels dock follows the application's light-only direction. */
+html[data-mm-light-only="425"][data-mm429-social][data-mm46-reels] .mm44-nav{
+ background:rgba(255,255,255,.98)!important;
+ border-top:1px solid var(--mm433-line)!important;
+ box-shadow:0 -4px 14px rgba(24,50,74,.10)!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+html[data-mm-light-only="425"][data-mm429-social][data-mm46-reels] .mm44-nav-button{
+ color:var(--mm433-muted)!important;
+ background:transparent!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+html[data-mm-light-only="425"][data-mm429-social][data-mm46-reels] .mm44-nav-button svg{
+ color:inherit!important;
+ stroke:currentColor!important;
+ opacity:1!important;
+}
+html[data-mm-light-only="425"][data-mm429-social][data-mm46-reels] .mm44-nav-button[aria-pressed=true],
+html[data-mm-light-only="425"][data-mm429-social][data-mm46-reels] .mm44-nav-button[aria-current=page]{
+ color:var(--mm433-orange)!important;
+ background:#fff2e4!important;
+ border-radius:13px!important;
+ box-shadow:none!important;
+}
+
+/* Loading may be visible briefly, but it no longer dominates the video. */
+html[data-mm429-social][data-mm46-reels] [data-mm46-loading] .mm46-loading{
+ top:48%!important;
+ padding:8px 12px!important;
+ border:1px solid rgba(220,228,236,.92)!important;
+ border-radius:999px!important;
+ background:rgba(255,255,255,.93)!important;
+ color:var(--mm433-ink)!important;
+ box-shadow:0 3px 12px rgba(0,0,0,.18)!important;
+ font-size:11px!important;
+}
+html[data-mm429-social][data-mm46-reels] #shReelStatus:not(:empty){
+ top:66px!important;
+ left:14px!important;
+ right:14px!important;
+ border-color:#dce4ec!important;
+ background:rgba(255,255,255,.96)!important;
+ color:var(--mm433-ink)!important;
+ box-shadow:0 3px 12px rgba(24,50,74,.12)!important;
+}
+
+@media(max-width:360px){
+ html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-toolbar{padding-left:7px!important;padding-right:7px!important;gap:5px!important}
+ html[data-mm-light-only="425"][data-mm-depth="423"][data-mm429-social][data-mm46-reels] .mm46-icon{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;padding:8px!important}
+ html[data-mm429-social][data-mm46-reels] .mm46-brand strong{font-size:17px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-mm429-social][data-mm46-reels] .mm46-icon{transition:none!important;transform:none!important}
+}
