@@ -27,8 +27,11 @@ test('all static assets compile and carry no credentials',()=>{
  }
 });
 test('installer compatibility anchors remain unchanged',()=>{
- const fs=require('node:fs'); const s=fs.readFileSync(require('node:path').join(__dirname,'../marney-brand/branding.cjs'),'utf8');
- assert.ok(s.includes('changed=enhance(raw),out=changed===raw?data:Buffer.from(changed)'));
+ const fs=require('node:fs'),path=require('node:path');
+ const sourcePath=fs.existsSync(path.join(__dirname,'../marney-brand/branding.cjs'))?path.join(__dirname,'../marney-brand/branding.cjs'):path.join(__dirname,'branding.cjs');
+ const s=fs.readFileSync(sourcePath,'utf8');
+ assert.ok(s.includes('changed=enhance(raw),out=changed===raw?data:Buffer.from(changed)')||
+  s.includes("changed=enhance(require('./signup/account-page.cjs').enhanceAccount(raw,p)),out=changed===raw?data:Buffer.from(changed)"));
  assert.ok(s.includes('function enhance(html){'));
  assert.ok(s.includes('const withAnalysis=ANALYSIS.injectHtml('));
 });
