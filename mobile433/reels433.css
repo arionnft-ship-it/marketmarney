@@ -1,0 +1,299 @@
+/* MarketMarney 4.33 — clean, app-only Reels viewport. */
+:root[data-mm433-reels="clean"]{
+  --mm433-dock-h:62px;
+  --mm433-safe-bottom:env(safe-area-inset-bottom,0px);
+  --mm433-orange:#ff7a00;
+  --mm433-glass:rgba(6,10,15,.66);
+  --mm433-line:rgba(255,255,255,.18);
+  color-scheme:dark;
+}
+
+/* Reels owns the app viewport. The persistent Social header must not compete with its toolbar. */
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-social-header{
+  display:none!important;
+  visibility:hidden!important;
+  height:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] body{
+  margin:0!important;
+  padding-top:0!important;
+  padding-bottom:calc(var(--mm433-dock-h) + var(--mm433-safe-bottom))!important;
+  background:#05080d!important;
+  overflow:hidden!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] #shReelsPanel{
+  position:fixed!important;
+  inset:0 0 calc(var(--mm433-dock-h) + var(--mm433-safe-bottom)) 0!important;
+  top:0!important;
+  bottom:calc(var(--mm433-dock-h) + var(--mm433-safe-bottom))!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  background:#05080d!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] #shReelFeed,
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-card{
+  height:calc(var(--mm47-vh,100dvh) - var(--mm433-dock-h) - var(--mm433-safe-bottom))!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+
+/* One compact overlay toolbar. */
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar{
+  display:flex!important;
+  position:absolute!important;
+  inset:0 0 auto 0!important;
+  min-height:58px!important;
+  align-items:center!important;
+  gap:7px!important;
+  padding:8px 10px 16px!important;
+  background:linear-gradient(180deg,rgba(3,6,10,.88) 0%,rgba(3,6,10,.52) 62%,rgba(3,6,10,0) 100%)!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  z-index:20!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar .mm46-icon{
+  display:inline-grid!important;
+  place-items:center!important;
+  width:40px!important;
+  min-width:40px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:9px!important;
+  border:1px solid var(--mm433-line)!important;
+  border-radius:50%!important;
+  background:var(--mm433-glass)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar .mm46-icon:active{
+  background:rgba(255,122,0,.24)!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar .mm46-icon svg{
+  display:block!important;
+  width:22px!important;
+  height:22px!important;
+  stroke:#fff!important;
+  fill:none!important;
+  opacity:1!important;
+  filter:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-brand{
+  display:flex!important;
+  flex:1 1 auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-width:0!important;
+  color:#fff!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-brand-mark{
+  display:grid!important;
+  place-items:center!important;
+  width:36px!important;
+  min-width:36px!important;
+  height:36px!important;
+  padding:2px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,255,255,.20)!important;
+  border-radius:10px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-brand-mark .mm417-brand-image{
+  width:31px!important;
+  height:31px!important;
+  object-fit:contain!important;
+  filter:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-brand strong{
+  color:#fff!important;
+  font-size:17px!important;
+  font-weight:750!important;
+  line-height:1!important;
+  letter-spacing:-.25px!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.55)!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-brand small{display:none!important}
+
+/* Compact action rail: no oversized 3D blocks or repeated labels. */
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail{
+  right:8px!important;
+  bottom:44px!important;
+  width:48px!important;
+  gap:9px!important;
+  padding:0!important;
+  z-index:8!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn{
+  width:46px!important;
+  min-width:46px!important;
+  min-height:46px!important;
+  padding:6px 3px!important;
+  gap:2px!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  border-radius:50%!important;
+  background:rgba(7,12,18,.58)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  backdrop-filter:blur(7px)!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn:active{
+  background:rgba(255,122,0,.24)!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn small{display:none!important}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn strong{
+  font-size:10px!important;
+  line-height:1!important;
+  color:inherit!important;
+  text-shadow:0 1px 2px #000!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn[data-mm46-action] .sh-reel-rail-icon{
+  width:23px!important;
+  height:23px!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn[aria-pressed=true][data-mm46-action=like]{
+  color:#ff9b35!important;
+  border-color:rgba(255,122,0,.46)!important;
+}
+
+/* Give captions and author information more room without covering the dock. */
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-bottom{
+  left:12px!important;
+  right:64px!important;
+  bottom:28px!important;
+  gap:6px!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-author .sh-avatar{
+  width:36px!important;
+  height:36px!important;
+  flex-basis:36px!important;
+  border-radius:50%!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-caption{
+  font-size:12px!important;
+  line-height:1.45!important;
+  -webkit-line-clamp:2!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-seek{
+  left:10px!important;
+  width:calc(100% - 20px)!important;
+  height:18px!important;
+  opacity:.76!important;
+}
+
+/* Loading is a subtle spinner, not a white box over the face. */
+html[data-mm433-reels="clean"][data-mm46-reels] [data-mm46-loading] .mm46-loading{
+  display:grid!important;
+  place-items:center!important;
+  left:50%!important;
+  top:48%!important;
+  width:36px!important;
+  height:36px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,255,255,.22)!important;
+  border-radius:50%!important;
+  background:rgba(5,9,14,.64)!important;
+  color:transparent!important;
+  font-size:0!important;
+  box-shadow:none!important;
+  backdrop-filter:blur(4px)!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] [data-mm46-loading] .mm46-loading::before{
+  content:"";
+  display:block;
+  width:15px;
+  height:15px;
+  border:2px solid rgba(255,255,255,.34);
+  border-top-color:var(--mm433-orange);
+  border-radius:50%;
+  animation:mm433-spin .78s linear infinite;
+}
+@keyframes mm433-spin{to{transform:rotate(360deg)}}
+
+/* A flatter, smaller Social dock that remains readable over video. */
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav{
+  position:fixed!important;
+  inset:auto 0 0 0!important;
+  height:calc(var(--mm433-dock-h) + var(--mm433-safe-bottom))!important;
+  min-height:var(--mm433-dock-h)!important;
+  padding:4px max(6px,env(safe-area-inset-left)) var(--mm433-safe-bottom) max(6px,env(safe-area-inset-right))!important;
+  gap:0!important;
+  border:0!important;
+  border-top:1px solid rgba(255,255,255,.12)!important;
+  border-radius:0!important;
+  background:rgba(5,9,14,.94)!important;
+  box-shadow:none!important;
+  backdrop-filter:blur(12px) saturate(1.12)!important;
+  z-index:120!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav-button{
+  min-height:52px!important;
+  max-height:54px!important;
+  padding:5px 2px 4px!important;
+  gap:2px!important;
+  border:0!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  color:#aeb7c2!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav-button svg{
+  width:22px!important;
+  height:22px!important;
+  stroke:currentColor!important;
+  fill:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav-button span{
+  font-size:9px!important;
+  font-weight:650!important;
+  line-height:1!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav-button[aria-pressed=true],
+html[data-mm433-reels="clean"][data-mm46-reels] .mm44-nav-button[aria-current=page]{
+  color:#ff9b35!important;
+  background:rgba(255,122,0,.12)!important;
+}
+
+html[data-mm433-reels="clean"][data-mm46-reels] #shReelStatus:not(:empty){
+  top:62px!important;
+  left:12px!important;
+  right:12px!important;
+  padding:9px 12px!important;
+  border-radius:12px!important;
+  background:rgba(10,16,23,.90)!important;
+  box-shadow:none!important;
+}
+html[data-mm433-reels="clean"][data-mm46-reels] .mm46-retry{
+  left:18%!important;
+  right:18%!important;
+  padding:11px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+
+@media(max-height:700px){
+  :root[data-mm433-reels="clean"]{--mm433-dock-h:56px}
+  html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar{min-height:52px!important;padding:6px 8px 12px!important}
+  html[data-mm433-reels="clean"][data-mm46-reels] .mm46-toolbar .mm46-icon{width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;padding:8px!important}
+  html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail{bottom:34px!important;gap:6px!important}
+  html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-rail-btn{width:42px!important;min-width:42px!important;min-height:42px!important}
+  html[data-mm433-reels="clean"][data-mm46-reels] .sh-reel-bottom{bottom:22px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-mm433-reels="clean"] [data-mm46-loading] .mm46-loading::before{animation:none!important;border-top-color:#fff!important}
+}
