@@ -4,6 +4,16 @@
 // website and its data remain on the persistent volume. If the bundle changes,
 // return it unchanged instead of applying only half of this coordinated patch.
 const MARKER = 'mm-performance-news-v1';
+/** Public news listing: exclude technical-analysis publications only.
+ *  The /api/content response remains untouched; the dedicated Analisa Market
+ *  widget and canonical article links continue using the original data. */
+function isNewsListingArticle(a) {
+  if (!a || typeof a !== 'object' || a.status !== 'published' || a.id == null) return false;
+  return String(a.tipe || '').trim().toLowerCase() !== 'analysis'
+    && !/^mm-analysis-/i.test(String(a.id));
+}
+const NEWS_LISTING_FILTER = 'const mmPerfIsNewsListingArticle = ' + isNewsListingArticle.toString() + ';';
+
 
 const OLD_BOOT = `(async()=>{try{let mm1811Online=false;try{const r=await fetch('/api/content',{cache:'no-store'});if(r.ok){const d=await r.json();localStorage.setItem('mm_pro_articles',JSON.stringify(d.articles));localStorage.setItem('mm_pro_forums',JSON.stringify(d.forums));localStorage.setItem('mm_tv_videos_v1',JSON.stringify(d.videos));window.mm1816CommunityLinks=d.communityLinks||{};window.mm1816PivotLevels=d.publishedPivots||{};mm1811Online=true;}}catch(e){console.warn('MarketMarney: API konten tidak tersedia, menggunakan cache lokal bila ada.',e);}`;
 
@@ -17,6 +27,7 @@ const NEW_BOOT = String.raw`(()=>{try{
 /* mm-performance-news-v1: the navigation does not wait for /api/content. */
 let mm1811Online=false,mmPerfNewsState='loading',mmPerfVideos=[],mmPerfContentRequest=null;
 const mmPerfReadingCache=new WeakMap();
+${NEWS_LISTING_FILTER}
 window.mm1816CommunityLinks={};window.mm1816PivotLevels={};
 function mmPerfContentPlaceholder(kind){
  const loading=mmPerfNewsState==='loading',failed=mmPerfNewsState==='error';
@@ -49,7 +60,7 @@ function mmPerfLoadContent(){
    if(!data||!Array.isArray(data.articles))throw new Error('Invalid public content response');
    // Only this unauthenticated public response is authoritative. In particular,
    // an old localStorage value written by the admin cannot expose a draft.
-   const published=data.articles.filter(a=>a&&typeof a==='object'&&a.status==='published'&&a.id!=null);
+   const published=data.articles.filter(mmPerfIsNewsListingArticle);
    const nextIndex=window.MMNewsSearch1879.createIndex(published);
    articles=published;newsSearchIndex=nextIndex;
    if(Array.isArray(data.forums))forums=data.forums;
@@ -161,4 +172,4 @@ function transformHomeHtml(html) {
   }
 }
 
-module.exports = { transformHomeHtml, MARKER };
+module.exports = { transformHomeHtml, MARKER, isNewsListingArticle, NEWS_LISTING_FILTER };
