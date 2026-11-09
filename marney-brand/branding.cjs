@@ -2,6 +2,7 @@
 // Response-only MARNEY branding. No protected app files, accounts or media are written.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const SEO=require('./seo.cjs');
+const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
 const VERSION='marney-20261109-new-logo-r1';
 const APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
@@ -52,6 +53,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  const performance=createPublicPerformance({appRoot});
  const assets=new Map();for(const [url,file]of aliases)assets.set(url,[fs.readFileSync(path.join(assetRoot,file)),mime[path.extname(file)]]);
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
+ for(const [url,a] of ANALYSIS.assets())assets.set(url,[a.body,a.mime]);
  function handle(req,res){
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
@@ -105,7 +107,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    if(pass){restore();return original.end.call(this,chunk,encoding,callback);}
    if(chunk!=null){const b=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk,encoding||'utf8');chunks.push(b);size+=b.length;}
    if(!ok()||size>MAX){flush();restore();return original.end.call(this,callback);}
-   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=enhance(raw),out=changed===raw?data:Buffer.from(changed);
+   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=ANALYSIS.injectHtml(enhance(raw),p),out=changed===raw?data:Buffer.from(changed);
    const seoHtml=SEO.patchHtml(out.toString('utf8'),p,seoEnabled),final=seoHtml===out.toString('utf8')?out:Buffer.from(seoHtml);
    if(seoEnabled)SEO.clearBlockingHeader(this);
    if(final!==data){this.removeHeader('etag');this.removeHeader('content-md5');this.removeHeader('transfer-encoding');this.setHeader('content-length',final.length);this.setHeader('X-Marney-Brand',VERSION);}

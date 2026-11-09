@@ -1,0 +1,44 @@
+
+.mm-analysis-admin,.mm-analysis-public{font:inherit;color:#1b2633;background:#fff;border:1px solid #e4e8ed;border-radius:17px;box-shadow:0 4px 24px #0d17230b;padding:24px;margin:18px 0 26px;max-width:100%;box-sizing:border-box}
+.mm-analysis-admin *,.mm-analysis-public *{box-sizing:border-box}
+.mm-analysis-heading,.mm-analysis-public-head,.mm-analysis-list-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mm-analysis-eyebrow{font-size:11px;letter-spacing:.13em;color:#bc7119;font-weight:800}
+.mm-analysis-admin h2,.mm-analysis-public h2{font-size:22px;line-height:1.3;letter-spacing:-.025em;margin:5px 0 7px;color:#192536}
+.mm-analysis-admin h3{font-size:17px;margin:0}
+.mm-analysis-admin p,.mm-analysis-public p{font-size:13px;line-height:1.6;color:#607080;margin:0}
+.mm-analysis-heading>a{font-size:13px;color:#af660e;text-decoration:none;font-weight:700}
+.mm-analysis-form{margin-top:21px;display:grid;gap:14px}
+.mm-analysis-current{font-size:12px;font-weight:700;color:#b36c15}
+.mm-analysis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.mm-analysis-admin label{display:grid;gap:6px;font-weight:700;color:#293746;font-size:12px;line-height:1.45}
+.mm-analysis-admin input,.mm-analysis-admin textarea,.mm-analysis-admin select{width:100%;font:inherit;font-size:14px;color:#223143;background:#fff;border:1px solid #cbd5df;border-radius:9px;padding:10px 11px;min-height:40px;outline-offset:2px}
+.mm-analysis-admin textarea{line-height:1.5;resize:vertical}
+.mm-analysis-admin input[type=file]{font-size:12px;padding:6px}
+.mm-analysis-admin small,.mm-analysis-muted{font-size:11px!important;color:#718092!important}
+.mm-analysis-preview{max-width:440px;width:100%;max-height:240px;border-radius:10px;object-fit:contain;border:1px solid #e6e8ec;background:#f9fafb}
+.mm-analysis-preview[hidden]{display:none}
+.mm-analysis-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mm-analysis-actions button,.mm-analysis-list-head button,.mm-analysis-list-row button{background:#fff;border:1px solid #d4dce3;color:#263545;padding:9px 14px;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer}
+.mm-analysis-actions .mm-analysis-primary{background:#f39823;border-color:#f39823;color:#171b20}
+.mm-analysis-actions button:disabled{opacity:.45;cursor:wait}
+.mm-analysis-status{padding:9px 12px!important;background:#f8f9fb;border-radius:8px;font-weight:600}
+.mm-analysis-status[data-error=true]{background:#fff1f1;color:#af3333!important}
+.mm-analysis-list-head{border-top:1px solid #e8ebef;padding-top:18px;margin-top:20px;align-items:center}
+.mm-analysis-admin-list{display:grid;gap:8px;margin:13px 0}
+.mm-analysis-list-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:11px 12px;background:#f7f9fb;border:1px solid #e9eef2;border-radius:10px}
+.mm-analysis-list-title{flex:1 1 260px;min-width:0;font-weight:600;font-size:13px}
+.mm-analysis-list-row a{font-size:12px;color:#bc6d0a;font-weight:700;text-decoration:none}
+.mm-analysis-nav{display:block;border-radius:8px;background:#fff7eb;color:#985809!important;padding:9px 11px;text-decoration:none;font-size:12px;font-weight:800}
+.mm-analysis-public-count{color:#ac680f;background:#fff4e4;padding:5px 12px;border-radius:30px;font-size:12px;font-weight:700}
+.mm-analysis-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:19px}
+.mm-analysis-card{display:block;overflow:hidden;border-radius:12px;background:#fff;color:#1b2737;text-decoration:none;border:1px solid #e5e9ee;transition:box-shadow .15s}
+.mm-analysis-card:hover{box-shadow:0 8px 22px #0d15201b}
+.mm-analysis-card img{display:block;width:100%;height:145px;object-fit:cover}
+.mm-analysis-card-content{padding:15px;display:grid;gap:8px}
+.mm-analysis-card strong{font-size:15px;line-height:1.35}
+.mm-analysis-card-kicker{font-size:11px;color:#a56517;letter-spacing:.04em;font-weight:700}
+.mm-analysis-card p{font-size:12px;line-height:1.5;margin:0;color:#586577}
+.mm-analysis-card-link{color:#bf700c;font-size:12px;font-weight:700}
+.mm-analysis-empty{grid-column:1/-1;padding:14px;background:#f8f9fb;border-radius:10px}
+@media(max-width:850px){.mm-analysis-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.mm-analysis-admin,.mm-analysis-public{padding:17px}.mm-analysis-grid,.mm-analysis-cards{grid-template-columns:1fr}.mm-analysis-admin h2,.mm-analysis-public h2{font-size:19px}}
