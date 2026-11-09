@@ -2,8 +2,12 @@
 
 const http = require('node:http');
 
-const VERSION = 'marketmarney-social-upload-20261109-v3';
+const VERSION = 'marketmarney-runtime-20261109-v4';
 const HELPER = '/assets/mm-social-upload-100mb.js?v=20261109-100mb-v3';
+const HELPERS = Object.freeze([
+  HELPER,
+  '/assets/mm-automatic-pivot.js?v=20261109-auto-pivot-v1'
+]);
 
 function pathnameOf(req) {
   try { return new URL(String(req.url || '/'), 'http://marketmarney.local').pathname; }
@@ -18,15 +22,16 @@ function patchServiceWorker(source) {
     return "const CACHE='" + VERSION + "';";
   });
   text = text.replace(/\bconst\s+CORE\s*=\s*\[([^\]]*)\]/, (whole, list) => {
-    if (list.includes('mm-social-upload-100mb.js')) return whole;
+    const missing = HELPERS.filter(helper => !list.includes(helper));
+    if (!missing.length) return whole;
     replacements++;
-    return 'const CORE=[' + list + ',' + JSON.stringify(HELPER) + ']';
+    return 'const CORE=[' + list + missing.map(helper=>','+JSON.stringify(helper)).join('') + ']';
   });
-  if (!text.includes('MM_SOCIAL_UPLOAD_SW_V3')) {
+  if (!text.includes('MM_RUNTIME_SW_V4')) {
     replacements++;
-    text += "\n/* MM_SOCIAL_UPLOAD_SW_V3 */\n" +
+    text += "\n/* MM_RUNTIME_SW_V4 */\n" +
       "self.addEventListener('install',()=>{self.skipWaiting();});\n" +
-      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));await self.clients.claim();})());});\n";
+      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload|runtime|auto-pivot)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));await self.clients.claim();})());});\n";
   }
   return { output: text, replacements };
 }
@@ -72,7 +77,7 @@ function wrapServiceWorker(req, res) {
       this.setHeader('pragma','no-cache');
       this.setHeader('service-worker-allowed','/');
       this.setHeader('x-marketmarney-service-worker',VERSION);
-      if(!wrapServiceWorker.logged){wrapServiceWorker.logged=true;console.log('MM_SOCIAL_UPLOAD_SW_PATCH '+JSON.stringify({version:VERSION,replacements:patched.replacements}));}
+      if(!wrapServiceWorker.logged){wrapServiceWorker.logged=true;console.log('MM_RUNTIME_SW_PATCH '+JSON.stringify({version:VERSION,replacements:patched.replacements,helpers:HELPERS}));}
     }
     chunks.length=0;head();restore();return original.end.call(this,out,callback);
   };
@@ -89,6 +94,6 @@ http.createServer = function(...args) {
   return server;
 };
 
-console.log('MM_SOCIAL_UPLOAD_SW_PATCH_READY '+JSON.stringify({version:VERSION,helper:HELPER}));
+console.log('MM_RUNTIME_SW_PATCH_READY '+JSON.stringify({version:VERSION,helpers:HELPERS}));
 
-module.exports={VERSION,HELPER,patchServiceWorker,wrapServiceWorker};
+module.exports={VERSION,HELPER,HELPERS,patchServiceWorker,wrapServiceWorker};
