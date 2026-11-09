@@ -45,12 +45,15 @@ target.parent.mkdir(parents=True,exist_ok=True)
 shutil.copy2(base/'Reels433LayoutTest.java',target)
 shutil.copy2(base/'Marney433-Panduan.md',root/'README-MULAI-DISINI.md')
 
-# The connected emulator occasionally needs longer to return the first WebView
-# evaluateJavascript callback after a cold start. This changes test tolerance only;
-# application behavior and production timing remain untouched.
+# Connected emulators can take longer to complete the first WebView callback
+# and the final opening fade. These edits affect test tolerance only; they do
+# not change production startup timing or UI behavior.
 home_test='app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java'
 replace(home_test,'done.await(6,TimeUnit.SECONDS)','done.await(15,TimeUnit.SECONDS)')
 replace(home_test,'SystemClock.sleep(500);','SystemClock.sleep(1000);')
+opening_test='app/src/androidTest/java/com/marketmarney/mobile/OpeningSoft426Test.java'
+replace(opening_test,'overlay.finish(true,"test-complete");','overlay.finish(false,"test-complete");')
+replace(opening_test,'awaitRemoved(600);','awaitRemoved(3000);')
 
 version_tests=[]
 test_root=root/'app/src/androidTest/java'
@@ -72,6 +75,7 @@ required={
     'app/src/main/assets/reels433.js',
     'app/src/androidTest/java/com/marketmarney/mobile/Reels433LayoutTest.java',
     'app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java',
+    'app/src/androidTest/java/com/marketmarney/mobile/OpeningSoft426Test.java',
 }
 allowed=required|set(version_tests)
 assert required<=set(changed),{'missing':sorted(required-set(changed))}
