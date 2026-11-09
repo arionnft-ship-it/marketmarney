@@ -45,12 +45,12 @@ public class Reels433LayoutTest {
     @Test public void reelsUsesOneCompactHeaderAndFlatDock()throws Exception{
         String ready="";
         for(int retry=0;retry<70;retry++){
-            ready=js("(function(){return JSON.stringify({shell:document.documentElement.dataset.mm429Social||'',toolbar:!!document.getElementById('mm46-toolbar'),header:!!document.querySelector('.mm44-social-header'),nav:!!document.querySelector('.mm44-nav'),reels:!!document.querySelector('.mm44-nav-button[aria-label=\\\"Reels\\\"]')});})()");
-            if(ready.contains("429")&&ready.contains("\\\"toolbar\\\":true")&&ready.contains("\\\"header\\\":true")&&ready.contains("\\\"reels\\\":true"))break;
+            ready=js("(function(){return JSON.stringify({shell:document.documentElement.dataset.mm429Social||'',toolbar:!!document.getElementById('mm46-toolbar'),header:!!document.querySelector('.mm44-social-header'),nav:!!document.querySelector('.mm44-nav'),reels:!!document.querySelector('.mm44-nav-button[aria-label=\\\"Reels\\\"]'),logged:!!document.getElementById('shLogged')});})()");
+            if(ready.contains("429")&&ready.contains("\\\"toolbar\\\":true")&&ready.contains("\\\"header\\\":true")&&ready.contains("\\\"reels\\\":true")&&ready.contains("\\\"logged\\\":true"))break;
             SystemClock.sleep(120);
         }
         assertTrue(ready,ready.contains("429"));
-        assertEquals("true",js("(function(){var b=document.querySelector('.mm44-nav-button[aria-label=\\\"Reels\\\"]');if(!b)return false;b.click();return true;})()"));
+        assertEquals("true",js("(function(){var H=document.documentElement,logged=document.getElementById('shLogged'),guest=document.getElementById('shGuest');if(!logged)return false;logged.hidden=false;if(guest)guest.hidden=true;H.dataset.mmAuthState='authenticated';window.dispatchEvent(new Event('mm:auth-state'));var b=document.querySelector('.mm44-nav-button[aria-label=\\\"Reels\\\"]');if(!b)return false;b.click();return true;})()"));
         String state="";
         for(int retry=0;retry<60;retry++){
             state=js("(function(){var H=document.documentElement,h=document.querySelector('.mm44-social-header'),p=document.getElementById('shReelsPanel'),t=document.getElementById('mm46-toolbar'),n=document.querySelector('.mm44-nav'),l=document.querySelector('.mm46-loading');var sv=t?Array.from(t.querySelectorAll('.mm46-icon svg')):[];return JSON.stringify({view:H.dataset.mm44View||'',native:H.hasAttribute('data-mm46-reels'),clean:H.dataset.mm433Reels||'',header:h?getComputedStyle(h).display:'missing',top:p?Math.round(p.getBoundingClientRect().top):-99,toolbar:t?getComputedStyle(t).display:'missing',icons:sv.length,visible:sv.filter(function(x){var s=getComputedStyle(x);return s.display!=='none'&&s.opacity!=='0'&&s.stroke!=='none';}).length,navHeight:n?Math.round(n.getBoundingClientRect().height):999,navShadow:n?getComputedStyle(n).boxShadow:'missing',loadingFont:l?parseFloat(getComputedStyle(l).fontSize):99,loadingBg:l?getComputedStyle(l).backgroundColor:'missing'});})()");
