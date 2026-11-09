@@ -105,3 +105,27 @@ test('analysis integration cache version changes to refresh previously loaded ho
  assert.equal(VERSION,'20261110-v2');
  assert.match(injectHtml(html,'/'),/mm-analysis-public-v1\.js\?v=20261110-v2/);
 });
+
+test('news listings exclude analysis while dedicated analysis cards keep their source',()=>{
+ const {isNewsListingArticle,NEWS_LISTING_FILTER}=require('./performance-news.cjs');
+ const fixtures=[
+  {id:'mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac',status:'published',tipe:'analysis',cat:'FOREX',title:'GBP/USD — Skenario H4'},
+  {id:'mm-analysis-d97166abe11b446cbb75844dd82078e3',status:'published',cat:'EMAS',title:'XAU/USD H1'},
+  {id:'other-analysis-entry',status:'published',tipe:'analysis',cat:'SAHAM'},
+  {id:'ordinary-forex-news',status:'published',tipe:'news',cat:'FOREX'},
+  {id:'ordinary-gold-news',status:'published',tipe:'news',cat:'EMAS'},
+  {id:'marketmarney-editorial',status:'published',tipe:'editorial',cat:'EKONOMI'},
+  {id:'draft-news',status:'draft',tipe:'news',cat:'SAHAM'}
+ ];
+ assert.deepEqual(fixtures.filter(isNewsListingArticle).map(a=>a.id),[
+  'ordinary-forex-news','ordinary-gold-news','marketmarney-editorial'
+ ]);
+ const sandbox={};
+ vm.runInNewContext(NEWS_LISTING_FILTER+'; globalThis.check=mmPerfIsNewsListingArticle;',sandbox,{timeout:300});
+ assert.deepEqual(fixtures.map(x=>Boolean(sandbox.check(x))),fixtures.map(x=>Boolean(isNewsListingArticle(x))));
+ const fs=require('node:fs'),path=require('node:path');
+ const homepage=fs.readFileSync(path.join(__dirname,'performance-news.cjs'),'utf8');
+ assert.match(homepage,/data\\.articles\\.filter\\(mmPerfIsNewsListingArticle\\)/);
+ const marketAnalysis=fs.readFileSync(path.join(__dirname,'analysis-upload-public.js'),'utf8');
+ assert.match(marketAnalysis,/show\\(panel,doc\\.articles\\)/);
+});
