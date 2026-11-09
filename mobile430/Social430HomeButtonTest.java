@@ -71,11 +71,14 @@ public class Social430HomeButtonTest {
     }
 
     @Test public void appOnlyHomeAssetsArePackaged()throws Exception{
-        String script=asset("home430.js"),css=asset("home430.css");
+        String script=asset("home430.js"),css=asset("home430.css"),social=asset("social411/app.js");
         assertTrue(script.contains("Kembali ke Beranda"));
         assertTrue(script.contains("/index.html#mm-app-home"));
         assertTrue(script.contains("cloneNode(false)"));
         assertTrue(css.contains("mm430-home-button"));
         assertTrue(css.contains("mm430-home-label"));
+        assertTrue(social.contains("button('Kembali ke Beranda','home'"));
+        assertTrue(social.contains("mm430-home-label','Beranda'"));
+        assertFalse(social.contains("button('Buat postingan, Story atau Reels','plus'"));
     }
 }
