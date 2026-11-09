@@ -1,0 +1,25 @@
+/* MarketMarney 4.34 — lightweight rendering containment for long Social feeds. */
+html[data-mm429-social]:not([data-mm46-reels]) .sh-feed > .sh-post{
+  content-visibility:auto;
+  contain-intrinsic-size:680px;
+}
+html[data-mm429-social]:not([data-mm46-reels]) .sh-feed{
+  overscroll-behavior-y:contain;
+}
+html[data-mm429-social] .sh-post,
+html[data-mm429-social] .sh-compose,
+html[data-mm429-social] .sh-story-section{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-mm429-social] img,
+html[data-mm429-social] video{
+  image-rendering:auto;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-card{
+  content-visibility:visible!important;
+  contain-intrinsic-size:auto!important;
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-mm429-social] .sh-feed{scroll-behavior:auto!important}
+}
