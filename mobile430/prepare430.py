@@ -40,6 +40,13 @@ replace(main,
 startup='app/src/main/java/com/marketmarney/mobile/StartupOverlay.java'
 replace(startup,'MM429_LAUNCH','MM430_LAUNCH',count=2)
 
+# Replace the Social header create button in the packaged page itself so Beranda
+# appears on the first rendered frame, before the native fallback injector runs.
+social='app/src/main/assets/social411/app.js'
+replace(social,
+    " var create=button('Buat postingan, Story atau Reels','plus',function(){menu.showModal();});row.append(create,wordmark());",
+    " var create=button('Kembali ke Beranda','home',function(){location.assign('/index.html#mm-app-home');},'mm44-icon mm430-home-button');create.append(node('span','mm430-home-label','Beranda'));row.append(create,wordmark());")
+
 # Keep inherited version assertions aligned with this release.
 test_root=root/'app/src/androidTest/java'
 for test_file in test_root.rglob('*.java'):
