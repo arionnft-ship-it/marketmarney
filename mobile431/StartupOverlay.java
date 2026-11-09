@@ -29,6 +29,7 @@ final class StartupOverlay extends FrameLayout {
     private static final int OPENING_BG=0xfffbfaf7;
     private static final int INK=0xff17283b;
     private static final int MUTED=0xff718092;
+    private static final long MIN_VISIBLE_MS=650L;
     private static final long SAFETY_LIMIT_MS=1100L;
 
     private final Runnable onRemoved;
@@ -39,6 +40,7 @@ final class StartupOverlay extends FrameLayout {
     private final TextView name;
     private final TextView caption;
     private final View[] animated;
+    private Runnable delayedFinish;
     private boolean finishing=false;
     private boolean removed=false;
     private boolean started=false;
@@ -176,6 +178,13 @@ final class StartupOverlay extends FrameLayout {
         name.setTranslationY(0f);
     }
 
+    private void cancelDelayedFinish(){
+        if(delayedFinish!=null){
+            removeCallbacks(delayedFinish);
+            delayedFinish=null;
+        }
+    }
+
     @Override public void onWindowFocusChanged(boolean focus){
         super.onWindowFocusChanged(focus);
         if(!focus&&started&&!removed)settle();
@@ -183,7 +192,19 @@ final class StartupOverlay extends FrameLayout {
 
     void finish(boolean fade,String reason){
         if(finishing||removed)return;
+        long remaining=MIN_VISIBLE_MS-(SystemClock.uptimeMillis()-shownAt);
+        if(remaining>0){
+            if(delayedFinish==null){
+                delayedFinish=()->{
+                    delayedFinish=null;
+                    finish(fade,reason);
+                };
+                postDelayed(delayedFinish,remaining);
+            }
+            return;
+        }
         finishing=true;
+        cancelDelayedFinish();
         removeCallbacks(timeout);
         cancelArtwork();
         Log.i("MM431_LAUNCH","dismiss reason="+reason+" elapsedMs="+(SystemClock.uptimeMillis()-shownAt));
@@ -197,6 +218,7 @@ final class StartupOverlay extends FrameLayout {
     void dispose(){
         if(removed)return;
         finishing=true;
+        cancelDelayedFinish();
         removeCallbacks(timeout);
         animate().cancel();
         cancelArtwork();
@@ -206,6 +228,7 @@ final class StartupOverlay extends FrameLayout {
     private void removeNow(){
         if(removed)return;
         removed=true;
+        cancelDelayedFinish();
         removeCallbacks(timeout);
         animate().cancel();
         cancelArtwork();
@@ -216,6 +239,7 @@ final class StartupOverlay extends FrameLayout {
     }
 
     @Override protected void onDetachedFromWindow(){
+        cancelDelayedFinish();
         removeCallbacks(timeout);
         animate().cancel();
         cancelArtwork();
