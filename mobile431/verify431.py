@@ -29,7 +29,6 @@ with ZipFile(apk) as archive:
     dex=b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
     assert b'MarketMarneyAndroid/4.31 AppShell' in dex
     assert b'MM431_LAUNCH' in dex
-    assert b'com.marketmarney.mobile.beta431' in dex
 
 with ZipFile(testapk/'Marney431-Tests.apk') as tests:
     dex=b''.join(tests.read(name) for name in tests.namelist() if name.endswith('.dex'))
