@@ -46,7 +46,7 @@ assert word.size==(1024,269)
 assert legacy.size==(192,192)
 assert native.getpixel((0,0))[3]==0 and web.getpixel((0,0))[3]==0
 assert word.getpixel((0,0))[3]==0
-assert legacy.getpixel((8,8))[3]>0
+assert legacy.getpixel((96,96))[3]>0
 
 def palette_ok(image):
     black=orange=transparent=0
