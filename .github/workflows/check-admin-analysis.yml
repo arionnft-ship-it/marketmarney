@@ -21,3 +21,7 @@ jobs:
           node --check warxau-fbs/analysis-upload.cjs
           node --check marney-brand/branding.cjs
           node --test warxau-fbs/analysis-upload.test.cjs
+          cp marney-brand/branding.cjs /tmp/marketmarney-brand-analysis.cjs
+          node signup/install.cjs /tmp/marketmarney-brand-analysis.cjs
+          node sidebar3d/install.cjs /tmp/marketmarney-brand-analysis.cjs
+          node --check /tmp/marketmarney-brand-analysis.cjs

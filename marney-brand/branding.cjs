@@ -107,8 +107,10 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    if(pass){restore();return original.end.call(this,chunk,encoding,callback);}
    if(chunk!=null){const b=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk,encoding||'utf8');chunks.push(b);size+=b.length;}
    if(!ok()||size>MAX){flush();restore();return original.end.call(this,callback);}
-   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=ANALYSIS.injectHtml(enhance(raw),p),out=changed===raw?data:Buffer.from(changed);
-   const seoHtml=SEO.patchHtml(out.toString('utf8'),p,seoEnabled),final=seoHtml===out.toString('utf8')?out:Buffer.from(seoHtml);
+   const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=enhance(raw),out=changed===raw?data:Buffer.from(changed);
+   const withAnalysis=ANALYSIS.injectHtml(out.toString('utf8'),p);
+   const analysisOut=withAnalysis===out.toString('utf8')?out:Buffer.from(withAnalysis);
+   const seoHtml=SEO.patchHtml(analysisOut.toString('utf8'),p,seoEnabled),final=seoHtml===analysisOut.toString('utf8')?analysisOut:Buffer.from(seoHtml);
    if(seoEnabled)SEO.clearBlockingHeader(this);
    if(final!==data){this.removeHeader('etag');this.removeHeader('content-md5');this.removeHeader('transfer-encoding');this.setHeader('content-length',final.length);this.setHeader('X-Marney-Brand',VERSION);}
    chunks.length=0;head();restore();return original.end.call(this,final,callback);
