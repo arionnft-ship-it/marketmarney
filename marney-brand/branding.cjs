@@ -1,4 +1,5 @@
 'use strict';
+const googleVerification=require('./google-site-verification.cjs');
 // Response-only MARNEY branding. No protected app files, accounts or media are written.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const SEO=require('./seo.cjs');
@@ -53,6 +54,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  const assets=new Map();for(const [url,file]of aliases)assets.set(url,[fs.readFileSync(path.join(assetRoot,file)),mime[path.extname(file)]]);
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
  function handle(req,res){
+  if(googleVerification.handle(req,res))return true;
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
   if(performance.handle(req,res))return true;
