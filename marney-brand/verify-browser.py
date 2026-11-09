@@ -3,7 +3,7 @@ import os, json, subprocess, hashlib
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 BASE='https://marketmarney.com'
-VERSION='marney-20261107-r2'
+VERSION='marney-20261109-new-logo-r1'
 LIVE=os.environ.get('BRAND_LIVE')=='1'
 root=Path(__file__).resolve().parent
 out=Path('brand-verification');out.mkdir(exist_ok=True)

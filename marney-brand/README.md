@@ -1,7 +1,9 @@
-# MARNEY website branding
+# MarketMarney — website logo (9 November 2026)
 
-Reuses the gold M + MARNEY artwork already stored in mobile417/logo.png, matching the user's selected MARNEY design. Generated transparent website logos, favicons, touch icons and PWA icons are built from that full-resolution PNG. Only transparent margins are trimmed; artwork is not redrawn.
+Uses the exact black-and-orange rising M symbol, **MarketMarney** wordmark and **marketmarney.com** uploaded by the website owner. The source is optimized to 800×170 for web delivery and stored in `user-logo-20261109.b64`; the build validates its SHA-256.
 
-The new response adapter replaces known brand image endpoints and the built-in WarXAU header icon. Uploaded user/group photos, article media, protected application files, databases, authentication and market feeds are untouched. Textual name MarketMarney and manifest application ID/start URL stay unchanged. The cancelled opening animation is NOT enabled.
+Existing /assets/brand-logo.png and .webp URLs serve a square **M icon cropped from the uploaded logo**, keeping existing 40×40 header/logo locations readable. /assets/brand-wordmark.png and .webp serve the full uploaded horizontal artwork. Favicons, Apple touch and PWA icons use the matching M icon on a white background.
 
-Rollback: redeploy the previous Railway deployment or select the previous source commit. No volume migrations or persistent data changes are made.
+The response-only brand adapter and versioned cache update the website presentation. User/group uploads, news images, authentication, databases, protected code and market data are unchanged. The app's manifest ID and start URL remain unchanged.
+
+Build: `python marney-brand/build-assets.py`. Rollback: restore the previous pinned Railway service commit/deployment. No data migrations.

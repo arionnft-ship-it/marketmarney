@@ -3,11 +3,12 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const SEO=require('./seo.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
-const VERSION='marney-20261107-r2';
+const VERSION='marney-20261109-new-logo-r1';
 const APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
 const ROOT=path.join(__dirname,'marney-brand-assets');
 const aliases=new Map([
  ['/assets/brand-logo.png','logo.png'],['/assets/brand-logo.webp','logo.webp'],
+ ['/assets/brand-wordmark.png','wordmark.png'],['/assets/brand-wordmark.webp','wordmark.webp'],
  ['/assets/embedded-favicon.png','favicon.png'],['/favicon.png','favicon.png'],
  ['/favicon.ico','favicon.ico'],['/assets/apple-touch-icon.png','apple-touch-icon.png'],
  ['/apple-touch-icon.png','apple-touch-icon.png'],['/icons/icon-192.png','icon-192.png'],
@@ -36,7 +37,7 @@ function start(){apply(document);let queued=new Set(),scheduled=false;
  .observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['src','srcset','href']});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();})();`;
-function versionURL(s){return s.replace(/((?:(?:\.\/|\/)?(?:assets\/(?:brand-logo\.(?:png|webp)|embedded-favicon\.png|apple-touch-icon\.png)|icons\/icon-(?:maskable-)?(?:192|512)\.png|favicon\.(?:png|ico)|manifest\.webmanifest)))(?:\?v=[A-Za-z0-9._-]+)?/g,'$1?v='+VERSION);}
+function versionURL(s){return s.replace(/((?:(?:\.\/|\/)?(?:assets\/(?:brand-(?:logo|wordmark)\.(?:png|webp)|embedded-favicon\.png|apple-touch-icon\.png)|icons\/icon-(?:maskable-)?(?:192|512)\.png|favicon\.(?:png|ico)|manifest\.webmanifest)))(?:\?v=[A-Za-z0-9._-]+)?/g,'$1?v='+VERSION);}
 function enhance(html){
  if(typeof html!=='string'||!/<html\b/i.test(html)||!/<\/html\s*>/i.test(html))return html;
  if(html.includes('data-marney-brand-release="'+VERSION+'"'))return html;
