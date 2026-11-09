@@ -98,9 +98,12 @@ jobs:
           adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta430.test/androidx.test.runner.AndroidJUnitRunner | tee quality430/android/opening.txt
           grep -F 'OK (1 test)' quality430/android/opening.txt
           adb shell pm clear com.marketmarney.mobile.beta430 >/dev/null
-          CLASSES='com.marketmarney.mobile.Social430HomeButtonTest,com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Social430HomeButtonTest com.marketmarney.mobile.beta430.test/androidx.test.runner.AndroidJUnitRunner | tee quality430/android/home-button.txt
+          grep -F 'OK (3 tests)' quality430/android/home-button.txt
+          adb shell pm clear com.marketmarney.mobile.beta430 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
           adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta430.test/androidx.test.runner.AndroidJUnitRunner | tee quality430/android/regression.txt
-          grep -F 'OK (35 tests)' quality430/android/regression.txt
+          grep -F 'OK (32 tests)' quality430/android/regression.txt
           adb logcat -d -s AndroidRuntime:E > quality430/android/runtime.log
           test ! -s quality430/android/runtime.log
           adb shell am force-stop com.marketmarney.mobile.beta430
