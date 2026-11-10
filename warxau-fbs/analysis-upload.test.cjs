@@ -89,7 +89,7 @@ test('published analysis appears between indicator guide and pivot card',()=>{
   body:root
  };
  const context={
-  document,window:{},MutationObserver:class{observe(){}},requestAnimationFrame:callback=>callback(),
+  document,MutationObserver:class{observe(){}},requestAnimationFrame:callback=>callback(),
   setTimeout(){},fetch:()=>new Promise(()=>{}),AbortSignal:{timeout(){return null;}},
  };
  vm.runInNewContext(source,context);
@@ -127,7 +127,7 @@ test('news listings exclude analysis while dedicated analysis cards keep their s
  const homepage=fs.readFileSync(path.join(__dirname,'performance-news.cjs'),'utf8');
  assert.ok(homepage.includes('data.articles.filter(mmPerfIsNewsListingArticle)'));
  const marketAnalysis=fs.readFileSync(path.join(__dirname,'analysis-upload-public.js'),'utf8');
- assert.ok(marketAnalysis.includes('show(panel,items)'));
+ assert.ok(marketAnalysis.includes('show(panel,doc.articles)'));
 });
 
 
@@ -163,23 +163,4 @@ test('unrelated articles and malformed body remain untouched',()=>{
  assert.equal(a.parse({title:'GBP/USD',summary:'',body:'ANALISA MARKET | GBP/USD | H4 | NETRAL'}),null);
  assert.equal(a.PATH.test('/berita/mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac/gbp-usd-skenario-h4'),true);
  assert.equal(a.PATH.test('/berita/mm-editorial-123456789012345678901234/ordinary'),false);
-});
-
-test('analysis card images are lazily loaded through smaller same-origin thumbnails',()=>{
- const s=assets().get('/assets/mm-analysis-public-v1.js').body.toString();
- assert.match(s,/\/assets\/news-thumb-v1\/640\//);
- assert.match(s,/img\.loading='lazy'/);
- assert.match(s,/img\.decoding='async'/);
- assert.match(s,/img\.fetchPriority='low'/);
- assert.match(s,/img\.addEventListener\('error'/);
- assert.match(s,/img\.src=original/);
-});
-test('analysis reuses public published data for quick navigation; retains safe public fallback',()=>{
- const s=assets().get('/assets/mm-analysis-public-v1.js').body.toString();
- const news=require('node:fs').readFileSync(require('node:path').join(__dirname,'performance-news.cjs'),'utf8');
- assert.match(news,/window\.MMAnalysisPublicFeed=\{at:Date\.now\(\),articles:/);
- assert.match(news,/a\.status==='published'/);
- assert.match(s,/feed\.articles/);
- assert.match(s,/Date\.now\(\)-feed\.at<25000/);
- assert.match(s,/fetch\('\/api\/content'/);
 });

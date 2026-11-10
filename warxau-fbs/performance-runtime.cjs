@@ -156,7 +156,7 @@ function createPublicPerformance({appRoot=APP_ROOT,publicOrigin='https://marketm
       const r=await fetchImpl(new URL('/media/'+name,origin),{redirect:'error',headers:{accept:'image/png,image/jpeg,image/webp'},signal:AbortSignal.timeout(10000)});
       if(!r.ok||r.headers.get('set-cookie')||!/^image\/(png|jpe?g|webp)(?:;|$)/i.test(r.headers.get('content-type')||'')){await r.body?.cancel();throw Error('Public image unavailable');}
       const input=await readLimited(r,10*1024*1024);
-      const body=await resize(input,width),asset={body,digest:hash(body),contentType:'image/webp',cacheSeconds:86400};
+      const body=await resize(input,width),asset={body,digest:hash(body),contentType:'image/webp'};
       remember(key,asset);return asset;
     }).finally(()=>pending.delete(key));
     pending.set(key,job);return job;
@@ -168,7 +168,6 @@ function createPublicPerformance({appRoot=APP_ROOT,publicOrigin='https://marketm
     const headers={'Content-Type':asset.contentType,'X-Content-Type-Options':'nosniff',
       'Cache-Control':immutable?'public, max-age=31536000, immutable':'public, max-age=3600',
       'ETag':tag,'X-Marney-Performance':RELEASE};
-    if(asset.cacheSeconds===86400)headers['Cache-Control']='public, max-age=86400';
     if(asset.gzip)headers.Vary='Accept-Encoding';
     if(gzip)headers['Content-Encoding']='gzip';
     if(req.headers['if-none-match']===tag){res.writeHead(304,headers);res.end();return;}
