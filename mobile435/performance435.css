@@ -1,0 +1,24 @@
+/* MarketMarney 4.35 — lightweight rendering hints for the Android app only. */
+html[data-mm-android="435"] .sh-reel-card:not([data-mm46-active]) video{
+  will-change:auto!important;
+  transform:none!important;
+}
+html[data-mm-android="435"] .sh-reel-card[data-mm46-active] video{
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+html[data-mm-android="435"] img[data-mm435-lazy="1"]{
+  content-visibility:auto;
+  contain-intrinsic-size:320px 240px;
+}
+html[data-mm-android="435"][data-mm435-pressure="low"] .sh-reel-card:not([data-mm46-active]),
+html[data-mm-android="435"][data-mm435-pressure="high"] .sh-feed-card,
+html[data-mm-android="435"][data-mm435-pressure="high"] .sh-reel-card:not([data-mm46-active]){
+  box-shadow:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-mm-android="435"][data-mm435-pressure="high"] .sh-reel-card:not([data-mm46-active]) *{
+  animation:none!important;
+  transition:none!important;
+}
