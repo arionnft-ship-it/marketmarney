@@ -1,0 +1,45 @@
+/* MarketMarney 4.39 — lightweight interaction and buffer-priority layer. */
+
+html[data-mm439-instant] button,
+html[data-mm439-instant] a,
+html[data-mm439-instant] [role="button"],
+html[data-mm439-instant] .mm44-nav,
+html[data-mm439-instant] .sh-reel-rail-btn{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html[data-mm439-instant] [data-mm439-pressed]{
+  transform:scale(.985)!important;
+  transition:transform 70ms ease-out!important;
+}
+
+/* When the active Reel is short on buffered media, remove decorative work and
+   stop neighbouring cards from competing for compositor time. */
+html[data-mm439-buffer-starved][data-mm46-reels] .sh-reel-rail-btn,
+html[data-mm439-buffer-starved][data-mm46-reels] .mm46-icon,
+html[data-mm439-buffer-starved][data-mm46-reels] .mm44-nav,
+html[data-mm439-buffer-starved][data-mm46-reels] .sh-reel-card:not([data-mm46-active]){
+  box-shadow:none!important;
+  transition:none!important;
+  animation:none!important;
+  will-change:auto!important;
+}
+
+html[data-mm439-buffer-starved][data-mm46-reels] .sh-reel-card[data-mm46-active] video.sh-reel-video{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+
+html[data-mm439-instant][data-mm46-reels] #shReelFeed{
+  overscroll-behavior-y:contain!important;
+  scroll-behavior:auto!important;
+}
+
+html[data-mm439-instant]:not([data-mm46-reels]) .sh-feed>.sh-post{
+  contain:layout paint style;
+}
+
+@media(prefers-reduced-motion:reduce){
+  html[data-mm439-instant] [data-mm439-pressed]{transform:none!important;transition:none!important}
+}
