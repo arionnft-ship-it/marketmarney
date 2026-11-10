@@ -1,9 +1,17 @@
-# MarketMarney — website logo (9 November 2026)
+# MarketMarney — simbol M dan panah oranye (10 November 2026)
 
-Uses the exact black-and-orange rising M symbol, **MarketMarney** wordmark and **marketmarney.com** uploaded by the website owner. The source is optimized to 800×170 for web delivery and stored in `user-logo-20261109.b64`; the build validates its SHA-256.
+Pemilik website memilih **simbol M hitam dengan panah pertumbuhan oranye** sebagai logo baru untuk semua permukaan website.
 
-Existing /assets/brand-logo.png and .webp URLs serve a square **M icon cropped from the uploaded logo**, keeping existing 40×40 header/logo locations readable. /assets/brand-wordmark.png and .webp serve the full uploaded horizontal artwork. Favicons, Apple touch and PWA icons use the matching M icon on a white background.
+- Sumber transparan: `user-logo-20261109.b64`, PNG 768×768, diverifikasi SHA-256 saat build.
+- `/assets/brand-logo.png` dan `.webp`: simbol M hitam-oranye, latar transparan.
+- `/assets/brand-logo-dark.png` dan `.webp`: simbol M terang dengan panah oranye yang sama, untuk header/area gelap.
+- `/assets/brand-about-transparent.webp`: varian transparan kontras di halaman Tentang MarketMarney, tanpa mengubah desain halaman.
+- `/assets/brand-wordmark.png` dan `.webp`: simbol M baru dengan tulisan MarketMarney yang lama; tulisan asli dipertahankan dari `wordmark-text-source.b64` agar identitas tetap konsisten.
+- `/assets/brand-wordmark-dark.webp`: alternatif terang untuk area gelap.
+- `/favicon.png`, `/favicon.ico`, `/apple-touch-icon.png`, dan `/icons/icon-*.png`: simbol M baru dengan ukuran sesuai favicon dan PWA.
 
-The response-only brand adapter and versioned cache update the website presentation. User/group uploads, news images, authentication, databases, protected code and market data are unchanged. The app's manifest ID and start URL remain unchanged.
+Tidak ada perubahan pada artikel, berita, media pengguna, autentikasi, database, navigasi, atau data pasar. Versi cache: `marney-m-arrow-20261110-v1`.
 
-Build: `python marney-brand/build-assets.py`. Rollback: restore the previous pinned Railway service commit/deployment. No data migrations.
+Uji build: `python marney-brand/build-assets.py` lalu `node --test marney-brand/logo-asset.test.cjs` pada runtime yang memiliki Sharp dan output assets.
+
+Rollback: kembali ke commit Railway sebelum pergantian logo. Tidak ada migrasi data.
