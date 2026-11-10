@@ -5,12 +5,14 @@ const SEO=require('./seo.cjs');
 const ABOUT=require('./about-refresh.cjs');
 const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
-const VERSION='marney-20261109-new-logo-r1';
+const VERSION='marney-m-arrow-20261110-v1';
 const APP='/persist/site-r1/MarketMarney-Railway-Staging/app';
 const ROOT=path.join(__dirname,'marney-brand-assets');
 const aliases=new Map([
  ['/assets/brand-logo.png','logo.png'],['/assets/brand-logo.webp','logo.webp'],
+ ['/assets/brand-logo-dark.png','logo-dark.png'],['/assets/brand-logo-dark.webp','logo-dark.webp'],
  ['/assets/brand-wordmark.png','wordmark.png'],['/assets/brand-wordmark.webp','wordmark.webp'],
+ ['/assets/brand-wordmark-dark.webp','wordmark-dark.webp'],
  ['/assets/brand-about-transparent.webp','about-logo.webp'],
  ['/assets/embedded-favicon.png','favicon.png'],['/favicon.png','favicon.png'],
  ['/favicon.ico','favicon.ico'],['/assets/apple-touch-icon.png','apple-touch-icon.png'],
@@ -24,13 +26,19 @@ picture:has(>img[data-marney-brand="${VERSION}"]){overflow:visible}
 .mm46-brand-logo:has(>img[data-marney-brand="${VERSION}"]){background:transparent!important;border-radius:0!important}`;
 const CLIENT=`(function(){'use strict';
 const v=${JSON.stringify(VERSION)},paths=new Set(${JSON.stringify([...aliases.keys()])});
+function isDarkSurface(){return location.pathname==='/about.html'||document.documentElement.dataset.mmTheme==='dark'||document.documentElement.dataset.theme==='dark';}
 function apply(root){
  const selector='img,picture source,link[rel~="icon"],link[rel="apple-touch-icon"]',nodes=[];
  if(root.matches&&root.matches(selector))nodes.push(root);
  if(root.querySelectorAll)nodes.push(...root.querySelectorAll(selector));
  for(const el of nodes){const attr=el.tagName==='SOURCE'?'srcset':el.tagName==='LINK'?'href':'src',old=el.getAttribute(attr);if(!old)continue;
  let u;try{u=new URL(old,location.href);}catch{continue;}if(u.origin!==location.origin||!paths.has(u.pathname))continue;
- if(u.searchParams.get('v')!==v){u.searchParams.set('v',v);el.setAttribute(attr,u.pathname+u.search+u.hash);}
+ const originalPath=u.pathname;
+ if(el.tagName==='IMG'&&/^\/assets\/brand-(?:logo|wordmark)(?:-dark)?\.(?:png|webp)$/.test(originalPath)){
+   const dark=isDarkSurface(),isWordmark=/brand-wordmark/.test(originalPath);
+   u.pathname=isWordmark?(dark?'/assets/brand-wordmark-dark.webp':'/assets/brand-wordmark.webp'):(dark?'/assets/brand-logo-dark.webp':'/assets/brand-logo.webp');
+ }
+ if(u.pathname!==originalPath||u.searchParams.get('v')!==v){u.searchParams.set('v',v);el.setAttribute(attr,u.pathname+u.search+u.hash);}
  if(el.tagName==='IMG'&&el.dataset.marneyBrand!==v){el.dataset.marneyBrand=v;if(!el.alt||/logo/i.test(el.alt))el.alt='Logo MARNEY';}
  }
 }
@@ -38,9 +46,10 @@ function start(){apply(document);let queued=new Set(),scheduled=false;
  new MutationObserver(records=>{for(const r of records){if(r.type==='attributes')queued.add(r.target);else for(const n of r.addedNodes)if(n.nodeType===1)queued.add(n);}
  if(scheduled||!queued.size)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;const batch=queued;queued=new Set();for(const n of batch)if(n.isConnected)apply(n);});})
  .observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['src','srcset','href']});
+ new MutationObserver(()=>apply(document)).observe(document.documentElement,{attributes:true,attributeFilter:['data-mm-theme','data-theme']});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();})();`;
-function versionURL(s){return s.replace(/((?:(?:\.\/|\/)?(?:assets\/(?:brand-(?:logo|wordmark)\.(?:png|webp)|embedded-favicon\.png|apple-touch-icon\.png)|icons\/icon-(?:maskable-)?(?:192|512)\.png|favicon\.(?:png|ico)|manifest\.webmanifest)))(?:\?v=[A-Za-z0-9._-]+)?/g,'$1?v='+VERSION);}
+function versionURL(s){return s.replace(/((?:(?:\.\/|\/)?(?:assets\/(?:brand-(?:logo|wordmark)(?:-dark)?\.(?:png|webp)|brand-about-transparent\.webp|embedded-favicon\.png|apple-touch-icon\.png)|icons\/icon-(?:maskable-)?(?:192|512)\.png|favicon\.(?:png|ico)|manifest\.webmanifest)))(?:\?v=[A-Za-z0-9._-]+)?/g,'$1?v='+VERSION);}
 function enhance(html){
  if(typeof html!=='string'||!/<html\b/i.test(html)||!/<\/html\s*>/i.test(html))return html;
  if(html.includes('data-marney-brand-release="'+VERSION+'"'))return html;
