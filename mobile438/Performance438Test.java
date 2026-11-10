@@ -31,7 +31,7 @@ public class Performance438Test {
             assertTrue(name,script.contains("function queueActivate"));
             assertTrue(name,script.contains("function settleScroll"));
             assertTrue(name,script.contains("forward=distance*direction"));
-            assertTrue(name,script.contains("data-mm438-scrolling"));
+            assertTrue(name,script.contains("mm438Scrolling"));
             assertTrue(name,script.contains("onscrollend"));
         }
     }
