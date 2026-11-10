@@ -53,5 +53,8 @@ public class Performance438Test {
         assertNotNull(MainActivity.class.getDeclaredMethod("navigate",int.class));
         assertNotNull(MainActivity.class.getDeclaredMethod("open",String.class));
         assertNotNull(MainActivity.class.getDeclaredMethod("createWeb"));
+        assertNotNull(MainActivity.class.getDeclaredMethod("preloadSocialAssets"));
+        assertNotNull(MainActivity.class.getDeclaredField("socialAssetExecutor"));
+        assertNotNull(MainActivity.class.getDeclaredField("socialAssetFuture"));
     }
 }
