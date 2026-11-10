@@ -102,6 +102,17 @@ for test_file in (root/'app/src/androidTest/java').rglob('*.java'):
         test_file.write_text(updated,encoding='utf-8')
         version_tests.append(test_file.relative_to(root).as_posix())
 
+# The 4.34 regression test intentionally tracks the active-card threshold.
+# MarketMarney 4.38 raises it from 55% to 58% and adds hysteresis so adjacent
+# Reels cannot steal playback during a short swipe. Keep the inherited test
+# strict, but align its expected threshold with the new policy.
+legacy_reels_test='app/src/androidTest/java/com/marketmarney/mobile/Reels434PerformanceTest.java'
+replace(legacy_reels_test,
+    'assertTrue(script.contains("intersectionRatio>.55"));',
+    'assertTrue(script.contains("intersectionRatio>.58"));')
+if legacy_reels_test not in version_tests:
+    version_tests.append(legacy_reels_test)
+
 assets=root/'app/src/main/assets'
 for rel in ['reels46.js','social411/app.js','social411/bundle427.js']:
     patch_controller(assets/rel)
