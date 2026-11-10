@@ -9,73 +9,106 @@ root = Path(__file__).resolve().parent
 out = root / 'dist'
 out.mkdir(exist_ok=True)
 
-# Exact owner-uploaded MarketMarney artwork, scaled and optimized for web.
+# The exact transparent M / orange rising-arrow symbol selected by the owner.
 source = base64.b64decode((root / 'user-logo-20261109.b64').read_text().strip(), validate=True)
-assert hashlib.sha256(source).hexdigest() == 'cdcbf063dc103921615abc2eeb38f966f9149e3417437c1b7780d46e5d8231c4', 'uploaded_logo_checksum_mismatch'
-wordmark = Image.open(io.BytesIO(source)).convert('RGBA')
-assert wordmark.size == (800, 170), 'uploaded_logo_size_mismatch'
-mark = wordmark.crop((0, 0, 184, 170))
+expected = '5266db8f7a8e4cdfdd129a87a628b2442d3d7d905ba1b7649709418936b014d6'
+assert hashlib.sha256(source).hexdigest() == expected, 'owner_logo_checksum_mismatch'
+symbol = Image.open(io.BytesIO(source)).convert('RGBA')
+assert symbol.size == (768, 768), 'owner_logo_dimensions_mismatch'
+bbox = symbol.getchannel('A').getbbox()
+assert bbox and bbox[2] > 600 and bbox[3] > 600, 'owner_logo_alpha_missing'
+symbol = symbol.crop(bbox)
 
-def icon(size, margin):
-    canvas = Image.new('RGBA', (size, size), (255, 255, 255, 255))
-    target = ImageOps.contain(
-        mark,
-        (int(size * (1 - 2 * margin)), int(size * (1 - 2 * margin))),
-        Image.Resampling.LANCZOS,
-    )
-    canvas.alpha_composite(target, ((size - target.width) // 2, (size - target.height) // 2))
-    return canvas
+# Keep the original MarketMarney lettering but replace its former symbol.
+old_text_source = base64.b64decode((root / 'wordmark-text-source.b64').read_text().strip(), validate=True)
+assert hashlib.sha256(old_text_source).hexdigest() == 'cdcbf063dc103921615abc2eeb38f966f9149e3417437c1b7780d46e5d8231c4', 'original_wordmark_checksum_mismatch'
+old_wordmark = Image.open(io.BytesIO(old_text_source)).convert('RGBA')
+assert old_wordmark.size == (800, 170), 'original_wordmark_size_mismatch'
 
-brand = icon(512, 0.045)
-brand.save(out / 'logo.png', optimize=True)
-brand.save(out / 'logo.webp', quality=90, method=6)
-
-# About-page-only transparent icon. Keep every existing icon and the dark page design unchanged.
-# The uploaded palette PNG has an opaque white matte, so merely exporting RGBA
-# would preserve the white square. Convert that matte to alpha with decontaminated
-# antialiased edges; the actual logo uses dark and orange foreground colours.
-def remove_white_matte(image):
-    image = image.convert('RGBA')
+def white_matte_to_alpha(image):
+    # Remove opaque white surrounding original wordmark text.
     pixels = []
-    for red, green, blue, original_alpha in image.getdata():
-        opacity = max(0, min(255, 255 - min(red, green, blue)))
-        opacity = (opacity * original_alpha + 127) // 255
+    for r,g,b,a in image.convert('RGBA').getdata():
+        opacity = max(0, min(255, 255 - min(r,g,b)))
+        opacity = (opacity*a + 127) // 255
         if opacity < 3:
-            pixels.append((0, 0, 0, 0))
+            pixels.append((0,0,0,0))
             continue
-        backing = 255 - opacity
+        back = 255 - opacity
         def unmatte(channel):
-            return max(0, min(255, round((channel - backing) * 255 / opacity)))
-        pixels.append((unmatte(red), unmatte(green), unmatte(blue), opacity))
+            return max(0, min(255, round((channel-back) * 255 / opacity)))
+        pixels.append((unmatte(r),unmatte(g),unmatte(b),opacity))
     result = Image.new('RGBA', image.size, (0,0,0,0))
     result.putdata(pixels)
     return result
 
-transparent_mark = remove_white_matte(mark)
-about_canvas = Image.new('RGBA', (512,512), (0,0,0,0))
-target = ImageOps.contain(transparent_mark, (440,440), Image.Resampling.LANCZOS)
-about_canvas.alpha_composite(target, ((512-target.width)//2, (512-target.height)//2))
-about_canvas.save(out / 'about-logo.webp', quality=94, method=6)
-wordmark.save(out / 'wordmark.png', optimize=True)
-wordmark.convert('RGB').save(out / 'wordmark.webp', quality=91, method=6)
+wordmark_text = white_matte_to_alpha(old_wordmark.crop((184, 0, 800, 170)))
 
-favicon = icon(64, 0.04)
+def pale_for_dark(image):
+    # Retain the orange arrow, recolor only the near-black M for dark surfaces.
+    pixels=[]
+    for r,g,b,a in image.getdata():
+        if r < 110 and g < 115 and b < 118:
+            pixels.append((248,250,252,a))
+        else:
+            pixels.append((r,g,b,a))
+    result=Image.new('RGBA',image.size,(0,0,0,0))
+    result.putdata(pixels)
+    return result
+
+light_symbol = pale_for_dark(symbol)
+
+def icon(size, margin=0.055, dark=False, background=None):
+    img=light_symbol if dark else symbol
+    canvas=Image.new('RGBA',(size,size),background or (0,0,0,0))
+    width=round(size*(1-2*margin))
+    mark=ImageOps.contain(img,(width,width),Image.Resampling.LANCZOS)
+    canvas.alpha_composite(mark,((size-mark.width)//2,(size-mark.height)//2))
+    return canvas
+
+primary = icon(512)
+primary.save(out / 'logo.png', optimize=True)
+primary.save(out / 'logo.webp', quality=94, method=6)
+dark_logo = icon(512,dark=True)
+dark_logo.save(out / 'logo-dark.png', optimize=True)
+dark_logo.save(out / 'logo-dark.webp', quality=94, method=6)
+
+def wordmark(dark=False):
+    canvas=Image.new('RGBA',(800,170),(0,0,0,0))
+    mark=icon(172,0.025,dark=dark)
+    canvas.alpha_composite(mark,(2,0))
+    text=wordmark_text.copy()
+    if dark:
+        text=pale_for_dark(text)
+    canvas.alpha_composite(text,(184,0))
+    return canvas
+
+wordmark().save(out / 'wordmark.png', optimize=True)
+wordmark().save(out / 'wordmark.webp', quality=91, method=6)
+wordmark(dark=True).save(out / 'wordmark-dark.webp', quality=91, method=6)
+
+# The About page uses the same M symbol, but with contrast for its dark background.
+dark_logo.save(out / 'about-logo.webp', quality=94, method=6)
+
+# Browser, Apple touch, and installable PWA icons use the same new symbol.
+# Opaque light icon tiles are intentional for OS launchers, not website hero images.
+tile=(248,249,252,255)
+favicon=icon(64,0.04,background=tile)
 favicon.save(out / 'favicon.png', optimize=True)
-favicon.save(out / 'favicon.ico', sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
-icon(180, 0.08).convert('RGB').save(out / 'apple-touch-icon.png', optimize=True)
-for size in (192, 512):
-    icon(size, 0.06).save(out / f'icon-{size}.png', optimize=True)
-    icon(size, 0.19).save(out / f'icon-maskable-{size}.png', optimize=True)
+favicon.save(out / 'favicon.ico', sizes=[(16,16),(32,32),(48,48),(64,64)])
+icon(180,0.08,background=tile).save(out / 'apple-touch-icon.png', optimize=True)
+for size in (192,512):
+    icon(size,0.06,background=tile).save(out / f'icon-{size}.png', optimize=True)
+    icon(size,0.19,background=tile).save(out / f'icon-maskable-{size}.png', optimize=True)
 
-report = {
-    'artwork': 'MarketMarney white-and-orange upload, 9 Nov 2026',
-    'version': 'marney-20261109-new-logo-r1',
-    'sourceSha256': hashlib.sha256(source).hexdigest(),
-    'assets': {
-        asset.name: {'bytes': asset.stat().st_size,
-                     'sha256': hashlib.sha256(asset.read_bytes()).hexdigest()}
-        for asset in out.iterdir() if asset.is_file()
-    },
+report={
+ 'artwork':'Selected MarketMarney black M + orange rising arrow',
+ 'version':'marney-m-arrow-20261110-v1',
+ 'sourceSha256':hashlib.sha256(source).hexdigest(),
+ 'assets':{
+  asset.name:{'bytes':asset.stat().st_size,'sha256':hashlib.sha256(asset.read_bytes()).hexdigest()}
+  for asset in out.iterdir() if asset.is_file()
+ }
 }
-(out / 'assets.json').write_text(json.dumps(report, indent=2))
-print(json.dumps(report, indent=2))
+(out / 'assets.json').write_text(json.dumps(report,indent=2))
+print(json.dumps(report,indent=2))
