@@ -20,4 +20,8 @@ Versi ini melanjutkan MarketMarney 4.34 dengan fokus pada pemulihan koneksi dan 
 - Version code: `39`
 - Tipe: APK debug beta yang ditandatangani otomatis untuk pengujian
 
+## Verifikasi rilis
+
+Build final memeriksa integritas sumber dan aset, tanda tangan APK, opening, branding, navigasi, galeri, Social Marney, Reels, pemulihan koneksi, tekanan memori, serta seluruh rangkaian regresi Android sebelum rilis diterbitkan.
+
 Versi ini dapat dipasang berdampingan dengan beta sebelumnya karena nama paketnya berbeda.
