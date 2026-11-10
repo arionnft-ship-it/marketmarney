@@ -42,7 +42,13 @@ with sync_playwright() as pw:
         page.on("pageerror",lambda ex:problems.append(str(ex)[:150]))
         try:
             result=page.goto(BASE+"/",wait_until="domcontentloaded",timeout=60000)
-            page.locator(".navbtn").filter(has_text=re.compile("ANALISA",re.I)).first.click(timeout=12000)
+            if name=="mobile":
+                # Mobile navigation is off-canvas until its menu opens. Activate
+                # the SPA route directly; this test audits content, not menu UX.
+                page.wait_for_selector('.navbtn[data-page="Analisa"]',timeout=15000,state="attached")
+                page.evaluate("""() => document.querySelector('.navbtn[data-page="Analisa"]').click()""")
+            else:
+                page.locator(".navbtn").filter(has_text=re.compile("ANALISA",re.I)).first.click(timeout=12000)
             panel=page.locator("#mm-analysis-public-v1")
             panel.wait_for(timeout=20000)
             panel.scroll_into_view_if_needed()
