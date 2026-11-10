@@ -1,0 +1,23 @@
+/* MarketMarney 4.37 — lightweight Reel recovery feedback. */
+html[data-mm44-view="reels"] .sh-reel-card[data-mm437-recovering] .mm46-loading{
+  display:flex!important;
+  opacity:1!important;
+}
+html[data-mm44-view="reels"] .sh-reel-card[data-mm437-recovering] .mm46-loading::after{
+  content:" · menyambungkan ulang";
+  font-weight:600;
+}
+html[data-mm44-view="reels"] .sh-reel-card[data-mm437-slow] .mm46-retry{
+  display:flex!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+html[data-mm44-view="reels"] .sh-reel-card[data-mm437-slow] .mm46-loading{
+  display:none!important;
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-mm44-view="reels"] .sh-reel-card[data-mm437-recovering] *{
+    animation:none!important;
+    transition:none!important;
+  }
+}
