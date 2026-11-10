@@ -57,7 +57,7 @@ checks=[
     all('function queueActivate' in script for script in controllers),
     all('function settleScroll' in script for script in controllers),
     all('forward=distance*direction' in script for script in controllers),
-    all('data-mm438-scrolling' in script for script in controllers),
+    all('mm438Scrolling' in script for script in controllers),
     all('onscrollend' in script for script in controllers),
     all('function recoverStall(st)' in script for script in controllers),
     all('location.reload()' not in script for script in controllers),
