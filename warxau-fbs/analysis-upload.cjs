@@ -7,7 +7,9 @@ const sources=[
  ['/assets/mm-analysis-v1.css','analysis-upload.css','text/css; charset=utf-8'],
  ['/assets/mm-analysis-modern-v1.css','analysis-modern.css','text/css; charset=utf-8'],
  ['/assets/mm-analysis-article-v1.js','analysis-article.js','text/javascript; charset=utf-8'],
- ['/assets/mm-analysis-article-v1.css','analysis-article.css','text/css; charset=utf-8']
+ ['/assets/mm-analysis-article-v1.css','analysis-article.css','text/css; charset=utf-8'],
+ ['/assets/mm-xauwar-beta-v1.js','xauwar-beta.js','text/javascript; charset=utf-8'],
+ ['/assets/mm-xauwar-beta-v1.css','xauwar-beta.css','text/css; charset=utf-8']
 ];
 function assets(dir=__dirname){
  return new Map(sources.map(([url,name,mime])=>[url,{body:fs.readFileSync(path.join(dir,name)),mime}]));
@@ -15,8 +17,14 @@ function assets(dir=__dirname){
 function injectHtml(html,pathname){
  if(typeof html!=='string'||!/<\/head\s*>/i.test(html)||!/<\/html\s*>/i.test(html))return html;
  const isAdmin=pathname==='/admin.html',isPublic=pathname==='/'||pathname==='/index.html';
+ const isWar=pathname==='/assets/xau-war-3d.html';
  const article=/^\/berita\/mm-analysis-[a-f0-9-]{32,36}(?:\/[a-z0-9-]*)?\/?$/i.test(pathname);
- if(!isAdmin&&!isPublic&&!article)return html;
+ if(!isAdmin&&!isPublic&&!article&&!isWar)return html;
+ const beta='<link rel="stylesheet" href="/assets/mm-xauwar-beta-v1.css?v=20261110-beta-v1"><script defer src="/assets/mm-xauwar-beta-v1.js?v=20261110-beta-v1"></script>';
+ if(isWar){
+  if(html.includes('data-mm-war-beta="v1"'))return html;
+  return html.replace(/<\/head\s*>/i,'<meta data-mm-war-beta="v1">'+beta+'</head>');
+ }
  if(article){
   const v='20261110-article-v1';
   if(html.includes('data-mm-analysis-article="'+v+'"'))return html;
@@ -27,7 +35,7 @@ function injectHtml(html,pathname){
  if(html.includes(mark+'="'+VERSION+'"'))return html;
  const script=isAdmin?'/assets/mm-analysis-admin-v1.js':'/assets/mm-analysis-public-v1.js';
  const visual=isPublic?'<link rel="stylesheet" href="/assets/mm-analysis-modern-v1.css?v=20261110-modern-v1" data-mm-analysis-modern="v1">':'';
- const injection='<link rel="stylesheet" href="/assets/mm-analysis-v1.css?v='+VERSION+'" '+mark+'="'+VERSION+'">'+visual+'<script defer src="'+script+'?v='+VERSION+'"></script>';
+ const injection='<link rel="stylesheet" href="/assets/mm-analysis-v1.css?v='+VERSION+'" '+mark+'="'+VERSION+'">'+visual+(isPublic?beta:'')+'<script defer src="'+script+'?v='+VERSION+'"></script>';
  return html.replace(/<\/head\s*>/i,injection+'</head>');
 }
 module.exports={VERSION,sources,assets,injectHtml};

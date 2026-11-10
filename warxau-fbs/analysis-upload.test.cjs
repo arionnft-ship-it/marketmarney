@@ -181,3 +181,25 @@ test('modern style remains scoped and does not hide or replace data widgets',()=
  assert.doesNotMatch(s,/(^|\n)\s*(?:body|html|#app|\.sidebar)\s*[{,:]/);
  assert.doesNotMatch(s,/display:\s*none\s*!important/);
 });
+
+test('XAUWAR BETA status label is injected only on homepage and War arena',()=>{
+ const home=injectHtml(html,'/');
+ assert.match(home,/mm-xauwar-beta-v1\.js\?v=20261110-beta-v1/);
+ assert.match(home,/mm-xauwar-beta-v1\.css\?v=20261110-beta-v1/);
+ assert.equal(injectHtml(home,'/'),home);
+ const war=injectHtml(html,'/assets/xau-war-3d.html');
+ assert.match(war,/data-mm-war-beta="v1"/);
+ assert.match(war,/mm-xauwar-beta-v1\.js/);
+ assert.equal(injectHtml(war,'/assets/xau-war-3d.html'),war);
+ for(const path of ['/admin.html','/akun.html','/berita/mm-editorial-123456789012345678901234/forex','/assets/btc-war-3d.html']){
+  assert.ok(!injectHtml(html,path).includes('mm-xauwar-beta-v1'),'unrelated route '+path);
+ }
+});
+test('BETA script only adds idempotent labels without mutating buttons or live data',()=>{
+ const s=assets().get('/assets/mm-xauwar-beta-v1.js').body.toString();
+ assert.match(s,/mm-xau-war-link/);
+ assert.match(s,/mm-xauwar-beta-tag/);
+ assert.match(s,/document\.createElement\('span'\)/);
+ assert.match(s,/\.textContent=TEXT/);
+ assert.doesNotMatch(s,/fetch\(|XMLHttpRequest|\.remove\(|\.innerHTML|webgl|setInterval/i);
+});

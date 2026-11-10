@@ -1,0 +1,21 @@
+name: Check XAUWAR BETA status label
+on:
+  push:
+    branches: [feature/xauwar-beta-label-20261110]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check label assets and page integration
+        run: |
+          npm ci --prefix warxau-fbs --no-audit --no-fund
+          node --check warxau-fbs/xauwar-beta.js
+          node --check warxau-fbs/analysis-upload.cjs
+          node --test warxau-fbs/analysis-upload.test.cjs

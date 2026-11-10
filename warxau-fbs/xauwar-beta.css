@@ -1,0 +1,22 @@
+/* XAUWAR status — visual beta label only; no market or 3D changes. */
+#mm-xau-war-link > .mm-xauwar-beta-tag{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin-left:auto;flex:0 0 auto;
+ padding:3px 7px;border:1px solid #eacfa3;border-radius:5px;
+ background:#fff3df;color:#965910;
+ font:800 9px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
+ letter-spacing:.075em;white-space:nowrap;
+}
+h1 > .mm-xauwar-beta-tag.mm-xauwar-beta-title{
+ display:inline-flex;align-items:center;justify-content:center;
+ vertical-align:middle;margin-left:12px;padding:5px 9px;
+ border:1px solid #ffb956;border-radius:7px;
+ background:rgba(250,160,39,.16);color:#ffcd79;
+ font:800 10px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;
+ letter-spacing:.12em;white-space:nowrap;
+ text-shadow:none;box-shadow:none;
+}
+@media(max-width:600px){
+ #mm-xau-war-link > .mm-xauwar-beta-tag{padding:2px 6px;font-size:9px}
+ h1 > .mm-xauwar-beta-tag.mm-xauwar-beta-title{margin-left:7px;padding:4px 7px;font-size:9px}
+}
