@@ -29,6 +29,33 @@ def icon(size, margin):
 brand = icon(512, 0.045)
 brand.save(out / 'logo.png', optimize=True)
 brand.save(out / 'logo.webp', quality=90, method=6)
+
+# About-page-only transparent icon. Keep every existing icon and the dark page design unchanged.
+# The uploaded palette PNG has an opaque white matte, so merely exporting RGBA
+# would preserve the white square. Convert that matte to alpha with decontaminated
+# antialiased edges; the actual logo uses dark and orange foreground colours.
+def remove_white_matte(image):
+    image = image.convert('RGBA')
+    pixels = []
+    for red, green, blue, original_alpha in image.getdata():
+        opacity = max(0, min(255, 255 - min(red, green, blue)))
+        opacity = (opacity * original_alpha + 127) // 255
+        if opacity < 3:
+            pixels.append((0, 0, 0, 0))
+            continue
+        backing = 255 - opacity
+        def unmatte(channel):
+            return max(0, min(255, round((channel - backing) * 255 / opacity)))
+        pixels.append((unmatte(red), unmatte(green), unmatte(blue), opacity))
+    result = Image.new('RGBA', image.size, (0,0,0,0))
+    result.putdata(pixels)
+    return result
+
+transparent_mark = remove_white_matte(mark)
+about_canvas = Image.new('RGBA', (512,512), (0,0,0,0))
+target = ImageOps.contain(transparent_mark, (440,440), Image.Resampling.LANCZOS)
+about_canvas.alpha_composite(target, ((512-target.width)//2, (512-target.height)//2))
+about_canvas.save(out / 'about-logo.webp', quality=94, method=6)
 wordmark.save(out / 'wordmark.png', optimize=True)
 wordmark.convert('RGB').save(out / 'wordmark.webp', quality=91, method=6)
 
