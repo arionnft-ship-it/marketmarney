@@ -11,6 +11,7 @@ const ROOT=path.join(__dirname,'marney-brand-assets');
 const aliases=new Map([
  ['/assets/brand-logo.png','logo.png'],['/assets/brand-logo.webp','logo.webp'],
  ['/assets/brand-wordmark.png','wordmark.png'],['/assets/brand-wordmark.webp','wordmark.webp'],
+ ['/assets/brand-about-transparent.webp','about-logo.webp'],
  ['/assets/embedded-favicon.png','favicon.png'],['/favicon.png','favicon.png'],
  ['/favicon.ico','favicon.ico'],['/assets/apple-touch-icon.png','apple-touch-icon.png'],
  ['/apple-touch-icon.png','apple-touch-icon.png'],['/icons/icon-192.png','icon-192.png'],
