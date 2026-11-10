@@ -79,6 +79,27 @@ for test_file in (root / 'app/src/androidTest/java').rglob('*.java'):
         test_file.write_text(updated, encoding='utf-8')
         version_tests.append(test_file.relative_to(root).as_posix())
 
+# The fixture can report DOM readiness a fraction before Android's queued
+# onPageFinished adaptation finishes. Settle that legitimate current-document
+# adaptation first, then test that obsolete path/query callbacks cannot restyle it.
+adapt_test_rel='app/src/androidTest/java/com/marketmarney/mobile/AdaptGuardTest.java'
+adapt_test=read(adapt_test_rel)
+adapt_old='''  assertTrue("Fixture document marker, URL and readiness committed",fixture[0].awaitReady(inst,()->(WebView)field("web")));
+  assertEquals("true",js("window.guardErrors=[];window.addEventListener('error',e=>guardErrors.push(e.message));document.querySelectorAll('#mm43-common,#mm43-social-style').forEach(n=>n.remove());true"));'''
+adapt_new='''  assertTrue("Fixture document marker, URL and readiness committed",fixture[0].awaitReady(inst,()->(WebView)field("web")));
+  for(int settle=0;settle<50;settle++){
+   boolean nativeReady=url.equals(String.valueOf(field("lastAdaptedDocument")));
+   boolean scriptReady="true".equals(js("!!document.getElementById('mm43-social-style')||!!window.__mm411BundledReady"));
+   if(nativeReady&&scriptReady)break;
+   SystemClock.sleep(100);
+  }
+  SystemClock.sleep(200);
+  assertEquals("Current fixture adaptation settled",url,String.valueOf(field("lastAdaptedDocument")));
+  assertEquals("true",js("window.guardErrors=[];window.addEventListener('error',e=>guardErrors.push(e.message));document.querySelectorAll('#mm43-common,#mm43-social-style').forEach(n=>n.remove());true"));'''
+assert adapt_test.count(adapt_old)==1,'AdaptGuardTest setup changed unexpectedly'
+write(adapt_test_rel,adapt_test.replace(adapt_old,adapt_new,1))
+if adapt_test_rel not in version_tests:version_tests.append(adapt_test_rel)
+
 # Connectivity-aware recovery: retry only read-only network failures after Android
 # reports a validated network, with a bounded delay and lifecycle cancellation.
 fields_anchor = """    private long lastReloadAt=-10000L;
