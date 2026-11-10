@@ -1,0 +1,46 @@
+/* MarketMarney 4.38 — app-only adaptive media polish. */
+html[data-mm46-reels] .sh-reel-card[data-mm46-card]{
+  contain:layout paint style;
+  isolation:isolate;
+}
+html[data-mm46-reels] .sh-reel-stage,
+html[data-mm46-reels] video.sh-reel-video{
+  background:#0b0d10;
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-buffering][data-mm435-frame] .mm46-loading{
+  inset:auto 50% 78px auto!important;
+  transform:translateX(50%);
+  min-height:34px;
+  padding:7px 11px!important;
+  border-radius:999px!important;
+  font-size:12px!important;
+  white-space:nowrap;
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-soft] .mm46-loading::after{
+  content:'Menstabilkan video…';
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-soft] .mm46-loading{
+  font-size:0!important;
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-soft] .mm46-loading::after{
+  font-size:12px;
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-slow] .mm46-retry{
+  display:flex!important;
+}
+html[data-mm46-reels] .sh-reel-card[data-mm438-primed]:not([data-mm46-active]) video.sh-reel-video{
+  opacity:.998;
+}
+html[data-mm429-social] input,
+html[data-mm429-social] textarea,
+html[data-mm429-social] [contenteditable='true']{
+  scroll-margin-bottom:calc(88px + env(safe-area-inset-bottom));
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-mm46-reels] .sh-reel-card,
+  html[data-mm46-reels] .mm46-loading,
+  html[data-mm46-reels] .mm46-retry{
+    animation:none!important;
+    transition:none!important;
+  }
+}
