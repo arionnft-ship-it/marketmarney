@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make Reels direction-aware, hysteresis-controlled and less wasteful while swiping."""
+"""Make Reels fluid and remove synchronous Social asset I/O from direct app entry."""
 from pathlib import Path
 
 OLD_DECL="var reduce=matchMedia('(prefers-reduced-motion: reduce)'), conn=navigator.connection||{}, cards=[], states=new WeakMap(), active=null, suspended=!!window.__mm45Suspended, disposed=false, scheduled=false, muted=true, memoryGb=Number(navigator.deviceMemory||4), networkType=String(conn.effectiveType||'').toLowerCase(), networkOnline=navigator.onLine!==false, networkValidated=true, networkMetered=false, downKbps=0, powerSaving=false, pressure=0, resumeTimer=0;"
@@ -32,6 +32,64 @@ REPLACEMENTS=[
     (OLD_EVENTS,NEW_EVENTS),(OLD_DESTROY,NEW_DESTROY),
 ]
 
+OLD_PRELOAD='''    private void preloadSocialAssets(){
+        if(destroyed||socialAssetsReady||lowRamDevice||nativePowerSave)return;
+        synchronized(socialAssetLock){
+            if(destroyed||socialAssetsReady||socialAssetFuture!=null)return;
+            if(socialAssetExecutor==null)socialAssetExecutor=java.util.concurrent.Executors.newSingleThreadExecutor();
+            try{
+                socialAssetFuture=socialAssetExecutor.submit(()->{
+                    try{ensureSocialAssets();}
+                    catch(RuntimeException failure){Log.w("MM437_ASSETS","Social assets will retry on demand",failure);}
+                    finally{synchronized(socialAssetLock){socialAssetFuture=null;}}
+                });
+            }catch(java.util.concurrent.RejectedExecutionException ignored){}
+        }
+    }
+'''
+NEW_PRELOAD='''    private void preloadSocialAssets(){
+        if(destroyed||socialAssetsReady||(tab!=SOCIAL&&(lowRamDevice||nativePowerSave)))return;
+        synchronized(socialAssetLock){
+            if(destroyed||socialAssetsReady||socialAssetFuture!=null)return;
+            if(socialAssetExecutor==null)socialAssetExecutor=java.util.concurrent.Executors.newSingleThreadExecutor();
+            try{
+                socialAssetFuture=socialAssetExecutor.submit(()->{
+                    try{ensureSocialAssets();}
+                    catch(RuntimeException failure){Log.w("MM438_ASSETS","Social assets will retry asynchronously",failure);}
+                    finally{
+                        synchronized(socialAssetLock){socialAssetFuture=null;}
+                        if(socialAssetsReady)frame.post(()->{
+                            WebView target=web;String current=target==null?null:target.getUrl();
+                            if(!destroyed&&target!=null&&tab==SOCIAL&&own(current))adapt(target,current);
+                        });
+                    }
+                });
+            }catch(java.util.concurrent.RejectedExecutionException ignored){}
+        }
+    }
+'''
+OLD_SOCIAL_NAV='tab=selected;if(tab==SOCIAL)ensureSocialAssets();reelsChrome=tab==SOCIAL&&cached!=null&&cached.getUrl()!=null&&cached.getUrl().endsWith("#mm44-reels");chromeLight=true;updateSocialChrome();drawTabs();'
+NEW_SOCIAL_NAV='tab=selected;if(tab==SOCIAL)preloadSocialAssets();reelsChrome=tab==SOCIAL&&cached!=null&&cached.getUrl()!=null&&cached.getUrl().endsWith("#mm44-reels");chromeLight=true;updateSocialChrome();drawTabs();'
+OLD_SOCIAL_ADAPT='''        boolean social="/beranda-trader.html".equals(path)||"/profil.html".equals(path)||"/grup-trader.html".equals(path);
+        if(social)ensureSocialAssets();
+'''
+NEW_SOCIAL_ADAPT='''        boolean social="/beranda-trader.html".equals(path)||"/profil.html".equals(path)||"/grup-trader.html".equals(path);
+        if(social&&!socialAssetsReady){preloadSocialAssets();return;}
+'''
+
+def patch_social_entry(main:Path)->None:
+    text=main.read_text(encoding='utf-8')
+    for old,new,name in [
+        (OLD_PRELOAD,NEW_PRELOAD,'preloadSocialAssets'),
+        (OLD_SOCIAL_NAV,NEW_SOCIAL_NAV,'Social navigation'),
+        (OLD_SOCIAL_ADAPT,NEW_SOCIAL_ADAPT,'Social adapt guard'),
+    ]:
+        count=text.count(old)
+        assert count==1,f'{main}: {name} expected one anchor, found {count}'
+        text=text.replace(old,new,1)
+    main.write_text(text,encoding='utf-8')
+
+
 def patch_controller(path:Path)->None:
     text=path.read_text(encoding='utf-8')
     for old,new in REPLACEMENTS:
@@ -39,3 +97,8 @@ def patch_controller(path:Path)->None:
         assert count==1,f'{path}: expected one 4.37 anchor, found {count}: {old[:120]!r}'
         text=text.replace(old,new,1)
     path.write_text(text,encoding='utf-8')
+    # The third controller is patched last by prepare438.py. At that point all
+    # MainActivity version/navigation edits are already present, so publish the
+    # asynchronous Social entry patch before the verified source inventory closes.
+    if path.name=='bundle427.js' and path.parent.name=='social411':
+        patch_social_entry(path.parents[2]/'java/com/marketmarney/mobile/MainActivity.java')
