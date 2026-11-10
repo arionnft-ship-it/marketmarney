@@ -1,0 +1,53 @@
+/* MarketMarney 4.38 — app-only rendering and swipe smoothness. */
+
+/* Keep long Social feeds cheap to paint without changing their content or order. */
+html[data-mm429-social]:not([data-mm46-reels]) .sh-feed>.sh-post{
+  content-visibility:auto;
+  contain-intrinsic-size:620px;
+  contain-intrinsic-size:auto 620px;
+  contain:layout paint style;
+}
+
+/* Reels remains one card per viewport and does not rubber-band into adjacent UI. */
+html[data-mm429-social][data-mm46-reels] #shReelFeed{
+  scroll-snap-type:y mandatory!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+  -webkit-overflow-scrolling:touch;
+}
+html[data-mm429-social][data-mm46-reels] .sh-reel-card{
+  scroll-snap-align:start!important;
+  scroll-snap-stop:always!important;
+  contain:layout paint style;
+  backface-visibility:hidden;
+}
+
+/* Only the active Reel and its next likely neighbour receive a compositor layer. */
+html[data-mm429-social][data-mm46-reels] .sh-reel-card[data-mm46-active] video.sh-reel-video,
+html[data-mm429-social][data-mm46-reels] .sh-reel-card[data-mm46-active]+.sh-reel-card video.sh-reel-video{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+
+/* During a swipe, remove decorative work that does not help readability. */
+html[data-mm438-scrolling][data-mm46-reels] .sh-reel-rail-btn,
+html[data-mm438-scrolling][data-mm46-reels] .mm46-icon,
+html[data-mm438-scrolling][data-mm46-reels] .mm44-nav{
+  box-shadow:none!important;
+  transition:none!important;
+}
+html[data-mm438-scrolling][data-mm46-reels] .sh-reel-card:not([data-mm46-active]) .sh-reel-overlay{
+  pointer-events:none!important;
+}
+
+/* Avoid repainting invisible feed media while preserving normal accessibility. */
+html[data-mm429-social]:not([data-mm46-reels]) .sh-post img,
+html[data-mm429-social]:not([data-mm46-reels]) .sh-post video{
+  content-visibility:auto;
+}
+
+@media(prefers-reduced-motion:reduce){
+  html[data-mm429-social][data-mm46-reels] #shReelFeed{scroll-behavior:auto!important}
+  html[data-mm429-social][data-mm46-reels] .sh-reel-card,
+  html[data-mm429-social][data-mm46-reels] .sh-reel-card *{transition:none!important;animation:none!important}
+}
