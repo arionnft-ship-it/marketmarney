@@ -55,7 +55,7 @@ checks=[
     all('function recoverStall(st)' in script for script in controllers),
     all('function scheduleStall(st)' in script for script in controllers),
     all('st.recoveryCount>=2' in script for script in controllers),
-    all('Date.now()-st.lastRecoveryAt<18000' in script for script in controllers),
+    all('now-st.lastRecoveryAt<18000' in script for script in controllers),
     all('data-mm437-recovering' in script for script in controllers),
     all('lastProgressTime' in script for script in controllers),
     'data-mm437-recovering' in css,
