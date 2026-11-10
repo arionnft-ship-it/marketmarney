@@ -69,6 +69,7 @@ shutil.copy2(base/'instant439.css',assets/'instant439.css')
 shutil.copy2(base/'instant439.js',assets/'instant439.js')
 test_root=root/'app/src/androidTest/java/com/marketmarney/mobile'
 test_root.mkdir(parents=True,exist_ok=True)
+shutil.copy2(base/'Reels434PerformanceTest.java',test_root/'Reels434PerformanceTest.java')
 shutil.copy2(base/'Performance439Test.java',test_root/'Performance439Test.java')
 shutil.copy2(base/'Marney439-Panduan.md',root/'README-MULAI-DISINI.md')
 
@@ -81,6 +82,7 @@ expected={
     'app/src/main/res/values/strings.xml',
     'app/src/main/assets/reels46.js','app/src/main/assets/social411/app.js','app/src/main/assets/social411/bundle427.js',
     'app/src/main/assets/instant439.css','app/src/main/assets/instant439.js',
+    'app/src/androidTest/java/com/marketmarney/mobile/Reels434PerformanceTest.java',
     'app/src/androidTest/java/com/marketmarney/mobile/Performance439Test.java',
 }
 expected.update(version_tests)
