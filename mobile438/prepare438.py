@@ -89,9 +89,10 @@ assets=root/'app/src/main/assets'
 for rel in ['reels46.js','social411/app.js','social411/bundle427.js']:
     patch_controller(assets/rel)
 shutil.copy2(base/'fluid438.css',assets/'fluid438.css')
-new_test=root/'app/src/androidTest/java/com/marketmarney/mobile/Performance438Test.java'
-new_test.parent.mkdir(parents=True,exist_ok=True)
-shutil.copy2(base/'Performance438Test.java',new_test)
+test_root=root/'app/src/androidTest/java/com/marketmarney/mobile'
+test_root.mkdir(parents=True,exist_ok=True)
+shutil.copy2(base/'Performance438Test.java',test_root/'Performance438Test.java')
+shutil.copy2(base/'Reels433LayoutTest.java',test_root/'Reels433LayoutTest.java')
 shutil.copy2(base/'Marney438-Panduan.md',root/'README-MULAI-DISINI.md')
 
 after=inventory()
@@ -104,6 +105,7 @@ expected={
     'app/src/main/assets/reels46.js','app/src/main/assets/social411/app.js','app/src/main/assets/social411/bundle427.js',
     'app/src/main/assets/fluid438.css',
     'app/src/androidTest/java/com/marketmarney/mobile/Performance438Test.java',
+    'app/src/androidTest/java/com/marketmarney/mobile/Reels433LayoutTest.java',
 }
 expected.update(version_tests)
 assert changed==sorted(expected),{'unexpected':sorted(set(changed)-expected),'missing':sorted(expected-set(changed))}
