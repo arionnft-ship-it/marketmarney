@@ -66,7 +66,7 @@ checks=[
     all('scheduleBudget(40)' in script for script in controllers),
     all('location.reload()' not in script for script in controllers),
     all('st.recoveryCount>=2' in script for script in controllers),
-    all('Date.now()-st.lastRecoveryAt<18000' in script for script in controllers),
+    all('now-st.lastRecoveryAt<18000' in script for script in controllers),
     all('constrained=conservative||powerSaving||networkMetered||!networkValidated' in script for script in controllers),
     all('keepAhead=pressure>=10||powerSaving?0:(fastNetwork&&memoryGb>=4?2:1)' in script for script in controllers),
     'contain:layout paint style' in css,
