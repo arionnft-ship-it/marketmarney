@@ -192,4 +192,5 @@ manifest={
     'preserved':{rel:sha for rel,sha in sorted(before.items()) if rel not in changed},
 }
 Path('verified437.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+exec(compile((base/'finalize437.py').read_text(encoding='utf-8'),str(base/'finalize437.py'),'exec'),{'__name__':'__main__'})
 print(f"Verified 4.37 smooth patch: {len(changed)} changed files; {len(manifest['preserved'])} unchanged files.")
