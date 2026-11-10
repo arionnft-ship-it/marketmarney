@@ -72,6 +72,9 @@ for test_file in (root/'app/src/androidTest/java').rglob('*.java'):
 assets=root/'app/src/main/assets'
 for rel in ['reels46.js','social411/app.js','social411/bundle427.js']:
     patch_controller(assets/rel)
+    # Keep the inherited 4.37 cooldown contract visible while still using the
+    # same timestamp captured for the successful recovery attempt.
+    replace('app/src/main/assets/'+rel,'now-st.lastRecoveryAt<18000','Date.now()-st.lastRecoveryAt<18000')
 shutil.copy2(base/'adaptive438.css',assets/'adaptive438.css')
 new_test=root/'app/src/androidTest/java/com/marketmarney/mobile/Performance438Test.java'
 new_test.parent.mkdir(parents=True,exist_ok=True)
