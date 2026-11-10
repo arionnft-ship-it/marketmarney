@@ -20,7 +20,8 @@ with sync_playwright() as pw:
             page.evaluate("""() => document.querySelector('.navbtn[data-page="Analisa"]').click()""")
             page.wait_for_selector('#mm-analysis-public-v1 .mm-analysis-public-head',timeout=25000)
             page.add_style_tag(content=CSS)
-            page.wait_for_timeout(1800)
+            page.locator('#mm-analysis-public-v1 .mm-analysis-card').first.wait_for(state="attached",timeout=16000)
+            page.wait_for_timeout(450)
             info=page.evaluate("""() => {
                 const shell=document.querySelector('section.mm87-shell.mm1815-anal-shell');
                 const panel=document.querySelector('#mm-analysis-public-v1');
