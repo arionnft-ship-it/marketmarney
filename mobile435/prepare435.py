@@ -104,6 +104,14 @@ for test_file in (root/'app/src/androidTest/java').rglob('*.java'):
         test_file.write_text(updated,encoding='utf-8')
         version_tests.append(test_file.relative_to(root).as_posix())
 
+legacy='app/src/androidTest/java/com/marketmarney/mobile/Reels434PerformanceTest.java'
+replace(legacy,
+        'assertTrue(script.contains("keepAhead=fastNetwork&&memoryGb>=4?2:1"));',
+        'assertTrue(script.contains("keepAhead=pressure>=10?0:(fastNetwork&&memoryGb>=4?2:1)"));')
+replace(legacy,
+        'assertEquals("com.marketmarney.mobile.beta434",packageName);',
+        'assertEquals("com.marketmarney.mobile.beta435",packageName);')
+
 assets=root/'app/src/main/assets'
 for rel in ['reels46.js','social411/app.js','social411/bundle427.js']:
     patch_controller(assets/rel)
