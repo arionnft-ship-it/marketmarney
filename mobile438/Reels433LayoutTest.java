@@ -16,7 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Verifies the compact Reels shell without starting an Activity for static asset checks. */
+/** Verifies the compact Reels shell without racing the asynchronous Social installer. */
 public class Reels433LayoutTest {
     private Instrumentation inst;
     private MainActivity activity;
@@ -28,6 +28,16 @@ public class Reels433LayoutTest {
             .putExtra("startTab",4);
         activity=(MainActivity)inst.startActivitySync(intent);SystemClock.sleep(500);
         inst.runOnMainSync(()->{StartupOverlay overlay=(StartupOverlay)field("launchOverlay");if(overlay!=null)overlay.dispose();});
+        waitForAdaptedSocial();
+    }
+    private void waitForAdaptedSocial(){
+        AtomicReference<String> document=new AtomicReference<>("");
+        for(int retry=0;retry<180;retry++){
+            inst.runOnMainSync(()->document.set(String.valueOf(field("lastAdaptedDocument"))));
+            if(document.get().contains("/beranda-trader.html"))return;
+            SystemClock.sleep(100);
+        }
+        fail("Social document was not adapted: "+document.get());
     }
     private Object field(String name){
         try{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return f.get(activity);}
@@ -42,7 +52,7 @@ public class Reels433LayoutTest {
     private String js(String code)throws Exception{
         CountDownLatch done=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>();
         inst.runOnMainSync(()->((WebView)field("web")).evaluateJavascript(code,value->{result.set(value);done.countDown();}));
-        assertTrue("JavaScript callback",done.await(7,TimeUnit.SECONDS));return result.get();
+        assertTrue("JavaScript callback",done.await(10,TimeUnit.SECONDS));return result.get();
     }
     @Before public void setup(){inst=InstrumentationRegistry.getInstrumentation();}
     @After public void finish(){if(activity!=null)inst.runOnMainSync(()->activity.finish());}
