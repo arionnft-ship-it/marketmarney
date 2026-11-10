@@ -34,7 +34,7 @@ function apply(root){
  for(const el of nodes){const attr=el.tagName==='SOURCE'?'srcset':el.tagName==='LINK'?'href':'src',old=el.getAttribute(attr);if(!old)continue;
  let u;try{u=new URL(old,location.href);}catch{continue;}if(u.origin!==location.origin||!paths.has(u.pathname))continue;
  const originalPath=u.pathname;
- if(el.tagName==='IMG'&&/^\/assets\/brand-(?:logo|wordmark)(?:-dark)?\.(?:png|webp)$/.test(originalPath)){
+ if(el.tagName==='IMG'&&['/assets/brand-logo.','/assets/brand-logo-dark.','/assets/brand-wordmark.','/assets/brand-wordmark-dark.'].some(prefix=>originalPath.startsWith(prefix))){
    const dark=isDarkSurface(),isWordmark=/brand-wordmark/.test(originalPath);
    u.pathname=isWordmark?(dark?'/assets/brand-wordmark-dark.webp':'/assets/brand-wordmark.webp'):(dark?'/assets/brand-logo-dark.webp':'/assets/brand-logo.webp');
  }
