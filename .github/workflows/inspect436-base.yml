@@ -1,0 +1,78 @@
+name: Inspect 4.36 Base
+on:
+  push:
+    branches: [android-v4.36-stable]
+    paths: ['.github/workflows/inspect436-base.yml']
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct 4.35 source and print runtime anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0 >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import stat
+          with ZipFile('mobile419/base418-source.zip') as archive:
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and not stat.S_ISLNK(entry.external_attr>>16)
+                  if path.parts and path.parts[0]=='android417': archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py >/dev/null
+          mv android419 android420; python3 mobile420/prepare420.py >/dev/null
+          mv android420 android421; python3 mobile421/prepare421.py >/dev/null
+          mv android421 android422; python3 mobile422/prepare422.py >/dev/null
+          mv android422 android423; python3 mobile423/prepare423.py >/dev/null
+          mv android423 android424; python3 mobile424/prepare424.py >/dev/null
+          mv android424 android425; python3 mobile425/prepare425.py >/dev/null
+          python3 final425/finalize425.py >/dev/null
+          mv android425 android426; python3 mobile426/prepare426.py >/dev/null
+          mv android426 android427; python3 mobile427/prepare427.py >/dev/null
+          mv android427 android428; python3 mobile428/prepare428.py >/dev/null
+          mv android428 android429; python3 mobile429/prepare429.py >/dev/null
+          mv android429 android430; python3 mobile430/prepare430.py >/dev/null
+          mv android430 android431; python3 mobile431/prepare431.py >/dev/null
+          mv android431 android432; python3 mobile432/prepare432.py >/dev/null
+          mv android432 android433; python3 mobile433/prepare433.py >/dev/null
+          mv android433 android434; python3 mobile434/prepare434.py >/dev/null
+          mv android434 android435; python3 mobile435/prepare435.py >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android435/app/src/main/java/com/marketmarney/mobile/MainActivity.java')
+          s=p.read_text()
+          def section(title,start_token,end_token=None,limit=9000):
+              i=s.find(start_token)
+              print('\n===== '+title+' =====')
+              if i<0:
+                  print('NOT FOUND',start_token);return
+              if end_token:
+                  j=s.find(end_token,i+len(start_token))
+                  if j<0:j=i+limit
+              else:j=i+limit
+              print(s[i:j])
+          print('===== IMPORTS AND FIELDS =====')
+          print(s[:s.find('@Override protected void onCreate')])
+          section('ONCREATE','@Override protected void onCreate','private void createWeb')
+          section('CREATE WEB','private void createWeb','private void discardView')
+          section('OPEN NAVIGATION','private void open(','private void fail')
+          section('WEBVIEW CLIENT','web.setWebViewClient','web.setWebChromeClient')
+          section('LIFECYCLE','private void notifyMemoryPressure','@Override protected void onDestroy')
+          print('\n===== MANIFEST =====')
+          print(Path('android435/app/src/main/AndroidManifest.xml').read_text())
+          print('\n===== CONTROLLER IMPORTANT =====')
+          r=Path('android435/app/src/main/assets/social411/bundle427.js').read_text()
+          for token in ['var reduce=','function mayPlay','function budget','function start','function decorate','function onSuspend','function connectionChanged','function destroy']:
+              i=r.find(token)
+              print('\n---',token,'---\n',r[i:i+2800] if i>=0 else 'NOT FOUND')
+          print('\n===== LIFECYCLE435 =====')
+          print(Path('android435/app/src/main/assets/lifecycle435.js').read_text())
+          PY
