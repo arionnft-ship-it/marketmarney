@@ -129,3 +129,38 @@ test('news listings exclude analysis while dedicated analysis cards keep their s
  const marketAnalysis=fs.readFileSync(path.join(__dirname,'analysis-upload-public.js'),'utf8');
  assert.ok(marketAnalysis.includes('show(panel,doc.articles)'));
 });
+
+
+test('analysis article JS and CSS load only for mm-analysis articles',()=>{
+ const url='/berita/mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac/gbp-usd-skenario-h4';
+ const result=injectHtml(html,url);
+ assert.match(result,/mm-analysis-article-v1\.js\?v=20261110-article-v1/);
+ assert.match(result,/mm-analysis-article-v1\.css\?v=20261110-article-v1/);
+ assert.equal(injectHtml(result,url),result);
+ assert.equal(injectHtml(html,'/berita/mm-editorial-2dee2e8ece2d47278fa10c8a01dac0ac/news'),html);
+ assert.equal(injectHtml(html,'/api/admin/content'),html);
+ assert.ok(!injectHtml(html,'/').includes('mm-analysis-article-v1'));
+});
+test('legacy GBPUSD H4 text becomes readable without duplicated metadata',()=>{
+ const a=require('./analysis-article.js');
+ const title='GBP/USD — Skenario H4';
+ const summary='GBP/USD · H4 · NETRAL — GBP/USD — Skenario H4 | Harga acuan pada chart: sekitar 1,3440.';
+ const body='ANALISA MARKET | GBP/USD | H4 | NETRAL 📊 GBP/USD — Skenario H4 Harga acuan pada chart: sekitar 1,3440. 🔴 Resistance: 1,3470–1,3480; berikutnya 1,3550–1,3600. 🟢 Support: sekitar 1,3307; berikutnya 1,3250–1,3150. 1️⃣ Rejection di 1,3470–1,3480 → support kembali jadi perhatian. 2️⃣ Close H4 di atas 1,3480 → peluang lanjut ke 1,3550–1,3600. 3️⃣ Tembus 1,3307 ke bawah → risiko koreksi lebih dalam. Utamakan konfirmasi candle H4 dan manajemen risiko. 📌 Level dari screenshot 10 November 2026, bukan harga real-time.\n\nBukan rekomendasi investasi. #MarketMarney #GBPUSD #Forex #AnalisisTeknikal Disclaimer: Analisis ini bersifat edukatif dan bukan rekomendasi investasi. Harga dapat berubah sewaktu-waktu.';
+ const v=a.parse({title,summary,body});
+ assert.ok(v);assert.equal(v.pair,'GBP/USD');assert.equal(v.timeframe,'H4');assert.equal(v.bias,'NETRAL');
+ assert.equal(v.summary,'Harga acuan pada chart: sekitar 1,3440.');
+ assert.equal(v.blocks.filter(x=>x.type==='scenario').length,3);
+ assert.equal(v.blocks.some(x=>x.type==='level'&&x.heading==='Resistance'),true);
+ assert.equal(v.blocks.some(x=>x.type==='level'&&x.heading==='Support'),true);
+ assert.equal(v.blocks.some(x=>x.type==='paragraph'&&x.text===v.summary),false);
+ assert.equal(v.tags.length,4);
+ assert.ok(v.blocks.every(x=>!/#MarketMarney|ANALISA MARKET|Disclaimer:/i.test(x.text)));
+ assert.match(v.disclaimer,/bersifat edukatif/i);
+});
+test('unrelated articles and malformed body remain untouched',()=>{
+ const a=require('./analysis-article.js');
+ assert.equal(a.parse({title:'Ordinary News',summary:'',body:'ordinary paragraph'}),null);
+ assert.equal(a.parse({title:'GBP/USD',summary:'',body:'ANALISA MARKET | GBP/USD | H4 | NETRAL'}),null);
+ assert.equal(a.PATH.test('/berita/mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac/gbp-usd-skenario-h4'),true);
+ assert.equal(a.PATH.test('/berita/mm-editorial-123456789012345678901234/ordinary'),false);
+});

@@ -1,0 +1,20 @@
+name: Validate analysis detail rendering
+on:
+  push:
+    branches: [feature/analysis-article-reading-20261110]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify client parser and injection safety
+        run: |
+          node --check warxau-fbs/analysis-article.js
+          node --check warxau-fbs/analysis-upload.cjs
+          node --test warxau-fbs/analysis-upload.test.cjs
