@@ -112,6 +112,9 @@ replace(legacy,
         'assertEquals("com.marketmarney.mobile.beta434",packageName);',
         'assertEquals("com.marketmarney.mobile.beta435",packageName);')
 
+home_test='app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java'
+shutil.copy2(base/'Social430HomeButtonTest.java',root/home_test)
+
 assets=root/'app/src/main/assets'
 for rel in ['reels46.js','social411/app.js','social411/bundle427.js']:
     patch_controller(assets/rel)
@@ -132,6 +135,7 @@ expected={
     'app/src/main/assets/reels46.js','app/src/main/assets/social411/app.js','app/src/main/assets/social411/bundle427.js',
     'app/src/main/assets/lifecycle435.js','app/src/main/assets/performance435.css',
     'app/src/androidTest/java/com/marketmarney/mobile/Performance435Test.java',
+    'app/src/androidTest/java/com/marketmarney/mobile/Social430HomeButtonTest.java',
 }
 expected.update(version_tests)
 assert changed==sorted(expected),{'unexpected':sorted(set(changed)-expected),'missing':sorted(expected-set(changed))}
