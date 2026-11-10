@@ -63,6 +63,10 @@ checks=[
     's.setDatabaseEnabled(true)' in main,
     'web.setVerticalScrollBarEnabled(false)' in main,
     'web.setHorizontalScrollBarEnabled(false)' in main,
+    'private long adaptSequence;' in main,
+    'final long ticket=++adaptSequence;' in main,
+    'ticket!=adaptSequence' in main,
+    'ticket==adaptSequence' in main,
 ]
 assert all(checks),checks
 quality=Path('quality434')
