@@ -1,0 +1,27 @@
+name: Verify live MarketMarney speed improvement
+on:
+  push:
+    branches: [feature/marketmarney-speed-20261110]
+    paths: ['.github/workflows/verify-live-market-speed.yml','warxau-fbs/verify-live-market-speed.py']
+permissions:
+  contents: read
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install Chromium
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install chromium --with-deps
+      - name: Verify published public thumbnails and Analisa pages
+        run: python warxau-fbs/verify-live-market-speed.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: marketmarney-speed-verification
+          path: performance-verification/
+          retention-days: 5
