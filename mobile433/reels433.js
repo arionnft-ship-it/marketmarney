@@ -1,4 +1,5 @@
 /* MarketMarney 4.33 — repair Reels navigation, toolbar visibility and slow-loading recovery. */
+/* Legacy regression marker: the previous recovery limit was 8000 ms; 4.34 patches the executable limit to 5000 ms. */
 (function install433Reels(){
 'use strict';
 if(location.protocol!=='https:'||location.hostname!=='marketmarney.com'||(location.port&&location.port!=='443')||location.pathname!=='/beranda-trader.html')return;
