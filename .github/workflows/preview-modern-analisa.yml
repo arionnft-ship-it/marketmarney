@@ -1,0 +1,28 @@
+name: Preview Analisa Modern Desktop and Mobile
+on:
+  push:
+    branches: [feature/analisa-modern-ui-20261110]
+    paths: ['.github/workflows/preview-modern-analisa.yml', 'warxau-fbs/analysis-modern.css','warxau-fbs/verify-analysis-modern.py']
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Chromium
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install chromium --with-deps
+      - name: Preview CSS without writing to the website
+        run: python warxau-fbs/verify-analysis-modern.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-analisa-modern
+          path: analisa-modern-preview/
+          retention-days: 5
