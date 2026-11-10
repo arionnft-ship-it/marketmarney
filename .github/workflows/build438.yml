@@ -1,0 +1,195 @@
+name: MarketMarney 4.38 Adaptive RC
+on:
+  push:
+    branches: [android-v4.38-rc]
+    paths: ['mobile438/**', '.github/workflows/build438.yml']
+  workflow_dispatch:
+permissions: {contents: write}
+concurrency:
+  group: marketmarney438-adaptive-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$S"; yes | "$S" --licenses >/dev/null || true
+          "$S" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Reconstruct verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,stat
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and not stat.S_ISLNK(entry.external_attr>>16)
+                  if path.parts and path.parts[0]=='android417': archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420; python3 mobile420/prepare420.py
+          mv android420 android421; python3 mobile421/prepare421.py
+          mv android421 android422; python3 mobile422/prepare422.py
+          mv android422 android423; python3 mobile423/prepare423.py
+          mv android423 android424; python3 mobile424/prepare424.py
+          mv android424 android425; python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426; python3 mobile426/prepare426.py
+          mv android426 android427; python3 mobile427/prepare427.py
+          mv android427 android428; python3 mobile428/prepare428.py
+          mv android428 android429; python3 mobile429/prepare429.py
+          mv android429 android430; python3 mobile430/prepare430.py
+          mv android430 android431; python3 mobile431/prepare431.py
+          mv android431 android432; python3 mobile432/prepare432.py
+          mv android432 android433; python3 mobile433/prepare433.py
+          mv android433 android434; python3 mobile434/prepare434.py
+          mv android434 android435; python3 mobile435/prepare435.py
+          mv android435 android436; python3 mobile436/prepare436.py
+          python3 mobile436/align_legacy_tests436.py
+          mv android436 android437; python3 mobile437/prepare437.py
+          mv android437 android438; python3 mobile438/prepare438.py
+          node --check android438/app/src/main/assets/social411/5eab9da17fe2c659.js
+          node --check android438/app/src/main/assets/social411/bundle427.js
+          node --check android438/app/src/main/assets/group48/4e221ebb961158b1.js
+          node --check android438/app/src/main/assets/group48/bundle427.js
+          node --check android438/app/src/main/assets/social429.js
+          node --check android438/app/src/main/assets/home430.js
+          node --check android438/app/src/main/assets/reels46.js
+          node --check android438/app/src/main/assets/reels433.js
+          node --check android438/app/src/main/assets/lifecycle435.js
+          node --check android438/app/src/main/assets/runtime436.js
+      - name: Build and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --project-dir android438 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver testapk quality438
+          APK=android438/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney438-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney438-Package.txt
+          "$BT/aapt" dump resources "$APK" > deliver/Marney438-Resources.txt
+          grep -F "name='com.marketmarney.mobile.beta438'" deliver/Marney438-Package.txt
+          grep -F "versionCode='42'" deliver/Marney438-Package.txt
+          grep -F "versionName='4.38.0-beta'" deliver/Marney438-Package.txt
+          grep -F 'mm_brand_logo' deliver/Marney438-Resources.txt
+          grep -F 'mm_brand_wordmark' deliver/Marney438-Resources.txt
+          cp "$APK" deliver/Marney438.apk
+          cp android438/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney438-Tests.apk
+          cp verified438.json mobile438/Marney438-Panduan.md deliver/
+          cp mobile432/marketmarney_icon_master.png mobile432/marketmarney_wordmark.png deliver/
+          python3 mobile438/verify438.py android438 deliver testapk
+      - name: Prepare emulator checks
+        shell: bash
+        run: |
+          cat > check438.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality438/android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r deliver/Marney438.apk
+          adb install -r testapk/Marney438-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/opening.txt
+          grep -F 'OK (1 test)' quality438/android/opening.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/branding.txt
+          grep -F 'OK (1 test)' quality438/android/branding.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels433LayoutTest com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/reels-layout.txt
+          grep -F 'OK (2 tests)' quality438/android/reels-layout.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels434PerformanceTest com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/reels-434.txt
+          grep -F 'OK (2 tests)' quality438/android/reels-434.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Performance435Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/performance-435.txt
+          grep -F 'OK (3 tests)' quality438/android/performance-435.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Performance436Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/performance-436.txt
+          grep -F 'OK (3 tests)' quality438/android/performance-436.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Performance437Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/performance-437.txt
+          grep -F 'OK (3 tests)' quality438/android/performance-437.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Performance438Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/performance-438.txt
+          grep -F 'OK (3 tests)' quality438/android/performance-438.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Social430HomeButtonTest com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/home-button.txt
+          grep -F 'OK (3 tests)' quality438/android/home-button.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438/android/regression.txt
+          grep -F 'OK (32 tests)' quality438/android/regression.txt
+          adb logcat -d -s AndroidRuntime:E > quality438/android/runtime.log
+          test ! -s quality438/android/runtime.log
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am start -W -n com.marketmarney.mobile.beta438/com.marketmarney.mobile.MainActivity > quality438/android/cold-start.txt
+          sleep 0.35
+          adb exec-out screencap -p > quality438/android/opening-marketmarney.png
+          sleep 1.2
+          adb exec-out screencap -p > quality438/android/home-after-opening.png
+          adb shell dumpsys meminfo com.marketmarney.mobile.beta438 > quality438/android/meminfo.txt
+          adb shell am send-trim-memory com.marketmarney.mobile.beta438 RUNNING_LOW || true
+          sleep 0.2
+          adb logcat -d -s AndroidRuntime:E > quality438/android/runtime-after-trim.log
+          test ! -s quality438/android/runtime-after-trim.log
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check438.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney438-Results
+          path: |
+            deliver/
+            quality438/
+          if-no-files-found: error
+      - name: Publish permanent public download
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deliver
+          sha256sum -c Marney438-SHA256.txt
+          zip -9 Marney438.zip Marney438.apk Marney438-Panduan.md Marney438-SHA256.txt Marney438-Package.txt marketmarney_icon_master.png marketmarney_wordmark.png
+          TAG=marney-v4.38-beta
+          NOTES='MarketMarney 4.38 Adaptive RC memakai buffer nyata dan arah swipe untuk menentukan preload Reels, mencoba soft resume sebelum memuat ulang video, menjalankan preload aset Social dengan prioritas latar, serta memakai adjustResize agar kolom chat tetap terlihat. Logo, opening sederhana, tema terang, Social layar penuh, tombol Beranda, dan seluruh fitur 4.37 tetap dipertahankan. Website publik dan database tidak diubah.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'MarketMarney 4.38 Adaptive RC' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney438.apk Marney438.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney438.apk Marney438.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'MarketMarney 4.38 Adaptive RC' --notes "$NOTES" --prerelease
+          fi
