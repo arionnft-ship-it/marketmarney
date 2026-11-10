@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct 4.34 and inspect lifecycle
+      - name: Reconstruct 4.34 and inspect exact methods
         shell: bash
         run: |
           set -euo pipefail
@@ -52,44 +52,57 @@ jobs:
           mv android433 android434; python3 mobile434/prepare434.py >/dev/null
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('android434/app/src/main/java/com/marketmarney/mobile/MainActivity.java')
-          s=p.read_text(encoding='utf-8')
-          print('FILE_BYTES',len(s.encode()))
-          for token in ['private void navigate(', 'private void open(', 'private WebView create', 'private WebView new', 'private void adapt(', 'private void showOffline(', 'protected void onCreate(', 'protected void onStart(', 'protected void onResume(', 'protected void onPause(', 'protected void onStop(', 'public void onTrimMemory(', 'protected void onDestroy(']:
+          s=Path('android434/app/src/main/java/com/marketmarney/mobile/MainActivity.java').read_text(encoding='utf-8')
+          def method(token):
               i=s.find(token)
-              print('\n===== TOKEN',token,'INDEX',i,'=====')
-              if i<0: continue
+              print('\n===== '+token+' @ '+str(i)+' =====')
+              if i<0:return
               start=s.rfind('\n',0,i)+1
               brace=s.find('{',i)
-              if brace<0:
-                  print(s[start:i+500]); continue
-              depth=0; end=None
-              in_str=False; esc=False; quote=''
+              depth=0; end=None; state='code'; quote=''; esc=False
               for j in range(brace,len(s)):
                   c=s[j]
-                  if in_str:
-                      if esc: esc=False
-                      elif c=='\\': esc=True
-                      elif c==quote: in_str=False
+                  n=s[j+1] if j+1<len(s) else ''
+                  if state=='line':
+                      if c=='\n':state='code'
                       continue
-                  if c in ('\"',"'"):
-                      in_str=True; quote=c; continue
-                  if c=='{': depth+=1
+                  if state=='block':
+                      if c=='*' and n=='/':state='code'
+                      continue
+                  if state=='str':
+                      if esc:esc=False
+                      elif c=='\\':esc=True
+                      elif c==quote:state='code'
+                      continue
+                  if c=='/' and n=='/':state='line';continue
+                  if c=='/' and n=='*':state='block';continue
+                  if c in ('\"',"'"):state='str';quote=c;continue
+                  if c=='{':depth+=1
                   elif c=='}':
                       depth-=1
-                      if depth==0:
-                          end=j+1; break
-              print(s[start:end if end else min(len(s),i+5000)])
-          print('\n===== FIELDS =====')
-          for needle in ['lastAdaptedDocument','navigationSequence','lastReloadAt','retained =','slowTask','onPageStarted','onPageFinished','onReceivedError','onRenderProcessGone']:
-              print('\n---',needle,'---')
-              pos=0; count=0
-              while True:
-                  pos=s.find(needle,pos)
-                  if pos<0: break
-                  a=max(0,s.rfind('\n',0,max(0,pos-250)))
-                  b=min(len(s),s.find('\n',min(len(s),pos+500)))
-                  print(s[a:b])
-                  pos+=len(needle); count+=1
-                  if count>=8: break
+                      if depth==0:end=j+1;break
+              print(s[start:end])
+          for token in [
+              'private boolean canRetain(){',
+              'private boolean useLoadedIndex(',
+              'private void navigate(int selected,boolean allowSharedIndex){',
+              'private void createWeb(){',
+              'private void disposeWeb(){',
+              'private void beginPageWait(WebView target){',
+              'private void pageReady(WebView target,String url){',
+              'private void recoverPage(){',
+              'private void showFailure(String code,String message){',
+              '@Override public void onCreate(',
+              '@Override protected void onPause(){',
+              '@Override protected void onResume(){',
+              '@Override public void onTrimMemory(int level){',
+              '@Override protected void onDestroy(){'
+          ]: method(token)
+          print('\n===== CREATEWEB CLIENT BLOCK =====')
+          for needle in ['onPageStarted(WebView','onPageCommitVisible(WebView','onPageFinished(WebView','onReceivedError(WebView','onReceivedHttpError(WebView','onRenderProcessGone(WebView']:
+              p=s.find(needle)
+              print('\n---',needle,p,'---')
+              if p>=0: print(s[max(0,s.rfind('\n',0,p-500)):min(len(s),s.find('\n',p+1200))])
+          print('\n===== IMPORTS =====')
+          print(s[:s.find('/** Five destinations')])
           PY
