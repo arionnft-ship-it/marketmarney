@@ -53,6 +53,7 @@ test('Thumbnails only derive published, same-origin images without forwarding us
  const responses=await Promise.all(Array.from({length:5},()=>fetch(base+url,{headers:{cookie:'private-session=example',authorization:'Bearer example'}})));
  for(const r of responses){assert.equal(r.status,200);assert.equal(r.headers.get('content-type'),'image/webp');assert.equal(await r.text(),'webp-thumbnail');}
  assert.equal(imageReads,1);assert.equal(resizeCalls,1);
+ assert.equal(responses[0].headers.get('cache-control'),'public, max-age=86400');
  for(const r of requested){assert.equal(new URL(r.url).origin,'https://marketmarney.com');assert.equal(r.options.redirect,'error');assert.equal(r.options.headers.cookie,undefined);assert.equal(r.options.headers.authorization,undefined);}
  const disallowed=await fetch(base+'/assets/news-thumb-v1/640/'+B);assert.equal(disallowed.status,404);
  assert.equal(imageReads,1);assert.equal(resizeCalls,1);

@@ -60,7 +60,7 @@ function mmPerfLoadContent(){
    if(!data||!Array.isArray(data.articles))throw new Error('Invalid public content response');
    // Only this unauthenticated public response is authoritative. In particular,
    // an old localStorage value written by the admin cannot expose a draft.
-   const published=data.articles.filter(mmPerfIsNewsListingArticle);
+   // Share only already published public analyses with the dedicated analysis tab.\n   // Avoid a second complete /api/content download on quick navigation.\n   window.MMAnalysisPublicFeed={at:Date.now(),articles:data.articles.filter(a=>a&&a.status==='published'&&/^mm-analysis-[a-f0-9-]{32,36}$/i.test(String(a.id||'')))};\n   const published=data.articles.filter(mmPerfIsNewsListingArticle);
    const nextIndex=window.MMNewsSearch1879.createIndex(published);
    articles=published;newsSearchIndex=nextIndex;
    if(Array.isArray(data.forums))forums=data.forums;

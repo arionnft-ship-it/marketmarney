@@ -10,7 +10,7 @@ function show(panel,articles){
  if(!published.length){const msg=document.createElement('p');msg.className='mm-analysis-empty';msg.textContent='Belum ada analisa yang diterbitkan. Pantau halaman ini untuk publikasi selanjutnya.';root.append(msg);return;}
  for(const a of published){
  const card=document.createElement('a');card.className='mm-analysis-card';card.href='/berita/'+encodeURIComponent(a.id);
- if(safeImg(a.img)){const img=document.createElement('img');img.src=a.img;img.loading='lazy';img.alt='Ilustrasi '+String(a.title||'analisa').slice(0,100);card.append(img);}
+ if(safeImg(a.img)){const img=document.createElement('img');const original=a.img;const thumbnail='/assets/news-thumb-v1/640/'+original.slice('/media/'.length);img.src=thumbnail;img.loading='lazy';img.decoding='async';img.fetchPriority='low';img.width=640;img.height=360;img.alt='Ilustrasi '+String(a.title||'analisa').slice(0,100);img.addEventListener('error',()=>{if(img.src.endsWith(thumbnail))img.src=original;else img.hidden=true;},{passive:true});card.append(img);}
  const b=document.createElement('div');b.className='mm-analysis-card-content';
  b.append(line(String(a.cat||'MARKET')+' · '+new Date(a.date||Date.now()).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),'mm-analysis-card-kicker'));
  const h=document.createElement('strong');h.textContent=String(a.title||'Analisa Market');b.append(h);
@@ -20,7 +20,7 @@ function show(panel,articles){
 }
 async function refresh(panel){
  if(ongoing)return;ongoing=true;
- try{const r=await fetch('/api/content',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Layanan analisa belum tersedia.');const doc=await r.json();if(!Array.isArray(doc.articles))throw Error('Format daftar analisa tidak dikenali.');show(panel,doc.articles);last=Date.now();}
+ try{const feed=window.MMAnalysisPublicFeed;let items;if(feed&&Number.isFinite(feed.at)&&Date.now()-feed.at<25000&&Array.isArray(feed.articles))items=feed.articles;else{const r=await fetch('/api/content',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Layanan analisa belum tersedia.');const doc=await r.json();if(!Array.isArray(doc.articles))throw Error('Format daftar analisa tidak dikenali.');items=doc.articles;}show(panel,items);last=Date.now();}
  catch(e){panel.querySelector('.mm-analysis-cards').textContent='Daftar analisa belum bisa dimuat. Coba muat ulang halaman.';}finally{ongoing=false;}
 }
 function mount(){
