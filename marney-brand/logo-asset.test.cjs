@@ -45,6 +45,7 @@ test('all website, favicon and PWA paths map to the new logo assets',async()=>{
   assert.ok(fs.existsSync(path.join(root,filename)),filename);
  }
  assert.match(branding.CLIENT,/isDarkSurface/);
+ new (require('node:vm').Script)(branding.CLIENT);
  assert.match(about.CLIENT,/brand-about-transparent/);
  const icon=await sharp(path.join(root,'icon-512.png')).metadata();
  assert.equal(icon.width,512);assert.equal(icon.height,512);
