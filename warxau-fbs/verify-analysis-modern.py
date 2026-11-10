@@ -6,7 +6,7 @@ BASE="https://marketmarney.com/"
 CSS=Path("warxau-fbs/analysis-modern.css").read_text()
 OUT=Path("analisa-modern-preview")
 OUT.mkdir(exist_ok=True)
-report={"mode":"CSS preview only (no website writes)","screens":[],"failures":[]}
+report={"mode":"LIVE website CSS served by Railway","screens":[],"failures":[]}
 with sync_playwright() as pw:
     browser=pw.chromium.launch()
     for name,width,height in [("desktop",1440,950),("mobile",390,844)]:
@@ -19,7 +19,8 @@ with sync_playwright() as pw:
             page.wait_for_selector('.navbtn[data-page="Analisa"]',state="attached",timeout=18000)
             page.evaluate("""() => document.querySelector('.navbtn[data-page="Analisa"]').click()""")
             page.wait_for_selector('#mm-analysis-public-v1 .mm-analysis-public-head',timeout=25000)
-            page.add_style_tag(content=CSS)
+            styles=page.locator('link[href*="mm-analysis-modern-v1.css"]')
+            assert styles.count()>=1,'production stylesheet not linked on homepage'
             # Cards are populated by a separately fetched API; slow or temporarily
             # unavailable API must not invalidate the CSS-only layout preview.
             page.wait_for_timeout(2200)
