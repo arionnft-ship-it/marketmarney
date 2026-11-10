@@ -31,6 +31,7 @@ with ZipFile(apk) as archive:
     dex=b''.join(archive.read(name) for name in archive.namelist() if name.endswith('.dex'))
     assert b'MarketMarneyAndroid/4.38 AppShell' in dex
     assert b'MM438_LAUNCH' in dex
+    assert b'MM438_ASSETS' in dex
     assert 'assets/fluid438.css' in actual
 with ZipFile(testapk/'Marney438-Tests.apk') as tests:
     dex=b''.join(tests.read(name) for name in tests.namelist() if name.endswith('.dex'))
@@ -70,6 +71,11 @@ checks=[
     'int retainLimit=lowRamDevice||nativePowerSave?1:2' in main,
     'MM438_NAV' in main,
     'if(url.equals(current)&&!mainFailed)' in main,
+    'if(tab==SOCIAL)preloadSocialAssets()' in main,
+    'if(social&&!socialAssetsReady){preloadSocialAssets();return;}' in main,
+    'if(tab==SOCIAL)ensureSocialAssets()' not in main,
+    'MM438_ASSETS' in main,
+    'if(socialAssetsReady)frame.post(()->' in main,
     'ensureSocialAssets' in main,
     'CookieManager.getInstance().flush()' in main,
     'runtimeDispatchTask' in main,
