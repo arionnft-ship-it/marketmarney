@@ -17,7 +17,7 @@ function nav(){
 }
 function arena(){
  if(location.pathname!=='/assets/xau-war-3d.html')return;
- const heading=[...document.querySelectorAll('h1')].find(el=>/^WarXAU(?:\s|$)/i.test(el.textContent.trim()));
+ const heading=[...document.querySelectorAll('h1')].find(el=>/^WarXAU/i.test(el.textContent.trim()));
  if(heading)append(heading,'title');
 }
 function start(){
