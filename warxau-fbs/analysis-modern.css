@@ -1,0 +1,298 @@
+/* MarketMarney · Analisa Modern — visual-only enhancement, homepage only.
+   Deliberately scoped to the analysis shell and its public publication panel.
+   No changes to TradingView internals, pivot math, market data or admin UI. */
+.mm87-shell.mm1815-anal-shell {
+  --mm-analisa-ink: #202c3b;
+  --mm-analisa-muted: #657386;
+  --mm-analisa-line: #e4e9f0;
+  --mm-analisa-amber: #c77516;
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  padding: clamp(14px, 2.3vw, 28px);
+  background: linear-gradient(150deg, #ffffff 0%, #fbfcfe 72%, #fff9f0 100%);
+  color: var(--mm-analisa-ink);
+  border: 1px solid #e2e8ef;
+  border-radius: 22px;
+  box-shadow: 0 10px 38px rgba(24, 43, 65, .06);
+  overflow: visible;
+}
+.mm87-shell.mm1815-anal-shell::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(90deg, #ed9e3d 0%, #df7921 52%, rgba(237,158,61,0) 100%);
+  pointer-events: none;
+}
+.mm87-shell.mm1815-anal-shell > .mm1815-anal-heading {
+  margin-bottom: 20px;
+  padding: 5px 2px 0;
+}
+.mm87-shell.mm1815-anal-shell > .mm1815-anal-heading :is(h1,h2,h3) {
+  color: #1c2939;
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -.035em;
+  font-weight: 760;
+}
+.mm87-shell.mm1815-anal-shell > .mm1815-anal-heading p {
+  color: var(--mm-analisa-muted);
+  max-width: 65ch;
+  line-height: 1.65;
+}
+.mm87-shell.mm1815-anal-shell > .mm87-controls,
+.mm87-shell.mm1815-anal-shell > .mm1815-anal-controls,
+.mm87-shell.mm1815-anal-shell > .mm87-controls.mm1815-anal-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  background: #f5f7fb;
+  border: 1px solid var(--mm-analisa-line);
+  border-radius: 14px;
+  margin-bottom: 18px;
+}
+.mm87-shell.mm1815-anal-shell .mm1815-anal-field {
+  min-width: 0;
+  color: #435366;
+}
+.mm87-shell.mm1815-anal-shell :is(#mm87-symbol,#mm87-interval) {
+  min-height: 40px;
+  max-width: 100%;
+  border: 1px solid #d4dce7;
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: #1f2f41;
+  background: #fff;
+  font: inherit;
+  box-shadow: 0 1px 2px rgba(19,36,58,.04);
+}
+.mm87-shell.mm1815-anal-shell :is(#mm87-symbol,#mm87-interval):focus-visible {
+  outline: 2px solid #e3a64f;
+  outline-offset: 2px;
+}
+.mm87-shell.mm1815-anal-shell > .mm87-grid {
+  min-width: 0;
+  gap: clamp(12px, 1.6vw, 18px);
+  margin-bottom: 18px;
+}
+.mm87-shell.mm1815-anal-shell .mm87-panel {
+  min-width: 0;
+  border: 1px solid #e3e9f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 14px rgba(29,48,70,.035);
+  overflow: hidden;
+}
+.mm87-shell.mm1815-anal-shell .mm87-panel :is(iframe,canvas) {
+  max-width: 100%;
+}
+.mm87-shell.mm1815-anal-shell > .mm87-info {
+  margin: 18px 0;
+  padding: 18px 20px;
+  background: linear-gradient(100deg, #fff8ed, #fffdf9 65%, #fff);
+  border: 1px solid #f1e1c9;
+  border-left: 3px solid #dd8b2b;
+  border-radius: 13px;
+  color: #3e4c5c;
+  line-height: 1.7;
+}
+.mm87-shell.mm1815-anal-shell > .mm87-info h3 {
+  color: #253246;
+  margin-top: 0;
+  letter-spacing: -.015em;
+}
+.mm87-shell.mm1815-anal-shell > .mm1816-pivot-public,
+.mm87-shell.mm1815-anal-shell .mm1818-center {
+  min-width: 0;
+  margin-top: 19px;
+  padding: clamp(15px, 1.9vw, 22px);
+  background: #fff;
+  border: 1px solid #e3e9f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(22,42,61,.035);
+}
+.mm87-shell.mm1815-anal-shell .mm1816-pivot-public :is(h2,h3),
+.mm87-shell.mm1815-anal-shell .mm1818-center :is(h2,h3) {
+  color: #273647;
+  letter-spacing: -.015em;
+}
+.mm87-shell.mm1815-anal-shell > .mm1816-pivot-public table {
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public {
+  margin: 22px 0 10px;
+  padding: clamp(18px, 2.1vw, 26px);
+  background: linear-gradient(145deg, #fff 0%, #fff 79%, #fff9ef 100%);
+  border: 1px solid #e3e8ef;
+  border-radius: 19px;
+  box-shadow: 0 8px 28px rgba(17,35,55,.05);
+  color: #1e2a3a;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-public-head {
+  align-items: center;
+  border-bottom: 1px solid #edf0f4;
+  padding-bottom: 17px;
+  gap: 12px 20px;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-eyebrow {
+  color: #aa650c;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: .15em;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public h2 {
+  color: #1b2a3a;
+  margin: 6px 0 4px;
+  font-size: clamp(20px, 2.2vw, 26px);
+  letter-spacing: -.035em;
+  line-height: 1.25;
+  font-weight: 780;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-public-head p {
+  color: #697789;
+  max-width: 62ch;
+  line-height: 1.6;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-public-count {
+  flex: none;
+  padding: 8px 12px;
+  background: #fff3e5;
+  border: 1px solid #f4dfc3;
+  color: #925608;
+  font-size: 12px;
+  border-radius: 9px;
+  font-weight: 750;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.8vw, 18px);
+  margin-top: 18px;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: #1d2d3f;
+  background: #fff;
+  border: 1px solid #e2e7ee;
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 2px 9px rgba(16,34,55,.035);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card:hover {
+  transform: translateY(-3px);
+  border-color: #e9bf82;
+  box-shadow: 0 12px 27px rgba(24,41,63,.10);
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card:focus-visible {
+  outline: 3px solid #e9a249;
+  outline-offset: 3px;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
+  background: #f4f6f9;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding: clamp(14px, 1.5vw, 18px);
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card-kicker {
+  color: #a3610f;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: .04em;
+  line-height: 1.4;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card strong {
+  display: block;
+  font-weight: 760;
+  color: #1c2b3b;
+  font-size: clamp(14px, 1.3vw, 16px);
+  line-height: 1.43;
+  letter-spacing: -.016em;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  color: #657283;
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 0 0 2px;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card-link {
+  display: block;
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 12px;
+  font-weight: 770;
+  color: #ab6212;
+}
+.mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-empty {
+  border: 1px dashed #d7e1eb;
+  border-radius: 12px;
+  padding: 24px;
+  background: #f8fafc;
+  color: #657182;
+}
+@media (max-width: 960px) {
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .mm87-shell.mm1815-anal-shell {
+    padding: 12px;
+    border-radius: 17px;
+  }
+  .mm87-shell.mm1815-anal-shell::before {left: 14px;right: 14px}
+  .mm87-shell.mm1815-anal-shell > .mm1815-anal-heading {padding: 5px 2px 0}
+  .mm87-shell.mm1815-anal-shell > .mm87-controls,
+  .mm87-shell.mm1815-anal-shell > .mm1815-anal-controls {
+    padding: 12px;
+    gap: 10px;
+  }
+  .mm87-shell.mm1815-anal-shell :is(#mm87-symbol,#mm87-interval) {width: 100%}
+  .mm87-shell.mm1815-anal-shell > .mm87-info {padding: 14px}
+  .mm87-shell.mm1815-anal-shell > .mm1816-pivot-public,
+  .mm87-shell.mm1815-anal-shell .mm1818-center {padding: 12px}
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public {
+    margin: 14px 0 8px;
+    padding: 16px 13px;
+    border-radius: 14px;
+  }
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-public-head {align-items: flex-start}
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-cards {
+    grid-template-columns: minmax(0,1fr);
+    gap: 14px;
+  }
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card img {aspect-ratio: 16 / 9}
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card {transition: none}
+  .mm87-shell.mm1815-anal-shell > .mm-analysis-public .mm-analysis-card:hover {transform: none}
+}

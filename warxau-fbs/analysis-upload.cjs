@@ -5,6 +5,7 @@ const sources=[
  ['/assets/mm-analysis-admin-v1.js','analysis-upload-admin.js','text/javascript; charset=utf-8'],
  ['/assets/mm-analysis-public-v1.js','analysis-upload-public.js','text/javascript; charset=utf-8'],
  ['/assets/mm-analysis-v1.css','analysis-upload.css','text/css; charset=utf-8'],
+ ['/assets/mm-analysis-modern-v1.css','analysis-modern.css','text/css; charset=utf-8'],
  ['/assets/mm-analysis-article-v1.js','analysis-article.js','text/javascript; charset=utf-8'],
  ['/assets/mm-analysis-article-v1.css','analysis-article.css','text/css; charset=utf-8']
 ];
@@ -25,7 +26,8 @@ function injectHtml(html,pathname){
  const mark=isAdmin?'data-mm-analysis-admin':'data-mm-analysis-public';
  if(html.includes(mark+'="'+VERSION+'"'))return html;
  const script=isAdmin?'/assets/mm-analysis-admin-v1.js':'/assets/mm-analysis-public-v1.js';
- const injection='<link rel="stylesheet" href="/assets/mm-analysis-v1.css?v='+VERSION+'" '+mark+'="'+VERSION+'"><script defer src="'+script+'?v='+VERSION+'"></script>';
+ const visual=isPublic?'<link rel="stylesheet" href="/assets/mm-analysis-modern-v1.css?v=20261110-modern-v1" data-mm-analysis-modern="v1">':'';
+ const injection='<link rel="stylesheet" href="/assets/mm-analysis-v1.css?v='+VERSION+'" '+mark+'="'+VERSION+'">'+visual+'<script defer src="'+script+'?v='+VERSION+'"></script>';
  return html.replace(/<\/head\s*>/i,injection+'</head>');
 }
 module.exports={VERSION,sources,assets,injectHtml};

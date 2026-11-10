@@ -164,3 +164,20 @@ test('unrelated articles and malformed body remain untouched',()=>{
  assert.equal(a.PATH.test('/berita/mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac/gbp-usd-skenario-h4'),true);
  assert.equal(a.PATH.test('/berita/mm-editorial-123456789012345678901234/ordinary'),false);
 });
+
+test('modern Analisa CSS is injected on public homepage only',()=>{
+ const h=injectHtml(html,'/');
+ assert.match(h,/mm-analysis-modern-v1\.css\?v=20261110-modern-v1/);
+ assert.equal(injectHtml(h,'/'),h,'idempotent HTML injection');
+ assert.ok(!injectHtml(html,'/admin.html').includes('mm-analysis-modern-v1.css'),'Admin unchanged');
+ assert.ok(!injectHtml(html,'/akun.html').includes('mm-analysis-modern-v1.css'),'Accounts unchanged');
+ assert.ok(!injectHtml(html,'/berita/mm-analysis-2dee2e8ece2d47278fa10c8a01dac0ac/test').includes('mm-analysis-modern-v1.css'),'Article unchanged');
+});
+test('modern style remains scoped and does not hide or replace data widgets',()=>{
+ const s=assets().get('/assets/mm-analysis-modern-v1.css').body.toString();
+ assert.match(s,/\.mm87-shell\.mm1815-anal-shell/);
+ assert.match(s,/\.mm-analysis-public \.mm-analysis-card/);
+ assert.match(s,/\.mm1816-pivot-public/);
+ assert.doesNotMatch(s,/(^|\n)\s*(?:body|html|#app|\.sidebar)\s*[{,:]/);
+ assert.doesNotMatch(s,/display:\s*none\s*!important/);
+});

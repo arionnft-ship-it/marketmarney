@@ -1,0 +1,25 @@
+name: Verify Modern MarketMarney Analisa UI
+on:
+  push:
+    branches: [feature/analisa-modern-ui-20261110]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify scoped styles and legacy features
+        run: |
+          npm ci --prefix warxau-fbs --no-audit --no-fund
+          node --check warxau-fbs/analysis-upload.cjs
+          node --check marney-brand/branding.cjs
+          node --test warxau-fbs/analysis-upload.test.cjs
+          cp marney-brand/branding.cjs /tmp/marney-brand-modern-check.cjs
+          node signup/install.cjs /tmp/marney-brand-modern-check.cjs
+          node sidebar3d/install.cjs /tmp/marney-brand-modern-check.cjs
+          node --check /tmp/marney-brand-modern-check.cjs

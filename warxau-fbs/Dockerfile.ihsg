@@ -21,7 +21,7 @@ COPY warxau-fbs/btc-feed.js warxau-fbs/btc-addon.cjs warxau-fbs/start-btc.cjs ./
 COPY warxau-fbs/oil-feed.js warxau-fbs/oil-addon.cjs warxau-fbs/oil-preload.cjs warxau-fbs/start-oil.cjs ./
 COPY warxau-fbs/nasdaq-addon.cjs warxau-fbs/nasdaq-preload.cjs warxau-fbs/start-nasdaq.cjs ./
 COPY warxau-fbs/ihsg-addon.cjs warxau-fbs/ihsg-preload.cjs warxau-fbs/start-ihsg.cjs ./
-COPY warxau-fbs/analysis-upload.cjs warxau-fbs/analysis-upload-admin.js warxau-fbs/analysis-upload-public.js warxau-fbs/analysis-upload.css warxau-fbs/analysis-article.js warxau-fbs/analysis-article.css warxau-fbs/analysis-upload.test.cjs ./
+COPY warxau-fbs/analysis-upload.cjs warxau-fbs/analysis-upload-admin.js warxau-fbs/analysis-upload-public.js warxau-fbs/analysis-upload.css warxau-fbs/analysis-modern.css warxau-fbs/analysis-article.js warxau-fbs/analysis-article.css warxau-fbs/analysis-upload.test.cjs ./
 COPY marney-brand/branding.cjs marney-brand/seo.cjs ./
 COPY marney-brand/install.cjs ./brand-install.cjs
 COPY signup ./signup
