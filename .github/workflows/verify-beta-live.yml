@@ -1,0 +1,27 @@
+name: Verify live XAUWAR BETA labels
+on:
+  push:
+    branches: [feature/xauwar-beta-label-20261110]
+    paths: ['.github/workflows/verify-beta-live.yml','warxau-fbs/verify-beta-live.py']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install Playwright
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install chromium --with-deps
+      - name: Verify both XAUWAR labels in real browser
+        run: python warxau-fbs/verify-beta-live.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xauwar-beta-live-verification
+          path: xauwar-beta-verification/
+          retention-days: 4
