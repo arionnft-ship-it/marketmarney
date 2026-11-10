@@ -1,11 +1,11 @@
 'use strict';
 // About logo ONLY. All original dark styling, content, layout and navigation remain untouched.
-const VERSION='about-logo-only-20261110-v1';
+const VERSION='about-m-arrow-only-20261110-v2';
 const SOURCE='/assets/brand-about-transparent.webp?v='+VERSION;
 function client(){
  'use strict';
  if(location.pathname!=='/about.html')return;
- const source='/assets/brand-about-transparent.webp?v=about-logo-only-20261110-v1';
+ const source='/assets/brand-about-transparent.webp?v=about-m-arrow-only-20261110-v2';
  function label(n){return String(n?.textContent||'').replace(/\s+/g,' ').trim();}
  function apply(){
   const headings=[...document.querySelectorAll('h1,h2,h3')];
