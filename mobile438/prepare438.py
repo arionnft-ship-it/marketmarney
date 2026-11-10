@@ -76,6 +76,23 @@ replace(main,old_open,new_open)
 startup='app/src/main/java/com/marketmarney/mobile/StartupOverlay.java'
 replace(startup,'MarketMarney 4.37 opening','MarketMarney 4.38 opening')
 replace(startup,'MM437_LAUNCH','MM438_LAUNCH',count=2)
+replace(startup,
+'''        if(fade&&motionAllowed(getContext())&&isAttachedToWindow()){
+            animate().alpha(0f).setDuration(100).withEndAction(this::removeNow).start();
+        }else{
+            removeNow();
+        }
+''',
+'''        if(fade&&motionAllowed(getContext())&&isAttachedToWindow()){
+            animate().alpha(0f).setDuration(100).withEndAction(this::removeNow).start();
+            // Some overloaded WebView/renderer frames may drop an animation end
+            // callback. Always remove the opening shortly afterwards as a bounded
+            // fallback so it can never cover the application indefinitely.
+            postDelayed(this::removeNow,220);
+        }else{
+            removeNow();
+        }
+''')
 
 version_tests=[]
 for test_file in (root/'app/src/androidTest/java').rglob('*.java'):
@@ -111,7 +128,7 @@ expected.update(version_tests)
 assert changed==sorted(expected),{'unexpected':sorted(set(changed)-expected),'missing':sorted(expected-set(changed))}
 manifest={
     'release':'4.38.0-beta','package':'com.marketmarney.mobile.beta438','baseRelease':'4.37.0-beta',
-    'purpose':'Use direction-aware Reel buffering, activation hysteresis, scroll-settle selection, feed rendering containment, duplicate-navigation guards and an adaptive two-tab warm cache on capable devices.',
+    'purpose':'Use direction-aware Reel buffering, activation hysteresis, scroll-settle selection, feed rendering containment, duplicate-navigation guards, an adaptive two-tab warm cache on capable devices, and a bounded opening-removal fallback.',
     'changed':[{'path':rel,'beforeSha256':before.get(rel),'afterSha256':after.get(rel)} for rel in changed],
     'preserved':{rel:sha for rel,sha in sorted(before.items()) if rel not in changed},
 }
