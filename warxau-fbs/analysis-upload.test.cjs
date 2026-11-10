@@ -89,7 +89,7 @@ test('published analysis appears between indicator guide and pivot card',()=>{
   body:root
  };
  const context={
-  document,MutationObserver:class{observe(){}},requestAnimationFrame:callback=>callback(),
+  document,window:{},MutationObserver:class{observe(){}},requestAnimationFrame:callback=>callback(),
   setTimeout(){},fetch:()=>new Promise(()=>{}),AbortSignal:{timeout(){return null;}},
  };
  vm.runInNewContext(source,context);
@@ -127,7 +127,7 @@ test('news listings exclude analysis while dedicated analysis cards keep their s
  const homepage=fs.readFileSync(path.join(__dirname,'performance-news.cjs'),'utf8');
  assert.ok(homepage.includes('data.articles.filter(mmPerfIsNewsListingArticle)'));
  const marketAnalysis=fs.readFileSync(path.join(__dirname,'analysis-upload-public.js'),'utf8');
- assert.ok(marketAnalysis.includes('show(panel,doc.articles)'));
+ assert.ok(marketAnalysis.includes('show(panel,items)'));
 });
 
 
