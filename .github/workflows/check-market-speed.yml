@@ -18,6 +18,10 @@ jobs:
       - name: Verify speed changes and existing flows
         run: |
           node --check warxau-fbs/performance-runtime.cjs
+          cp warxau-fbs/performance-runtime.cjs warxau-fbs/performance-runtime-smoke.cjs
+          node warxau-fbs/install-light-theme.cjs warxau-fbs/performance-runtime-smoke.cjs
+          node --check warxau-fbs/performance-runtime-smoke.cjs
+          rm warxau-fbs/performance-runtime-smoke.cjs
           node --check warxau-fbs/performance-news.cjs
           node --check warxau-fbs/analysis-upload-public.js
           node --test warxau-fbs/performance-runtime.test.cjs
