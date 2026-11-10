@@ -1,7 +1,7 @@
 'use strict';
 // Public-domain SEO guard. Does not change stored application files, sessions or data.
 const ORIGIN = 'https://marketmarney.com';
-const BRAND_RELEASE = 'marney-20261109-r3';
+const BRAND_RELEASE = 'marney-m-arrow-20261110-v1';
 const GOOGLE_SITE_VERIFICATION = 'CxKqw5ml8va-XZ5WcsNCuYCKPCJjnSsf3F6dhGNp5ZU';
 // Official AdSense publisher ID shown in the owner's account.
 const ADSENSE_CLIENT = 'ca-pub-4691344602211954';
