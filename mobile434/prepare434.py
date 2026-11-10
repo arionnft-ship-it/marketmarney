@@ -50,6 +50,21 @@ replace(main,
     'WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setLoadsImagesAutomatically(true);s.setCacheMode(WebSettings.LOAD_DEFAULT);',
     'WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setLoadsImagesAutomatically(true);s.setCacheMode(WebSettings.LOAD_DEFAULT);s.setDatabaseEnabled(true);web.setOverScrollMode(View.OVER_SCROLL_NEVER);web.setVerticalScrollBarEnabled(false);web.setHorizontalScrollBarEnabled(false);')
 
+# Each adaptation request owns a ticket. A mismatched path/query request invalidates
+# a previously scheduled retry, so an obsolete document can never re-style the new one.
+replace(main,
+    '    private long navigationSequence;\n',
+    '    private long navigationSequence;\n    private long adaptSequence;\n')
+replace(main,
+    '    private void adapt(WebView v,String url){\n        if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl()))return;',
+    '    private void adapt(WebView v,String url){\n        final long ticket=++adaptSequence;\n        if(destroyed||v!=web||!own(url)||!Recovery414.sameDocument(url,v.getUrl()))return;')
+replace(main,
+    '            if(destroyed||v!=web||!Recovery414.sameDocument(url,v.getUrl()))return;',
+    '            if(destroyed||ticket!=adaptSequence||v!=web||!Recovery414.sameDocument(url,v.getUrl()))return;')
+replace(main,
+    '            if("\\\"retry\\\"".equals(result)){v.postDelayed(()->adapt(v,url),120);return;}',
+    '            if("\\\"retry\\\"".equals(result)){v.postDelayed(()->{if(!destroyed&&ticket==adaptSequence)adapt(v,url);},120);return;}')
+
 startup='app/src/main/java/com/marketmarney/mobile/StartupOverlay.java'
 replace(startup,'MarketMarney 4.33 opening','MarketMarney 4.34 opening')
 replace(startup,'MM433_LAUNCH','MM434_LAUNCH',count=2)
@@ -111,7 +126,7 @@ manifest={
     'release':'4.34.0-beta',
     'package':'com.marketmarney.mobile.beta434',
     'baseRelease':'4.33.0-beta',
-    'purpose':'Use a bounded adaptive three-to-four Reel buffer, delay destructive media release, preload the active and next Reel, reduce Social rendering work, scope observers, and enable the WebView database/cache path without changing the public website or database.',
+    'purpose':'Use a bounded adaptive three-to-four Reel buffer, delay destructive media release, preload the active and next Reel, reduce Social rendering work, scope observers, enable the WebView database/cache path, and cancel stale document adaptation retries without changing the public website or database.',
     'changed':[{'path':rel,'beforeSha256':before.get(rel),'afterSha256':after.get(rel)} for rel in changed],
     'preserved':{rel:sha for rel,sha in sorted(before.items()) if rel not in changed},
 }
