@@ -1,6 +1,6 @@
 # MarketMarney 4.38 Fluid
 
-Versi ini melanjutkan 4.37 dengan fokus pada respons sentuhan, kestabilan perpindahan Reel, dan navigasi aplikasi yang tidak melakukan muat ulang tanpa alasan.
+Versi ini melanjutkan 4.37 dengan fokus pada respons sentuhan, kestabilan perpindahan Reel, navigasi tanpa muat ulang yang tidak perlu, dan pembukaan Social yang tidak menahan thread antarmuka.
 
 ## Perubahan utama
 
@@ -8,6 +8,7 @@ Versi ini melanjutkan 4.37 dengan fokus pada respons sentuhan, kestabilan perpin
 - Preload mengikuti arah swipe, sehingga bandwidth diprioritaskan ke video yang kemungkinan dibuka berikutnya.
 - Setelah gerakan berhenti, kartu terdekat dipilih secara konsisten melalui `scrollend` atau fallback terjadwal.
 - Postingan Social yang jauh dari layar memakai `content-visibility` dan containment agar feed panjang lebih ringan.
+- Aset besar Social dibaca melalui satu executor latar, termasuk ketika aplikasi langsung dibuka ke Social; WebView tetap responsif lalu adaptasi tampilan diterapkan saat aset siap.
 - Tab yang sering dipakai dapat dipertahankan hingga dua pada perangkat normal; perangkat RAM rendah atau mode hemat daya tetap dibatasi satu.
 - Menekan tab yang sedang aktif tidak lagi memuat ulang halaman yang sama.
 - Permintaan membuka URL yang identik tidak lagi mengulang navigasi WebView.
