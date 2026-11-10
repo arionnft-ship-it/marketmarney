@@ -67,6 +67,7 @@ jobs:
           mv android433 android434; python3 mobile434/prepare434.py
           mv android434 android435; python3 mobile435/prepare435.py
           mv android435 android436; python3 mobile436/prepare436.py
+          python3 mobile436/align_legacy_tests436.py
           node --check android436/app/src/main/assets/social411/5eab9da17fe2c659.js
           node --check android436/app/src/main/assets/social411/bundle427.js
           node --check android436/app/src/main/assets/group48/4e221ebb961158b1.js
