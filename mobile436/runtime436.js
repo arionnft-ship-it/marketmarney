@@ -40,8 +40,8 @@ function apply(detail){
  else hideBanner(0);
  previousUsable=usable;
 }
-function runtime(event){apply(event&&event.detail||{});}
-function browserNetwork(){apply({online:navigator.onLine!==false,validated:navigator.onLine!==false});}
+function runtime(event){window.__mm436NativeNetwork=true;apply(event&&event.detail||{});}
+function browserNetwork(){var online=navigator.onLine!==false;if(window.__mm436NativeNetwork)apply({online:online});else apply({online:online,validated:online});}
 function power(event){var detail=event&&event.detail||{};apply({powerSave:!!detail.saving});}
 function pauseBackground(){
  document.querySelectorAll('video,audio').forEach(function(media){
