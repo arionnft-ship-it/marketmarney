@@ -1,0 +1,181 @@
+name: MarketMarney 4.35 Optimal
+on:
+  push:
+    branches: [android-v4.35-production]
+    paths: ['mobile435/**', '.github/workflows/build435.yml']
+  workflow_dispatch:
+permissions: {contents: write}
+concurrency:
+  group: marketmarney435-optimal-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$S"; yes | "$S" --licenses >/dev/null || true
+          "$S" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Reconstruct verified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,stat
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and not stat.S_ISLNK(entry.external_attr>>16)
+                  if path.parts and path.parts[0]=='android417': archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420; python3 mobile420/prepare420.py
+          mv android420 android421; python3 mobile421/prepare421.py
+          mv android421 android422; python3 mobile422/prepare422.py
+          mv android422 android423; python3 mobile423/prepare423.py
+          mv android423 android424; python3 mobile424/prepare424.py
+          mv android424 android425; python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426; python3 mobile426/prepare426.py
+          mv android426 android427; python3 mobile427/prepare427.py
+          mv android427 android428; python3 mobile428/prepare428.py
+          mv android428 android429; python3 mobile429/prepare429.py
+          mv android429 android430; python3 mobile430/prepare430.py
+          mv android430 android431; python3 mobile431/prepare431.py
+          mv android431 android432; python3 mobile432/prepare432.py
+          mv android432 android433; python3 mobile433/prepare433.py
+          mv android433 android434; python3 mobile434/prepare434.py
+          mv android434 android435; python3 mobile435/prepare435.py
+          node --check android435/app/src/main/assets/social411/5eab9da17fe2c659.js
+          node --check android435/app/src/main/assets/social411/bundle427.js
+          node --check android435/app/src/main/assets/group48/4e221ebb961158b1.js
+          node --check android435/app/src/main/assets/group48/bundle427.js
+          node --check android435/app/src/main/assets/social429.js
+          node --check android435/app/src/main/assets/home430.js
+          node --check android435/app/src/main/assets/reels46.js
+          node --check android435/app/src/main/assets/reels433.js
+          node --check android435/app/src/main/assets/lifecycle435.js
+      - name: Build and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --project-dir android435 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver testapk quality435
+          APK=android435/app/build/outputs/apk/debug/app-debug.apk
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" > deliver/Marney435-Certificate.txt
+          "$BT/aapt" dump badging "$APK" > deliver/Marney435-Package.txt
+          "$BT/aapt" dump resources "$APK" > deliver/Marney435-Resources.txt
+          grep -F "name='com.marketmarney.mobile.beta435'" deliver/Marney435-Package.txt
+          grep -F "versionCode='39'" deliver/Marney435-Package.txt
+          grep -F "versionName='4.35.0-beta'" deliver/Marney435-Package.txt
+          grep -F 'mm_brand_logo' deliver/Marney435-Resources.txt
+          grep -F 'mm_brand_wordmark' deliver/Marney435-Resources.txt
+          cp "$APK" deliver/Marney435.apk
+          cp android435/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney435-Tests.apk
+          cp verified435.json mobile435/Marney435-Panduan.md deliver/
+          cp mobile432/marketmarney_icon_master.png mobile432/marketmarney_wordmark.png deliver/
+          python3 mobile435/verify435.py android435 deliver testapk
+      - name: Prepare emulator checks
+        shell: bash
+        run: |
+          cat > check435.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality435/android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r deliver/Marney435.apk
+          adb install -r testapk/Marney435-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/opening.txt
+          grep -F 'OK (1 test)' quality435/android/opening.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/branding.txt
+          grep -F 'OK (1 test)' quality435/android/branding.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels433LayoutTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/reels-layout.txt
+          grep -F 'OK (2 tests)' quality435/android/reels-layout.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels434PerformanceTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/reels-434.txt
+          grep -F 'OK (2 tests)' quality435/android/reels-434.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Performance435Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/performance-435.txt
+          grep -F 'OK (3 tests)' quality435/android/performance-435.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Social430HomeButtonTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/home-button.txt
+          grep -F 'OK (3 tests)' quality435/android/home-button.txt
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/regression.txt
+          grep -F 'OK (32 tests)' quality435/android/regression.txt
+          adb logcat -d -s AndroidRuntime:E > quality435/android/runtime.log
+          test ! -s quality435/android/runtime.log
+          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
+          adb shell am start -W -n com.marketmarney.mobile.beta435/com.marketmarney.mobile.MainActivity > quality435/android/cold-start.txt
+          sleep 0.35
+          adb exec-out screencap -p > quality435/android/opening-marketmarney.png
+          sleep 1.2
+          adb exec-out screencap -p > quality435/android/home-after-opening.png
+          adb shell dumpsys meminfo com.marketmarney.mobile.beta435 > quality435/android/meminfo.txt
+          adb shell am send-trim-memory com.marketmarney.mobile.beta435 RUNNING_LOW || true
+          sleep 0.2
+          adb logcat -d -s AndroidRuntime:E > quality435/android/runtime-after-trim.log
+          test ! -s quality435/android/runtime-after-trim.log
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check435.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney435-Results
+          path: |
+            deliver/
+            quality435/
+          if-no-files-found: error
+      - name: Publish permanent public download
+        env: {GH_TOKEN: '${{ github.token }}'}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deliver
+          sha256sum -c Marney435-SHA256.txt
+          zip -9 Marney435.zip Marney435.apk Marney435-Panduan.md Marney435-SHA256.txt Marney435-Package.txt marketmarney_icon_master.png marketmarney_wordmark.png
+          TAG=marney-v4.35-beta
+          NOTES='MarketMarney 4.35 Optimal menyempurnakan penggunaan harian: mencegah permintaan play Reels ganda, menyesuaikan buffer dengan RAM, koneksi dan tekanan memori Android, menjeda media saat aplikasi di latar, melepas WebView cadangan saat diperlukan, memuat gambar feed secara bertahap, dan memulihkan perubahan jaringan tanpa memuat ulang seluruh Social. Logo baru, opening sederhana, tema terang, tombol Beranda, Social layar penuh, dan semua fitur 4.34 tetap dipertahankan. Website publik serta database tidak diubah.'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'MarketMarney 4.35 Optimal' --notes "$NOTES" --prerelease
+            gh release upload "$TAG" Marney435.apk Marney435.zip --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" Marney435.apk Marney435.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'MarketMarney 4.35 Optimal' --notes "$NOTES" --prerelease
+          fi
