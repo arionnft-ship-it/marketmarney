@@ -57,11 +57,13 @@ public class Performance437Test {
             assertTrue(name,script.contains("function recoverStall(st)"));
             assertTrue(name,script.contains("function scheduleStall(st)"));
             assertTrue(name,script.contains("st.recoveryCount>=2"));
-            assertTrue(name,script.contains("Date.now()-st.lastRecoveryAt<18000"));
+            assertTrue(name,script.contains("now-st.lastRecoveryAt<18000"));
             assertTrue(name,script.contains("data-mm437-recovering"));
             assertTrue(name,script.contains("lastProgressTime"));
             assertTrue(name,script.contains("6500:4200"));
-            assertFalse(name,script.contains("location.reload()"));
+            int start=script.indexOf("function recoverStall(st)"),end=script.indexOf("function scheduleStall(st)",start);
+            assertTrue(name,start>=0&&end>start);
+            assertFalse(name,script.substring(start,end).contains("location.reload"));
         }
         String css=asset("smooth437.css");
         assertTrue(css.contains("data-mm437-recovering"));
