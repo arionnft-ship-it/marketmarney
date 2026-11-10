@@ -102,41 +102,62 @@ jobs:
           cat > check435.sh <<'SH'
           set -euo pipefail
           mkdir -p quality435/android
+          TARGET=com.marketmarney.mobile.beta435
+          RUNNER=com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner
           adb shell wm size 480x960
           adb shell wm density 240
           adb install -r deliver/Marney435.apk
           adb install -r testapk/Marney435-Tests.apk
           adb logcat -c
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/opening.txt
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test "$RUNNER" | tee quality435/android/opening.txt
           grep -F 'OK (1 test)' quality435/android/opening.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/branding.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test "$RUNNER" | tee quality435/android/branding.txt
           grep -F 'OK (1 test)' quality435/android/branding.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels433LayoutTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/reels-layout.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels433LayoutTest "$RUNNER" | tee quality435/android/reels-layout.txt
           grep -F 'OK (2 tests)' quality435/android/reels-layout.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels434PerformanceTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/reels-performance.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels434PerformanceTest "$RUNNER" | tee quality435/android/reels-performance.txt
           grep -F 'OK (2 tests)' quality435/android/reels-performance.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.Stability435Test com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/stability.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Stability435Test "$RUNNER" | tee quality435/android/stability.txt
           grep -F 'OK (2 tests)' quality435/android/stability.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.Social430HomeButtonTest com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/home-button.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Social430HomeButtonTest "$RUNNER" | tee quality435/android/home-button.txt
           grep -F 'OK (3 tests)' quality435/android/home-button.txt
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          CLASSES='com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
-          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta435.test/androidx.test.runner.AndroidJUnitRunner | tee quality435/android/regression.txt
-          grep -F 'OK (32 tests)' quality435/android/regression.txt
+          adb shell pm clear "$TARGET" >/dev/null
+
+          # WebView destruction and focus hand-off are verified in fresh target
+          # processes so a previous Social document cannot stall the next test.
+          SOCIAL_METHODS=(
+            appOnlyShellAssetsArePackaged
+            socialDestinationStartsMediaAndHidesMarketNavigation
+            socialPageUsesMediaMarneyAndBottomDock
+            leavingSocialRestoresFiveMarketDestinations
+          )
+          : > quality435/android/social429-regression.txt
+          for method in "${SOCIAL_METHODS[@]}"; do
+            output="quality435/android/social429-${method}.txt"
+            adb shell am instrument -w -r -e class "com.marketmarney.mobile.Social429FullscreenTest#${method}" "$RUNNER" | tee "$output"
+            grep -F 'OK (1 test)' "$output"
+            cat "$output" >> quality435/android/social429-regression.txt
+            adb shell pm clear "$TARGET" >/dev/null
+            sleep 0.35
+          done
+
+          CLASSES='com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveLabelsInRequestedOrder,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" "$RUNNER" | tee quality435/android/regression.txt
+          grep -F 'OK (28 tests)' quality435/android/regression.txt
           adb logcat -d -s AndroidRuntime:E > quality435/android/runtime.log
           test ! -s quality435/android/runtime.log
-          adb shell pm clear com.marketmarney.mobile.beta435 >/dev/null
-          adb shell am start -W -n com.marketmarney.mobile.beta435/com.marketmarney.mobile.MainActivity > quality435/android/cold-start.txt
+          adb shell pm clear "$TARGET" >/dev/null
+          adb shell am start -W -n "$TARGET/com.marketmarney.mobile.MainActivity" > quality435/android/cold-start.txt
           sleep 0.35
           adb exec-out screencap -p > quality435/android/opening-marketmarney.png
           sleep 1.2
           adb exec-out screencap -p > quality435/android/home-after-opening.png
-          adb shell dumpsys meminfo com.marketmarney.mobile.beta435 > quality435/android/meminfo.txt
+          adb shell dumpsys meminfo "$TARGET" > quality435/android/meminfo.txt
           SH
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
       - uses: reactivecircus/android-emulator-runner@v2
