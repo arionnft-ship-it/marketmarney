@@ -3,7 +3,7 @@
 // MarketMarney TV catalog. Read-only public routes; no unauthenticated write API.
 const https=require('node:https');
 const crypto=require('node:crypto');
-const VERSION='mm-broker-heygen-import-20261111-v1';
+const VERSION='mm-broker-audio-clear-20261111-v2';
 const VIDEO_ID='85440075-e5d4-4637-b034-6f8b3051b287';
 const RECORD=Object.freeze({
  id:VIDEO_ID,
@@ -20,7 +20,7 @@ const RECORD=Object.freeze({
  learningStage:'mulai'
 });
 const ROUTES=new Map([
- [RECORD.url,{url:'https://resource2.heygen.ai/video/85440075e5d44637b0346f8b3051b287/original.mp4',mime:'video/mp4',maxBytes:25000000}],
+ [RECORD.url,{url:'https://raw.githubusercontent.com/arionnft-ship-it/marketmarney/854eb3558f397630b9d61f8ebace6a07a06e3fbf/assets/broker-audio/marketmarney-broker-suara-jelas-20261111.mp4',mime:'video/mp4',maxBytes:25000000}],
  [RECORD.thumb,{url:'https://dynamic.heygen.ai/image/e5e32e8ae4a44f3cba5b29371c11f835/original.jpg',mime:'image/jpeg',maxBytes:3000000}]
 ]);
 function injectCatalog(src){
@@ -96,7 +96,8 @@ function isAllowedTarget(u){
   (/^(?:[a-z0-9-]+\.)*heygen\.ai$/i.test(u.hostname)||
    /^(?:[a-z0-9-]+\.)*cloudfront\.net$/i.test(u.hostname)||
    /^(?:[a-z0-9-]+\.)*amazonaws\.com$/i.test(u.hostname)||
-   u.hostname==='storage.googleapis.com');
+   u.hostname==='storage.googleapis.com'||
+   ['raw.githubusercontent.com','media.githubusercontent.com','objects.githubusercontent.com'].includes(u.hostname));
 }
 function handleMedia(req,res){
  const path=String(req.url||'').split('?')[0];
