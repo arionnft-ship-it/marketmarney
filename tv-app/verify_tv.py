@@ -2,6 +2,7 @@
 """Verify that the Android TV tab opens a local shell backed by public video data."""
 from pathlib import Path
 import sys
+import json
 
 root=Path(sys.argv[1] if len(sys.argv)>1 else 'android439')
 java=root/'app/src/main/java/com/marketmarney/mobile/MainActivity.java'
@@ -31,4 +32,17 @@ assert 'id="mm-tv-root"' in tv
 assert 'id="grid"' in tv
 assert 'video.controls=true' in tv
 assert "www.youtube-nocookie.com/embed/" in tv
-print('PASS: TV bottom label, icon, local same-origin page, published video API, playback and retry UI')
+assert "window.MMNativeTvReceive" in tv
+assert "renderCatalogue(data,source)" in tv
+assert 'requestNativeTvCatalogue(v,url)' in s
+assert 'boundedText(in,2_000_000)' in s
+assert 'publishedTvPayload' in s
+assert 'bundled-snapshot' in s
+snapshot=(root/'app/src/main/assets/marketmarney-tv-catalogue.json')
+assert snapshot.is_file(), 'Android TV public fallback snapshot is missing'
+data=json.loads(snapshot.read_text(encoding='utf-8'))
+assert data['source']=='public-catalogue-snapshot'
+videos=data['videos']
+assert len(videos)>0, 'No published TV videos in bundled snapshot'
+assert all(v.get('status')=='published' and v.get('url') for v in videos)
+print(f"PASS: TV label, local page, video API, native fallback, snapshot={len(videos)} published clips")
