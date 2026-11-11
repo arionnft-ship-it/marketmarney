@@ -78,6 +78,25 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
   if(p==='/ads.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendAdsTxt(req,res);
   if(TV_HEYGEN_IMPORT.handleMedia(req,res))return true;
+  // Temporary consented Hedra audio bridge used only for producing the final MP4.
+  // The presigned URL is a Railway secret, never committed to source.
+  if(p==='/media/mm-hedra-broker-source-324cbc93.mp3'){
+   if(req.method!=='GET'){res.writeHead(405,{'Allow':'GET'});res.end();return true;}
+   const signed=process.env.MM_HEDRA_BROKER_AUDIO_SIGNED_URL||'';
+   if(!signed.startsWith('https://hedra-api-audio-6923ef8dbda63b10.s3.amazonaws.com/web-app-v2/audio/28fb0efe-c22e-4694-afa5-dac3c89d1ae1/324cbc93-2885-4d91-86ff-bd22497e4cae.mp3?')){
+    res.writeHead(503,{'content-type':'text/plain'});res.end('Audio source unavailable');return true;
+   }
+   (async()=>{
+    try{
+     const upstream=await fetch(signed,{redirect:'error',signal:AbortSignal.timeout(30000)});
+     if(upstream.status!==200||!upstream.body)throw Error('source_not_ready');
+     const h={'content-type':'audio/mpeg','cache-control':'private, no-store','x-content-type-options':'nosniff'};
+     const len=upstream.headers.get('content-length');if(len&&/^\\d+$/.test(len)&&Number(len)<25000000)h['content-length']=len;
+     res.writeHead(200,h);
+     require('node:stream').Readable.fromWeb(upstream.body).pipe(res);
+    }catch(err){console.error('MM_HEDRA_AUDIO_BRIDGE',String(err.message).slice(0,60));if(!res.headersSent){res.writeHead(502);res.end('Audio unavailable');}else res.destroy();}
+   })();return true;
+  }
   if(performance.handle(req,res))return true;
   let asset=assets.get(p);
   if(!asset&&(p==='/manifest.webmanifest'||p==='/sw.js')){
