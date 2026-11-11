@@ -16,6 +16,11 @@ text = text.replace(
     "startDownload(url, userAgent, disposition, mime));",
     1,
 )
+text = text.replace(
+    '        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/4.0 AppShell");',
+    '        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/4.0 AppShell " + APP_BUILD);',
+    1,
+)
 
 checks = {
     "single page method": text.count("private LinearLayout page(") == 1,
@@ -23,6 +28,7 @@ checks = {
     "no invalid method reference": "setDownloadListener(this::startDownload)" not in text,
     "balanced braces": text.count("{") == text.count("}"),
     "v4 marker": "MARNEY_ANDROID_V4" in text,
+    "runtime marker retained": 'AppShell " + APP_BUILD' in text,
 }
 failed = [name for name, ok in checks.items() if not ok]
 if failed:
