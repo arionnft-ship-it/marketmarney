@@ -33,7 +33,13 @@
     .player{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:16px}
     .player h2{margin:8px 0 12px;font-size:17px}.media{position:relative;aspect-ratio:16/9;background:#101923;border-radius:10px;overflow:hidden}
     video,iframe{display:block;width:100%;height:100%;border:0;object-fit:contain;background:#101923}
-    .back{background:transparent;border:0;color:var(--accent);padding:5px 0;font-size:12px;font-weight:700}
+    .back{background:#fff;border:1px solid var(--line);border-radius:10px;color:var(--accent);padding:11px 13px;min-height:44px;font-size:13px;font-weight:700}
+    .player:focus-within{outline:none}
+    main.mm-tv-viewing>.overline,main.mm-tv-viewing>h1,main.mm-tv-viewing>.subtitle,main.mm-tv-viewing>.filters,main.mm-tv-viewing>.grid,main.mm-tv-viewing>#catalogSource,main.mm-tv-viewing>#state{display:none!important}
+    main.mm-tv-viewing .player{border:none;box-shadow:none;padding:0;margin-top:3px}
+    main.mm-tv-viewing .player h2{font-size:17px}
+    main.mm-tv-viewing .media{margin:10px 0 22px}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
   </style>
 </head>
 <body>
@@ -55,7 +61,8 @@
     const state=document.getElementById('state'), player=document.getElementById('player'), media=document.getElementById('media');
     const back=document.getElementById('back'), title=document.getElementById('playTitle');
     const catalogSource=document.getElementById('catalogSource');
-    let entries=[],active='Semua',controller=null,request=0;
+    const tvMain=document.getElementById('mm-tv-root');
+    let entries=[],active='Semua',controller=null,request=0,oldScrollY=0;
     root.dataset.mmTvStatus='loading';
     function str(v){return v==null?'':String(v).trim()}
     function safeUrl(raw,localOnly){
@@ -123,8 +130,12 @@
       return '';
     }
     function openVideo(v){
+      oldScrollY=window.scrollY;
       media.replaceChildren();title.textContent=v.title;player.hidden=false;
-      window.scrollTo({top:0,behavior:'smooth'});
+      tvMain.classList.add('mm-tv-viewing');
+      root.dataset.mmTvPlayer='open';
+      window.scrollTo({top:0,behavior:'instant'});
+      requestAnimationFrame(()=>{try{back.focus({preventScroll:true})}catch(e){back.focus()}});
       if(v.type==='youtube'){
         const id=youtubeId(v.url);
         if(!/^[A-Za-z0-9_-]{11}$/.test(id)){media.textContent='Tautan YouTube tidak tersedia.';return}
@@ -142,7 +153,12 @@
         media.appendChild(video);
       }
     }
-    back.addEventListener('click',()=>{player.hidden=true;media.replaceChildren()});
+    function closePlayer(){
+      const video=media.querySelector('video');if(video)video.pause();
+      media.replaceChildren();player.hidden=true;tvMain.classList.remove('mm-tv-viewing');
+      root.dataset.mmTvPlayer='closed';requestAnimationFrame(()=>window.scrollTo(0,oldScrollY));
+    }
+    back.addEventListener('click',closePlayer);
     function renderCatalogue(data,source){
       if(!data||!Array.isArray(data.videos))throw Error('invalid public catalogue');
       const published=data.videos.filter(v=>v&&typeof v==='object'&&v.status==='published');
