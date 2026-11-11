@@ -1,0 +1,44 @@
+name: Inspect Live Marney and Reels integration points (read-only)
+on:
+  push:
+    branches: [feature/live-streams-in-reels-20261111]
+    paths: ['live-reels/**', '.github/workflows/inspect-live-reels.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and inspect existing live source and public Reels
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd warxau-fbs && node install-live-stream.cjs)
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,urllib.request
+          for name in ('live-stream.cjs','live-stream-preload.cjs','live-stream.test.cjs'):
+            source=Path('warxau-fbs')/name
+            s=source.read_text('utf-8')
+            print('\n===== '+name+' ===== length '+str(len(s)),flush=True)
+            print('----- SOURCE START -----')
+            # All files are public repository sources; limit output to read-only
+            # server logic and public UI hooks for planning a safe integration.
+            print(s[:36000],flush=True)
+            print('----- SOURCE END -----')
+          for path in ('/beranda-trader.html','/grup-trader.html','/community.html'):
+            url='https://marketmarney.com'+path
+            try:
+              request=urllib.request.Request(url,headers={'User-Agent':'MarketMarney-Reels-ReadOnly-Audit/1.0'})
+              with urllib.request.urlopen(request,timeout=20) as response:
+                h=response.read(450000).decode('utf-8','replace')
+                print('\nPUBLIC',path,'HTTP',response.status,'html-bytes',len(h))
+                for marker in ('Reels','reels','mm44-reels','shReelFeed','sh-reel','Live Marney','live-marney','live_stream','live-stream','data-live'):
+                  m=list(re.finditer(re.escape(marker),h,re.I))
+                  print('MARKER',marker,'COUNT',len(m))
+                  for z in m[:2]:print('CONTEXT',repr(h[max(0,z.start()-180):z.end()+320]))
+            except Exception as exc:
+              print('PUBLIC_ERROR',path,type(exc).__name__,str(exc)[:180])
+          PY
