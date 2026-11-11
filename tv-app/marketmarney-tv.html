@@ -46,6 +46,7 @@
     <div class="filters" id="filters" aria-label="Filter kategori video" hidden></div>
     <p class="status" id="state" role="status" aria-live="polite">Mengambil daftar video MarketMarney…</p>
     <div class="grid" id="grid" aria-label="Daftar video MarketMarney"></div>
+    <p id="catalogSource" class="subtitle" aria-live="polite"></p>
   </main>
   <script>
   (function(){
@@ -53,6 +54,7 @@
     const root=document.documentElement, filters=document.getElementById('filters'), grid=document.getElementById('grid');
     const state=document.getElementById('state'), player=document.getElementById('player'), media=document.getElementById('media');
     const back=document.getElementById('back'), title=document.getElementById('playTitle');
+    const catalogSource=document.getElementById('catalogSource');
     let entries=[],active='Semua',controller=null,request=0;
     root.dataset.mmTvStatus='loading';
     function str(v){return v==null?'':String(v).trim()}
@@ -69,7 +71,7 @@
       state.hidden=false;
       if(retry){
         const button=document.createElement('button');button.type='button';button.className='retry';
-        button.textContent='Coba lagi';button.addEventListener('click',load);
+        button.textContent='Coba lagi';button.addEventListener('click',()=>location.reload());
         state.appendChild(button);
       }
     }
@@ -141,31 +143,58 @@
       }
     }
     back.addEventListener('click',()=>{player.hidden=true;media.replaceChildren()});
+    function renderCatalogue(data,source){
+      if(!data||!Array.isArray(data.videos))throw Error('invalid public catalogue');
+      const published=data.videos.filter(v=>v&&typeof v==='object'&&v.status==='published');
+      entries=published.slice(0,200).map(v=>({
+        title:str(v.title)||'Video MarketMarney',cat:str(v.cat||v.category)||'Video',
+        desc:str(v.desc||v.description),thumb:str(v.thumb||v.thumbnail_url||v.thumbnail),
+        url:str(v.url||v.video_url),type:str(v.type).toLowerCase()==='youtube'?'youtube':'mp4',
+        date:str(v.date)
+      })).filter(v=>v.url);
+      if(!entries.length)throw Error('no public videos');
+      active='Semua';drawFilters();drawCards();
+      root.dataset.mmTvStatus='ready';
+      root.dataset.mmTvSource=source;
+      catalogSource.textContent=source==='bundled-snapshot'
+        ?'Menampilkan katalog terakhir yang tersimpan. Video memerlukan koneksi internet.'
+        :'Daftar video diperbarui dari MarketMarney.';
+    }
+    // Called only by the Android Activity's bounded read-only HTTPS client.
+    // No JavaScriptInterface or user credential/data exchange is required.
+    window.MMNativeTvReceive=function(jsonText,source){
+      try {
+        const data=JSON.parse(jsonText);
+        renderCatalogue(data,source==='native-live'?'native-live':'bundled-snapshot');
+      }catch(error){
+        root.dataset.mmTvStatus='error';
+        caption('Katalog video tidak dapat dibaca. Coba lagi.',true);
+      }
+    };
     async function load(){
       const mine=++request;
       if(controller)controller.abort();
       controller=new AbortController();
       const timer=setTimeout(()=>controller.abort(),12000);
       caption('Mengambil daftar video MarketMarney…',false);
+      catalogSource.textContent='';
       root.dataset.mmTvStatus='loading';
       try{
         const res=await fetch('/api/content',{method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal});
         if(!res.ok)throw Error('HTTP '+res.status);
         const data=await res.json();
         if(mine!==request)return;
-        if(!Array.isArray(data.videos))throw Error('Invalid video catalogue');
-        entries=data.videos.filter(v=>v&&(!v.status||v.status==='published')).map(v=>({
-          title:str(v.title)||'Video MarketMarney',cat:str(v.cat||v.category)||'Video',
-          desc:str(v.desc||v.description),thumb:str(v.thumb||v.thumbnail_url||v.thumbnail),
-          url:str(v.url||v.video_url),type:str(v.type).toLowerCase()==='youtube'?'youtube':'mp4',
-          date:str(v.date)
-        }));
-        active='Semua';drawFilters();drawCards();
-        root.dataset.mmTvStatus='ready';
+        renderCatalogue(data,'webview-live');
       }catch(err){
-        if(mine!==request)return;
-        root.dataset.mmTvStatus='error';
-        caption('Daftar video belum dapat dimuat. Periksa koneksi dan coba lagi.',true);
+        if(mine!==request||root.dataset.mmTvStatus==='ready')return;
+        // Native Android read may still be pending; do not flash an error card.
+        caption('Menyambungkan katalog video…',false);
+        setTimeout(()=>{
+          if(root.dataset.mmTvStatus!=='ready'){
+            root.dataset.mmTvStatus='error';
+            caption('Daftar video belum dapat dimuat. Periksa koneksi dan coba lagi.',true);
+          }
+        },12000);
       }finally{clearTimeout(timer)}
     }
     load();
