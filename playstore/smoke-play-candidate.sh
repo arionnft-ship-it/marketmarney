@@ -28,6 +28,7 @@ test -s "$OUT/play-first-launch.png"
 sleep 4
 adb exec-out screencap -p > "$OUT/play-home-after-7s.png"
 test -s "$OUT/play-home-after-7s.png"
+python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
 
 # Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
