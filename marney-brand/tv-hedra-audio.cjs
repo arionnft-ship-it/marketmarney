@@ -88,7 +88,7 @@ async function build(){
    '-map','[v]','-map','1:a:0',
    '-c:v','libx264','-preset','veryfast','-crf','23','-pix_fmt','yuv420p',
    '-c:a','aac','-ar','48000','-b:a','160k',
-   '-movflags','+faststart','-shortest',output
+   '-movflags','+faststart','-shortest','-t',String(audioSecs),output
   ],240000);
   const resultSecs=await probeDuration(output);
   const bytes=(await fs.promises.stat(output)).size;
