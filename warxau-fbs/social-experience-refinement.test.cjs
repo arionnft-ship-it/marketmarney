@@ -12,16 +12,28 @@ test('injects refinement on Social Marney and homepage only',()=>{
  assert.equal(refine.injectHtml(html,'/berita/example'),html);
 });
 
-test('repairs direct messages legacy route',()=>{
+test('repairs direct messages and notifications legacy routes',()=>{
  assert.equal(refine.redirectFor('/pesan.html'),'/beranda-trader.html#shMessagePanel');
  assert.equal(refine.redirectFor('/messages.html'),'/beranda-trader.html#shMessagePanel');
+ assert.equal(refine.redirectFor('/notifications.html'),'/beranda-trader.html#shNotificationPanel');
  assert.equal(refine.redirectFor('/unknown.html'),null);
 });
 
-test('client includes audited UX repairs',()=>{
- for(const token of ['0 postingan dimuat','Ruang diskusi yang lebih teratur','Unggah hingga 100 MB','installLiveGuard','fixHomeSocialEntry','shMessagePanel'])assert.match(refine.CLIENT,new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
- assert.match(refine.CSS,/mm-social-guest-guide/);
- assert.match(refine.CSS,/mm-social-empty-icon/);
+test('client includes audited Social Marney UX repairs',()=>{
+ for(const token of [
+  '0 postingan dimuat','Ruang diskusi yang lebih teratur','Unggah hingga 100 MB',
+  'showAuthGate','installGuestFeatureGate','activateHashPanel','installMobileNav',
+  'Cari postingan, trader, atau grup','shMessagePanel','shNotificationPanel',
+  'Masuk untuk melihat pesan dan notifikasi.'
+ ]) assert.match(refine.CLIENT,new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+ assert.match(refine.CSS,/mm-social-auth-gate/);
+ assert.match(refine.CSS,/mm-social-mobile-nav/);
+ assert.match(refine.CSS,/mm-social-guest-repair/);
 });
 
-test('health metadata is versioned',()=>{assert.equal(refine.HEALTH_PATH,'/api/social/refinement');assert.ok(refine.INJECT_PAGES.has('/notifikasi.html'))});
+test('health metadata is versioned and covers Social pages',()=>{
+ assert.equal(refine.VERSION,'20261111-social-refinement-v2');
+ assert.equal(refine.HEALTH_PATH,'/api/social/refinement');
+ assert.ok(refine.INJECT_PAGES.has('/notifikasi.html'));
+ assert.ok(refine.INJECT_PAGES.has('/journal.html'));
+});
