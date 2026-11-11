@@ -92,7 +92,7 @@ async function build(){
   ],240000);
   const resultSecs=await probeDuration(output);
   const bytes=(await fs.promises.stat(output)).size;
-  if(bytes<1000000||Math.abs(resultSecs-audioSecs)>1.5)throw Error('Rendered file length mismatch');
+  if(bytes<1000000||Math.abs(resultSecs-audioSecs)>1.5)throw Error('Rendered file length mismatch: output='+resultSecs.toFixed(2)+'s, voice='+audioSecs.toFixed(2)+'s, source='+videoSecs.toFixed(2)+'s, bytes='+bytes);
   await fs.promises.rename(output,FINAL);
   console.log('MM_BROKER_HEDRA_READY',JSON.stringify({version:VERSION,audioSeconds:audioSecs,videoSeconds:resultSecs,bytes,audioBytes,videoBytes}));
   return true;
