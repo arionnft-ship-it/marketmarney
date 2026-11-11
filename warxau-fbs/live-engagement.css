@@ -1,0 +1,28 @@
+/* MarketMarney LIVE interactions: minimal lightweight responsive comment/gift UI */
+.mm-live-engagement{margin-top:15px;background:#fff;color:#182b3d;border:1px solid #e5e8ee;border-radius:16px;padding:13px;box-shadow:0 2px 14px rgba(15,29,51,.05)}
+.mm-live-engagement[hidden]{display:none!important}
+.mm-live-engagement-head{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.mm-live-engagement-head strong{font-size:14px;color:#17283c}
+.mm-live-gift-disclaimer{font-size:10px;color:#6b798a}
+.mm-live-comments{min-height:135px;max-height:235px;overflow-y:auto;overscroll-behavior:contain;margin:10px 0;padding:8px;border-radius:10px;background:#f7f9fc;scrollbar-width:thin}
+.mm-live-engagement-empty{font-size:12px;color:#778394;margin:8px}
+.mm-live-comment{display:flex;gap:7px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #e8edf3;font-size:12px;overflow-wrap:anywhere}
+.mm-live-comment:last-child{border-bottom:0}
+.mm-live-comment-name{flex:0 0 auto;max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a4651a;font-weight:750}
+.mm-live-comment-text{flex:1;min-width:0;line-height:1.45;color:#1e3042}
+.mm-live-mod-button,.mm-live-report-button{font:inherit;font-size:10px;color:#8c3f30;background:none;border:0;padding:0 3px;cursor:pointer}
+.mm-live-chat-form{display:flex;align-items:center;gap:8px}
+.mm-live-chat-input{flex:1;min-width:0;padding:11px 12px;border-radius:10px;border:1px solid #d6dee8;font:inherit;font-size:13px;background:#fff;color:#17283c}
+.mm-live-chat-input:focus{outline:2px solid #d99b55;outline-offset:1px}
+.mm-live-chat-submit{background:#273a50;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.mm-live-gifts{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.mm-live-gift{font:inherit;font-size:11px;color:#334b61;background:#fffaf3;border:1px solid #ebd8ba;border-radius:999px;padding:8px 11px;cursor:pointer}
+.mm-live-gift:hover,.mm-live-gift:focus-visible{background:#fff0dd;border-color:#daa969}
+.mm-live-gift:focus-visible,.mm-live-chat-submit:focus-visible{outline:2px solid #c97937;outline-offset:2px}
+.mm-live-engagement-status{font-size:11px;color:#758496;line-height:1.5;margin:8px 0 0}
+.mm-live-gift-toast{display:inline-block;max-width:100%;font-size:12px;padding:9px 13px;margin-top:8px;background:#fff4da;border:1px solid #f2d6a6;border-radius:11px;color:#895516;animation:mm-live-gift-in .25s ease-out}
+@keyframes mm-live-gift-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(max-width:440px){.mm-live-engagement{border-radius:12px;margin:10px 6px;padding:11px}.mm-live-gift{font-size:11px;padding:7px 10px}.mm-live-comments{max-height:27dvh}.mm-live-comment-name{max-width:27%}}
+body.mm-live-reels-embed #viewerStage .mm-live-engagement{margin:8px 10px 16px}
+body.mm-live-reels-embed #viewerStage .mm-live-comments{max-height:20dvh;min-height:95px}
+@media(prefers-reduced-motion:reduce){.mm-live-gift-toast{animation:none}}

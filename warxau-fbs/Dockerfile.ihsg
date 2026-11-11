@@ -17,6 +17,8 @@ COPY warxau-fbs/live-stream.cjs.gz.b64.01a warxau-fbs/live-stream.cjs.gz.b64.01b
 RUN node install-live-stream.cjs
 COPY warxau-fbs/live-reels-preload.cjs warxau-fbs/live-reels.js warxau-fbs/live-reels.css warxau-fbs/live-reels.test.cjs ./
 RUN node --check live-reels.js && node --check live-reels-preload.cjs && node --test live-reels.test.cjs
+COPY warxau-fbs/live-engagement.cjs warxau-fbs/live-engagement-preload.cjs warxau-fbs/live-engagement.js warxau-fbs/live-engagement.css warxau-fbs/live-engagement.test.cjs ./
+RUN node --check live-engagement.cjs && node --check live-engagement-preload.cjs && node --check live-engagement.js && node --test live-engagement.test.cjs
 COPY warxau-fbs/article-reading-width.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
 COPY warxau-fbs/article-banner.cjs ./
@@ -35,5 +37,5 @@ RUN node signup/otp/install.cjs && node signup/otp/activation.cjs && node signup
 RUN for file in *.cjs *.js signup/*.cjs signup/otp/*.cjs signup/password/*.cjs sidebar3d/*.cjs sidebar3d/*.js; do node --check "$file" || exit 1; done
 RUN node --test logo-asset.test.cjs about-refresh.test.cjs youtube-referrer.test.cjs tv-layout.test.cjs tv-albums.test.cjs tv-learning.test.cjs analysis-upload.test.cjs live-stream.test.cjs && node social-upload-preload.test.cjs && node social-upload-runtime-patch.test.cjs && node social-upload-sw-preload.test.cjs && node automatic-pivot.test.cjs && node automatic-pivot-internal-route.test.cjs && node xau-public-live.test.cjs && node xau-public-live-preload.test.cjs
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs --require=/opt/warxau-fbs/social-upload-preload.cjs --require=/opt/warxau-fbs/social-upload-runtime-patch.cjs --require=/opt/warxau-fbs/gateway-integrity-compat.cjs --require=/opt/warxau-fbs/release-verification-diagnostic.cjs --require=/opt/warxau-fbs/social-upload-sw-preload.cjs --require=/opt/warxau-fbs/live-stream-preload.cjs --require=/opt/warxau-fbs/live-reels-preload.cjs --require=/opt/warxau-fbs/xau-public-live-preload.cjs --require=/opt/warxau-fbs/automatic-pivot.cjs --require=/opt/warxau-fbs/automatic-pivot-internal-route.cjs"
+ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs --require=/opt/warxau-fbs/social-upload-preload.cjs --require=/opt/warxau-fbs/social-upload-runtime-patch.cjs --require=/opt/warxau-fbs/gateway-integrity-compat.cjs --require=/opt/warxau-fbs/release-verification-diagnostic.cjs --require=/opt/warxau-fbs/social-upload-sw-preload.cjs --require=/opt/warxau-fbs/live-stream-preload.cjs --require=/opt/warxau-fbs/live-reels-preload.cjs --require=/opt/warxau-fbs/live-engagement-preload.cjs --require=/opt/warxau-fbs/xau-public-live-preload.cjs --require=/opt/warxau-fbs/automatic-pivot.cjs --require=/opt/warxau-fbs/automatic-pivot-internal-route.cjs"
 CMD ["node", "/opt/warxau-fbs/start-ihsg.cjs"]
