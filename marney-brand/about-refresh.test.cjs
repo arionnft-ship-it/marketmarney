@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm');
-const {VERSION,SOURCE,CLIENT,assets,injectHtml}=require('./about-refresh.cjs');
+const {VERSION,SOURCE,CLIENT,assets,stripTeamHtml,injectHtml}=require('./about-refresh.cjs');
 const html='<!doctype html><html><head><title>Tentang MarketMarney</title></head><body><main><h1>Informasi pasar. Perspektif lebih luas.</h1></main></body></html>';
 test('About fix loads only tiny logo-specific JS and no restyling',()=>{
  const entries=assets();
@@ -63,6 +63,30 @@ test('About page removes only 04 / TIM and preserves the next information sectio
  vm.runInNewContext(CLIENT,{document:doc,location:{pathname:'/about.html'},MutationObserver},{timeout:300});
  assert.equal(removed,true,'team section must be removed');
  assert.equal(untouched,true,'other sections are not touched');
+});
+test('Only 04 / TIM block is removed from About HTML before delivery',()=>{
+ const team='<section class="team" id="team"><div>04 / TIM <h2>Tim MarketMarney</h2></div>'+
+ '<p>Di balik MarketMarney, kami bekerja bersama membangun platform.</p>'+
+ '<div><div>XXXTRIAN</div><div>BEMBENG</div><div>NYOK</div></div></section>';
+ const full='<!doctype html><html><head></head><body><main>'+
+ '<section id="social"><h2>Tentang Social Marney</h2></section>'+team+
+ '<section id="risk"><h2>05 / INFORMASI PENTING</h2><p>Informasi &amp; Risiko</p></section>'+
+ '</main></body></html>';
+ const stripped=stripTeamHtml(full);
+ assert.doesNotMatch(stripped,/XXXTRIAN|BEMBENG|NYOK|Tim MarketMarney|Di balik MarketMarney/);
+ assert.match(stripped,/Tentang Social Marney/);
+ assert.match(stripped,/05 \/ INFORMASI PENTING/);
+ assert.match(stripped,/Informasi &amp; Risiko/);
+ const injected=injectHtml(full,'/about.html');
+ assert.doesNotMatch(injected,/class="team"/);
+ assert.match(injected,/mm-about-logo-only-v1.js/);
+ assert.equal(injectHtml(injected,'/about.html'),injected);
+ assert.equal(injectHtml(full,'/index.html'),full);
+});
+test('Team removal refuses page-wide wrapper when it also contains risk',()=>{
+ const html='<html><body><main>Di balik MarketMarney XXXTRIAN BEMBENG NYOK'+
+ '<section>05 / INFORMASI PENTING</section></main></body></html>';
+ assert.equal(stripTeamHtml(html),html);
 });
 test('Transparent about asset is built separately from all existing logos',()=>{
  const fs=require('node:fs'),path=require('node:path');
