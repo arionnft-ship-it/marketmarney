@@ -1,0 +1,30 @@
+name: MarketMarney Public Theme Markup Audit (read only)
+on:
+  push:
+    branches: [feature/playstore-preflight-20261111]
+    paths: ['.github/workflows/web-dom-audit.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect only public homepage HTML theme controls
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, re
+          url='https://marketmarney.com/index.html'
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (MarketMarney QA; public HTML audit)'})
+          with urllib.request.urlopen(req,timeout=25) as resp:
+              html=resp.read(5_000_000).decode('utf-8','replace')
+              print('HTTP',resp.status,'content-length',len(html))
+          markers=list(re.finditer(r'Terang|Gelap|tema terang|tema gelap',html,re.I))
+          print('theme text occurrences',len(markers))
+          for match in markers[:18]:
+              left=max(0,match.start()-350);right=min(len(html),match.end()+350)
+              print('---PUBLIC HTML CONTEXT---')
+              print(html[left:right].replace('\n',' ')[:850])
+          if not markers: print('No direct HTML labels found; theme control may be inserted dynamically')
+          PY
