@@ -35,6 +35,13 @@ jobs:
         run: |
           set -euo pipefail
           MM_LIVE_REELS_UNIT_TEST=1 node --test live-stream.test.cjs live-reels.test.cjs
+      - name: Browser DOM simulation (Live Reels, view, close, empty/error states)
+        shell: bash
+        working-directory: warxau-fbs
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/mm-reels-dom" --no-save --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH="$RUNNER_TEMP/mm-reels-dom/node_modules" node --test live-reels-dom.test.cjs
       - name: Check build wiring and app-only stream permissions
         shell: bash
         run: |
