@@ -96,16 +96,22 @@
   function syncFab(){
     let fab=document.getElementById(fabId);
     const active=reelsMode()&&current.length>0;
-    if(!active){if(fab)fab.hidden=true;return}
+    if(!active){
+      if(fab&&!fab.hidden)fab.hidden=true;
+      return;
+    }
     if(!fab){
       fab=el('button','mm-reels-live-fab',null);
       fab.id=fabId;fab.type='button';
       fab.addEventListener('click',openChooser);
       document.body.appendChild(fab);
     }
-    fab.hidden=false;
-    fab.replaceChildren(el('span','mm-reels-live-dot',null),document.createTextNode('LIVE · '+current.length));
-    fab.setAttribute('aria-label','Lihat '+current.length+' streamer LIVE di Reels');
+    if(fab.hidden)fab.hidden=false;
+    if(fab.dataset.liveCount!==String(current.length)){
+      fab.dataset.liveCount=String(current.length);
+      fab.replaceChildren(el('span','mm-reels-live-dot',null),document.createTextNode('LIVE · '+current.length));
+      fab.setAttribute('aria-label','Lihat '+current.length+' streamer LIVE di Reels');
+    }
   }
   function render(){
     ensure();
