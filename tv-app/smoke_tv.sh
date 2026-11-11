@@ -75,19 +75,30 @@ test -s qa/play-tv-catalogue.png
 python3 playstore/check_visible_content.py qa/play-tv-catalogue.png
 python3 playstore/check_native_overlay.py qa/play-tv-catalogue.png
 
-# Exercise a real tap on the first visible video card to verify playback UI.
+# Tap a real, visible video card. Android 16 UIAutomator may freeze when
+# MediaPlayer/iframe surface is present; do not hang the entire test run.
 read TAP_X TAP_Y <<< "$(python3 tv-app/check_tv_visible_ui.py qa/play-tv-ui.xml --tap)"
-adb shell input tap "$TAP_X" "$TAP_Y"
-sleep 2
-adb shell uiautomator dump /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui-dump.txt 2>&1 || true
-adb exec-out cat /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui.xml 2>/dev/null || true
-grep -F 'Kembali ke daftar video' qa/play-tv-player-ui.xml >/dev/null || {
-  echo 'FAIL: video card did not open TV player UI'
-  exit 1
-}
-adb exec-out screencap -p > qa/play-tv-player.png
+timeout 10s adb shell input tap "$TAP_X" "$TAP_Y"
+sleep 3
+timeout 12s adb exec-out screencap -p > qa/play-tv-player.png
 test -s qa/play-tv-player.png
-echo 'PASS: first published video card opens the playback interface' | tee qa/play-tv-player-status.txt
+python3 tv-app/check_tv_player_screen.py qa/play-tv-catalogue.png qa/play-tv-player.png
+
+# Prefer the accessible explicit back button, but if Android 16 refuses to
+# dump a media WebView's accessibility tree, rely on the independently
+# captured changed-player screenshot rather than silently claiming playback.
+timeout 16s adb shell uiautomator dump /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui-dump.txt 2>&1 || true
+timeout 10s adb exec-out cat /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui.xml 2>/dev/null || true
+if grep -F '<hierarchy' qa/play-tv-player-ui.xml >/dev/null 2>&1; then
+  grep -F 'Kembali ke daftar video' qa/play-tv-player-ui.xml >/dev/null || {
+    echo 'FAIL: TV video player has no accessible back control'
+    exit 1
+  }
+  echo 'PASS: accessible player Back control is visible' | tee qa/play-tv-player-accessibility.txt
+else
+  echo 'WARN: player accessibility dump unavailable; screenshot transition verified' | tee qa/play-tv-player-accessibility.txt
+fi
+echo 'PASS: published TV video opens focused player interface; streaming still requires physical-device test' | tee qa/play-tv-player-status.txt
 
 adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-crashes.txt
 if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marketmarney\.mobile' qa/play-tv-crashes.txt; then
