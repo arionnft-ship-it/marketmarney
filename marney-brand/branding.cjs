@@ -4,6 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const SEO=require('./seo.cjs');
 const YOUTUBE=require('./youtube-referrer.cjs');
 const TV_LAYOUT=require('./tv-layout.cjs');
+const TV_LEARNING=require('./tv-learning.cjs');
 const ABOUT=require('./about-refresh.cjs');
 const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
@@ -70,6 +71,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  for(const [url,a] of ABOUT.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of YOUTUBE.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of TV_LAYOUT.assets())assets.set(url,[a.body,a.mime]);
+ for(const [url,a] of TV_LEARNING.assets())assets.set(url,[a.body,a.mime]);
  function handle(req,res){
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
@@ -128,7 +130,8 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    const aboutHtml=ABOUT.injectHtml(withAnalysis,p);
    const videoHtml=YOUTUBE.injectHtml(aboutHtml,p);
    const tvHtml=TV_LAYOUT.injectHtml(videoHtml,p);
-   const analysisOut=tvHtml===out.toString('utf8')?out:Buffer.from(tvHtml);
+   const learningHtml=TV_LEARNING.injectHtml(tvHtml,p);
+   const analysisOut=learningHtml===out.toString('utf8')?out:Buffer.from(learningHtml);
    const seoHtml=SEO.patchHtml(analysisOut.toString('utf8'),p,seoEnabled),final=seoHtml===analysisOut.toString('utf8')?analysisOut:Buffer.from(seoHtml);
    if(seoEnabled)SEO.clearBlockingHeader(this);
    // Only the public SPA HTML requires an identifying Referer for YouTube embeds.
