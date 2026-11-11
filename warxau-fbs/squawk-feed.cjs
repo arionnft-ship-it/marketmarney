@@ -1,11 +1,11 @@
 'use strict';
-// Opt-in, LICENSED external Audio Squawk feeds only. Never reads the MarketMarney article database.
+// Opt-in, LICENSED Newsquawk headlines only. Never reads MarketMarney or other news providers.
 const crypto=require('node:crypto');
 const API_PATH='/api/marketmarney/headlines';
 function providerFor(host){
  const h=String(host||'').toLowerCase();
+ // Only the officially licensed Newsquawk feed is allowed for this public ticker.
  if(h==='newsquawk.com'||h.endsWith('.newsquawk.com'))return 'Newsquawk';
- if(h==='financialjuice.com'||h.endsWith('.financialjuice.com'))return 'FinancialJuice';
  return null;
 }
 function checkedUrl(value){
@@ -64,9 +64,9 @@ function normalize(entry,source){
   date:Number.isFinite(ts)?new Date(ts).toISOString():null};
 }
 function createNewsTicker({
- feedUrl=process.env.MM_SQUAWK_FEED_URL||'',
- licensed=process.env.MM_SQUAWK_REDISTRIBUTION_AUTHORIZED==='true',
- apiToken=process.env.MM_SQUAWK_API_TOKEN||'',
+ feedUrl=process.env.MM_NEWSQUAWK_FEED_URL||'',
+ licensed=process.env.MM_NEWSQUAWK_REDISTRIBUTION_AUTHORIZED==='true',
+ apiToken=process.env.MM_NEWSQUAWK_API_TOKEN||'',
  fetchImpl=global.fetch,now=Date.now,cacheMs=60000
 }={}){
  let cached=null,pending=null;
@@ -76,7 +76,7 @@ function createNewsTicker({
   pending=(async()=>{
    let response;
    if(!feedUrl||!licensed){
-    response={ok:false,status:'not_connected',source:'Audio Squawk',headlines:[]};
+    response={ok:false,status:'not_connected',source:'Newsquawk',headlines:[]};
    }else{
     const providerUrl=checkedUrl(feedUrl);
     const headers={accept:'application/json, application/rss+xml, application/xml, text/xml'};
@@ -108,7 +108,7 @@ function createNewsTicker({
   }catch(err){
    console.error('MM_SQUAWK_FEED_UNAVAILABLE',String(err?.message||'unknown').slice(0,90));
    res.writeHead(503,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
-   res.end(req.method==='HEAD'?'':JSON.stringify({ok:false,status:'unavailable',source:'Audio Squawk',headlines:[]}));return true;
+   res.end(req.method==='HEAD'?'':JSON.stringify({ok:false,status:'unavailable',source:'Newsquawk',headlines:[]}));return true;
   }
  }
  return {owns,handle};
