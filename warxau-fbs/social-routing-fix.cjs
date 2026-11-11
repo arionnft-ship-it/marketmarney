@@ -3,10 +3,10 @@
 const http = require('node:http');
 const crypto = require('node:crypto');
 
-const VERSION = '20261111-social-routing-v1';
+const VERSION = '20261111-social-routing-v2';
 const JS_PATH = '/assets/mm-social-routing.js';
 const HEALTH_PATH = '/api/social/routing';
-const INJECT_PAGES = new Set(['/live.html', '/start-stream']);
+const INJECT_PAGES = new Set(['/live.html', '/start-stream', '/reels.html']);
 const ALIASES = new Map([
   ['/reels.html', '/beranda-trader.html#shReelsPanel']
 ]);
@@ -36,9 +36,13 @@ function isLiveStart(control){
 function goToLogin(){location.assign(loginUrl)}
 function install(){
  if(document.documentElement.dataset.mmSocialRoutingReady)return;document.documentElement.dataset.mmSocialRoutingReady='1';
+ if(location.pathname==='/reels.html'){
+  location.replace('/beranda-trader.html#shReelsPanel');
+  return;
+ }
  if(location.pathname==='/start-stream')Promise.resolve(statusPromise).finally(()=>{if(authState!=='in')location.replace(loginUrl)});
  document.addEventListener('click',event=>{
-  const control=event.target&&event.target.closest?event.target.closest('button,a,[role="button"]'):null;
+  const control=event.target&&event.target.closest?event.target.closest('button,a,[role="button"],input[type="button"],input[type="submit"]'):null;
   if(!isLiveStart(control)||control.dataset.mmLiveRoutingBypass==='1'||authState==='in')return;
   event.preventDefault();event.stopImmediatePropagation();
   Promise.resolve(statusPromise).finally(()=>{
@@ -77,7 +81,7 @@ function handle(req,res){
  const redirect=redirectFor(pathname);
  if(redirect){res.writeHead(302,{Location:redirect,'Cache-Control':'no-store','X-MarketMarney-Social-Routing':VERSION});res.end();return true}
  if(pathname===JS_PATH){sendAsset(req,res,CLIENT,'text/javascript; charset=utf-8');return true}
- if(pathname===HEALTH_PATH){const payload=Buffer.from(JSON.stringify({ok:true,version:VERSION,pages:[...INJECT_PAGES],aliases:Object.fromEntries(ALIASES),features:['reels-route','live-start-login','start-stream-login']}));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Content-Length':payload.length,'X-MarketMarney-Social-Routing':VERSION});res.end(req.method==='HEAD'?undefined:payload);return true}
+ if(pathname===HEALTH_PATH){const payload=Buffer.from(JSON.stringify({ok:true,version:VERSION,pages:[...INJECT_PAGES],aliases:Object.fromEntries(ALIASES),features:['reels-route','reels-client-fallback','live-start-login','start-stream-login']}));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Content-Length':payload.length,'X-MarketMarney-Social-Routing':VERSION});res.end(req.method==='HEAD'?undefined:payload);return true}
  return false;
 }
 function wrapHtml(req,res){
