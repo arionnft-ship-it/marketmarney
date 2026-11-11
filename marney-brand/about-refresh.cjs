@@ -10,14 +10,14 @@ function client(){
  // Remove only the About page's 04 / TIM section, never the adjacent community or risk sections.
  function removeTeam(){
   const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,span,p,strong,small')];
-  const heading=nodes.find(n=>/^Tim\\s+MarketMarney$/i.test(label(n)))||
-    nodes.find(n=>/^04\\s*\\/\\s*TIM$/i.test(label(n)));
+  const heading=nodes.find(n=>/^Tim\s+MarketMarney$/i.test(label(n)))||
+    nodes.find(n=>/^04\s*\/\s*TIM$/i.test(label(n)));
   if(!heading)return false;
   for(let section=heading.parentElement;section&&section!==document.body&&section!==document.documentElement;section=section.parentElement){
    const content=label(section);
-   if(!/04\\s*\\/\\s*TIM/i.test(content)||!/Tim\\s+MarketMarney/i.test(content))continue;
+   if(!/04\s*\/\s*TIM/i.test(content)||!/Tim\s+MarketMarney/i.test(content))continue;
    if(!['XXXTRIAN','BEMBENG','NYOK'].every(name=>content.includes(name)))continue;
-   if(/05\\s*\\/\\s*INFORMASI|Informasi\\s*&\\s*Risiko|03\\s*\\/\\s*KOMUNITAS|Tentang Social Marney/i.test(content))break;
+   if(/05\s*\/\s*INFORMASI|Informasi\s*&\s*Risiko|03\s*\/\s*KOMUNITAS|Tentang Social Marney/i.test(content))break;
    section.remove();
    return true;
   }
