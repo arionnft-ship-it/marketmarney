@@ -14,6 +14,15 @@ function safeRoutes(text){
  }
  return [...out].sort();
 }
+function installGatewayProbe(){
+ const fs=require('node:fs');if(fs.writeFileSync._mmLiveProbe)return;
+ const native=fs.writeFileSync;
+ function wrapped(target,data,...rest){
+  if(String(target)==='/tmp/marketmarney-public.cjs')try{const text=Buffer.isBuffer(data)?data.toString('utf8'):String(data),routes=safeRoutes(text);console.log('MM_LIVE_PROBE_GATEWAY '+JSON.stringify({routeCount:routes.length,routes:routes.slice(0,180)}));}catch{}
+  return native.call(this,target,data,...rest);
+ }
+ wrapped._mmLiveProbe=true;fs.writeFileSync=wrapped;
+}
 function discover(root=APP){
  const fs=require('node:fs'),found=[];
  function walk(dir,depth=0){if(depth>3)return;let entries=[];try{entries=fs.readdirSync(dir,{withFileTypes:true});}catch{return;}for(const e of entries){const p=path.join(dir,e.name);if(e.isDirectory())walk(p,depth+1);else if(/\.(?:html|js|cjs)$/i.test(e.name)&&/(?:social|trader|profile|profil|group|grup|account|akun|auth|message|chat|community|discussion)/i.test(e.name))found.push(p);}}
@@ -22,5 +31,5 @@ function discover(root=APP){
  for(const file of found.slice(0,120))try{const stat=fs.statSync(file);if(stat.size>6*1024*1024)continue;const text=fs.readFileSync(file,'utf8'),routes=safeRoutes(text),markers=[];for(const marker of ['getUserMedia','MediaRecorder','WebSocket','EventSource','session','currentUser','profile','message','chat'])if(text.includes(marker))markers.push(marker);if(routes.length||markers.length)files.push({file:path.relative(root,file),bytes:stat.size,routes:routes.slice(0,80),markers});}catch{}
  console.log('MM_LIVE_PROBE_ASSETS '+JSON.stringify({files:files.slice(0,60)}));
 }
-if(path.resolve(process.argv[1]||'.')===path.join(APP,'server.js')){install();setTimeout(()=>discover(),8000).unref?.();}
-module.exports={patch,install,TARGET,NAS,OIL,safeRoutes,discover};
+if(path.resolve(process.argv[1]||'.')===path.join(APP,'server.js')){installGatewayProbe();install();setTimeout(()=>discover(),8000).unref?.();}
+module.exports={patch,install,TARGET,NAS,OIL,safeRoutes,discover,installGatewayProbe};
