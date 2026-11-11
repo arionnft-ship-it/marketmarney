@@ -36,6 +36,13 @@ jobs:
         run: |
           set -euo pipefail
           MM_LIVE_REELS_UNIT_TEST=1 MM_LIVE_ENGAGEMENT_UNIT_TEST=1 node --test live-stream.test.cjs live-reels.test.cjs live-engagement.test.cjs
+      - name: Test viewer and host comment/gift interface in browser DOM
+        shell: bash
+        working-directory: warxau-fbs
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/mm-live-chat-dom" --no-save --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH="$RUNNER_TEMP/mm-live-chat-dom/node_modules" node --test live-engagement-dom.test.cjs
       - name: Verify no payment processing or new camera requirement
         shell: bash
         run: |
