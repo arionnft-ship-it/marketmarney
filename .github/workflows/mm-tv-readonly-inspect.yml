@@ -1,0 +1,49 @@
+name: MarketMarney TV read-only inspection
+on:
+  push:
+    branches: [work/marketmarney-tv-upload-20261111]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public TV UI and bundled source without mutations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re,urllib.request
+          files=[
+            pathlib.Path('warxau-live/dist/WEB-LIVE.html'),
+            pathlib.Path('warxau-hd-v7.6/dist/WEB-DEMO.html'),
+            pathlib.Path('warxau-fbs/ihsg-addon.cjs'),
+            pathlib.Path('warxau-fbs/start-ihsg.cjs')
+          ]
+          patterns=['MarketMarney TV','market tv','data-page="MarketMarney TV"','videos','videoUrl','video_url','videoSrc','tvVideos','tvItems','uploadVideo','api/videos','api/tv','video upload','videoAdmin','adminVideo','media\/','YouTube']
+          for fp in files:
+            if not fp.exists():continue
+            s=fp.read_text('utf8',errors='replace')
+            print('===== FILE =====',fp,'BYTES',len(s),flush=True)
+            for p in patterns:
+              at=[m.start() for m in re.finditer(re.escape(p),s,re.I)]
+              if at:
+                print('PAT',p,'COUNT',len(at))
+                for i in at[:3]:
+                  print('...',repr(s[max(0,i-250):min(len(s),i+480)]))
+            api=sorted(set(re.findall(r'\/api\/[a-zA-Z0-9_./-]{3,100}',s)))
+            print('APIS',repr(api[:75]))
+          for path in ['/', '/api/health']:
+            url='https://marketmarney.com'+path
+            try:
+              with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'MarketMarney-Video-Inspector/1.0'}),timeout=12) as r:
+                data=r.read(1500000).decode('utf8',errors='replace')
+                print('LIVE',path,'status',r.status,'bytes',len(data))
+                for p in ['MarketMarney TV','Market TV','api/tv','uploadVideo','video','television']:
+                  at=[m.start() for m in re.finditer(re.escape(p),data,re.I)]
+                  if at:
+                    print('LIVE PAT',p,'COUNT',len(at))
+                    for i in at[:2]:print('...',repr(data[max(0,i-180):min(len(data),i+330)]))
+            except Exception as e:print('LIVE ERROR',path,str(e)[:220])
+          PY
