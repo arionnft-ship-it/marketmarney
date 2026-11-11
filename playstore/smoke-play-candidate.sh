@@ -11,7 +11,7 @@ test -s "$APK"
 
 # Preserve non-sensitive renderer readiness diagnostics even on test failure.
 collect_diagnostics(){
-  adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V MMPLAY_UI:V MM45_NAV:V chromium:E chromium:W > "$OUT/play-readiness-diagnostics.txt" 2>/dev/null || true
+  adb logcat -d -v brief -s MMPLAY_RENDER:V MMPLAY_DIAG:V MMPLAY_PAGE:V MMPLAY_UI:V MM45_NAV:V chromium:E chromium:W > "$OUT/play-readiness-diagnostics.txt" 2>/dev/null || true
   adb logcat -d -v brief -s AndroidRuntime:E > "$OUT/play-runtime-diagnostics.txt" 2>/dev/null || true
 }
 trap collect_diagnostics EXIT
@@ -41,6 +41,10 @@ if ! grep -F 'ready tab=0' "$OUT/play-content-home.txt"; then
 fi
 adb exec-out screencap -p > "$OUT/play-home-after-7s.png"
 test -s "$OUT/play-home-after-7s.png"
+# Capture the accessibility tree before checking pixels so failure artifacts
+# still tell us whether WebView text was displayed, hidden or missing.
+adb shell uiautomator dump /sdcard/play-home-early-ui.xml > "$OUT/play-home-early-ui-dump.txt" 2>&1 || true
+adb exec-out cat /sdcard/play-home-early-ui.xml > "$OUT/play-home-early-ui.xml" 2>&1 || true
 python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
 # A populated native loading card has text and counts as nonblank pixels;
 # verify accessibility hierarchy so it CANNOT fool the screenshot gate.
