@@ -7,6 +7,7 @@ does not store credentials, and does not silently fall back to debug signing.
 from pathlib import Path
 import json
 import re
+import shutil
 import sys
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else 'android439')
@@ -69,7 +70,21 @@ if 'mmPlayKeystore' in gradle:
     raise SystemExit('Play signing block is already present')
 gradle_file.write_text(gradle + signing, encoding='utf-8')
 strings_file.write_text(replace_exact(strings, 'MarketMarney 4.39 Instant', 'MarketMarney', 'application label'), encoding='utf-8')
-main_file.write_text(main.replace('MarketMarney 4.39.0-beta', 'MarketMarney 4.39.0'), encoding='utf-8')
+# Preserve the original 4.39 beta while hiding the website's light/dark switch
+# only in this Play candidate. The 4.25 layer still enforces light colors.
+if 'MMLight425' not in (root / 'app/src/main/assets/light425.js').read_text(encoding='utf-8'):
+    raise SystemExit('Expected verified light-only layer is unavailable')
+source_ui = Path(__file__).with_name('only_light_ui.js')
+if not source_ui.is_file():
+    raise SystemExit('Play-specific light-only UI guard is missing')
+main = main.replace('MarketMarney 4.39.0-beta', 'MarketMarney 4.39.0')
+main = replace_exact(
+    main, 'asset("instant439.js");',
+    r'asset("instant439.js")+"\n"+asset("only_light_ui.js");',
+    'light-only app script append',
+)
+main_file.write_text(main, encoding='utf-8')
+shutil.copy2(source_ui, root / 'app/src/main/assets/only_light_ui.js')
 
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
@@ -82,5 +97,6 @@ out.write_text(json.dumps({
     'playConsoleDataSafetyAndPrivacyAuditRequired': True,
     'socialUserGeneratedContentAuditRequired': True,
     'realDeviceSmokeTestRequired': True,
+    'androidLightOnlyPolish': True,
 }, indent=2) + '\n', encoding='utf-8')
 print('Prepared Play release candidate: permanent app ID, API 36; no publication.')
