@@ -86,6 +86,10 @@ main = replace_exact(
 main_file.write_text(main, encoding='utf-8')
 shutil.copy2(source_ui, root / 'app/src/main/assets/only_light_ui.js')
 
+# Native XAUWar loading remains visible until meaningful WebView content exists.
+from prepare_xau_readiness import apply as apply_xau_readiness
+apply_xau_readiness(root)
+
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
     'applicationId': 'com.marketmarney.mobile',
