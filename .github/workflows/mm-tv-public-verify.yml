@@ -1,0 +1,36 @@
+name: Verify published MarketMarney TV tutorial (read-only)
+on:
+  push:
+    branches: [work/marketmarney-tv-upload-20261111]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public metadata, MP4 streaming, thumbnail
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json
+          base='https://marketmarney.com'
+          vid='11a9a03b-26bd-4db6-b1d5-c813973fc63d'
+          def request(path,method='GET',headers={}):
+              return urllib.request.urlopen(urllib.request.Request(base+path,method=method,headers={'User-Agent':'MarketMarney-TV-Verification/1.0',**headers}),timeout=25)
+          with request('/api/content') as r:
+              d=json.load(r)
+          videos=d.get('videos',[])
+          matching=[v for v in videos if v.get('id')==vid]
+          assert len(matching)==1 and matching[0].get('status')=='published',('video_not_published',matching)
+          assert len(videos)>=5,('other_videos_missing',len(videos))
+          print('TV_METADATA_OK',json.dumps({'count':len(videos),'title':matching[0]['title'],'id':vid},ensure_ascii=False),flush=True)
+          for name,path,ctype,magic in [('video','/media/'+vid+'.mp4','video/mp4',b'ftyp'),('thumbnail','/media/'+vid+'.jpg','image/jpeg',bytes.fromhex('ffd8ff'))]:
+              with request(path,'HEAD') as r:
+                  headers=dict(r.headers)
+                  print('HEAD',name,r.status,r.headers.get('Content-Type'),r.headers.get('Content-Length'),r.headers.get('Accept-Ranges'),flush=True)
+                  assert r.status==200 and r.headers.get('Content-Type','').startswith(ctype),('content_type_invalid',name)
+              with request(path,'GET',{'Range':'bytes=0-1023'}) as r:
+                  part=r.read(1024)
+                  print('STREAM',name,r.status,r.headers.get('Content-Type'),r.headers.get('Content-Range'),len(part),flush=True)
+                  assert r.status in (200,206) and (part[4:8]==magic if name=='video' else part[:3]==magic),('bad_media',name)
+          print('MM_TV_PUBLIC_VALIDATED',vid,flush=True)
+          PY
