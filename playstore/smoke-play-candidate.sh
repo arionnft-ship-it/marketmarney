@@ -37,6 +37,7 @@ adb shell pidof "$PKG" | tee "$OUT/play-after-navigation.txt"
 test -s "$OUT/play-after-navigation.txt"
 adb exec-out screencap -p > "$OUT/play-after-navigation.png"
 test -s "$OUT/play-after-navigation.png"
+python3 playstore/check_visible_content.py "$OUT/play-after-navigation.png"
 
 adb logcat -d -v time -s AndroidRuntime:E > "$OUT/play-crashes.txt"
 if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marketmarney\.mobile' "$OUT/play-crashes.txt"; then
