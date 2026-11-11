@@ -16,6 +16,8 @@ function create(){
   const dom=new JSDOM(html,{url:'https://marketmarney.com/live.html?watch='+ID,
     runScripts:'outside-only',pretendToBeVisual:true});
   const {window}=dom;
+  window.TextDecoder=globalThis.TextDecoder;
+  window.TextEncoder=globalThis.TextEncoder;
   const calls=[],readers=[];
   window.fetch=async (url,options={})=>{
     calls.push({url:String(url),method:options.method||'GET',headers:options.headers||{},body:options.body});
