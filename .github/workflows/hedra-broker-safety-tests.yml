@@ -1,0 +1,30 @@
+name: Hedra Broker Site Safety Tests
+on:
+  push:
+    branches:
+      - fix/site-performance-audit-20261108
+    paths:
+      - .github/workflows/hedra-broker-safety-tests.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reproduce baseline FinancialJuice ticker tests
+        run: |
+          set -euo pipefail
+          cd warxau-fbs
+          node --test news-ticker.test.cjs
+      - name: Validate Hedra media module and TV catalog
+        run: |
+          set -euo pipefail
+          cd marney-brand
+          node --check tv-hedra-audio.cjs
+          node --check tv-heygen-import.cjs
+          node --test tv-hedra-audio.test.cjs
