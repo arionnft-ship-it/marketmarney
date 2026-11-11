@@ -11,7 +11,7 @@ test -s "$APK"
 
 # Preserve non-sensitive renderer readiness diagnostics even on test failure.
 collect_diagnostics(){
-  adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V MM45_NAV:V chromium:E chromium:W > "$OUT/play-readiness-diagnostics.txt" 2>/dev/null || true
+  adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V MMPLAY_UI:V MM45_NAV:V chromium:E chromium:W > "$OUT/play-readiness-diagnostics.txt" 2>/dev/null || true
   adb logcat -d -v brief -s AndroidRuntime:E > "$OUT/play-runtime-diagnostics.txt" 2>/dev/null || true
 }
 trap collect_diagnostics EXIT
@@ -42,11 +42,20 @@ fi
 adb exec-out screencap -p > "$OUT/play-home-after-7s.png"
 test -s "$OUT/play-home-after-7s.png"
 python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
+# A populated native loading card has text and counts as nonblank pixels;
+# verify accessibility hierarchy so it CANNOT fool the screenshot gate.
+adb shell uiautomator dump /sdcard/play-home-ui.xml > "$OUT/play-home-ui-dump.txt"
+adb exec-out cat /sdcard/play-home-ui.xml > "$OUT/play-home-ui.xml"
+test -s "$OUT/play-home-ui.xml"
+if grep -F 'text="Memuat Beranda"' "$OUT/play-home-ui.xml"; then
+  echo 'FAIL: Home native loading overlay is still visible after content-ready log'
+  exit 1
+fi
 grep -F 'ready tab=0' "$OUT/play-content-home.txt" || { echo 'FAIL: Home did not display real web content'; exit 1; }
 
 # Retain Home diagnostic evidence before starting XAUWar: its fresh-start check
 # clears logcat, and otherwise only XAUWar diagnostics survive a passing run.
-adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V chromium:E > "$OUT/play-home-readiness.txt" || true
+adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V MMPLAY_UI:V MM45_NAV:V chromium:E > "$OUT/play-home-readiness.txt" || true
 
 # Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
@@ -74,6 +83,13 @@ fi
 adb exec-out screencap -p > "$OUT/play-after-navigation.png"
 test -s "$OUT/play-after-navigation.png"
 python3 playstore/check_visible_content.py "$OUT/play-after-navigation.png"
+adb shell uiautomator dump /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui-dump.txt"
+adb exec-out cat /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui.xml"
+test -s "$OUT/play-xauwar-ui.xml"
+if grep -F 'text="Menyiapkan XAUWar"' "$OUT/play-xauwar-ui.xml"; then
+  echo 'FAIL: XAUWar native loading overlay is still visible after content-ready log'
+  exit 1
+fi
 grep -F 'ready tab=2' "$OUT/play-content-xauwar.txt" || { echo 'FAIL: XAUWar did not display real web content'; exit 1; }
 
 
