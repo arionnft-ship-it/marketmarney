@@ -9,6 +9,13 @@ OUT=qa
 mkdir -p "$OUT"
 test -s "$APK"
 
+# Preserve non-sensitive renderer readiness diagnostics even on test failure.
+collect_diagnostics(){
+  adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V MM45_NAV:V chromium:E chromium:W > "$OUT/play-readiness-diagnostics.txt" 2>/dev/null || true
+  adb logcat -d -v brief -s AndroidRuntime:E > "$OUT/play-runtime-diagnostics.txt" 2>/dev/null || true
+}
+trap collect_diagnostics EXIT
+
 adb wait-for-device
 adb shell wm size 480x960
 adb shell wm density 240
