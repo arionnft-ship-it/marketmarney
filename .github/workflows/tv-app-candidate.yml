@@ -20,6 +20,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m py_compile playstore/*.py compliance/*.py tv-app/*.py
+          bash -n tv-app/smoke_tv.sh
           bash -n playstore/smoke-play-candidate.sh
           node --check playstore/only_light_ui.js
       - uses: actions/setup-java@v5
@@ -137,6 +138,8 @@ jobs:
           python3 playstore/prepare_play_candidate.py android439
           python3 tv-app/prepare_tv.py android439
           python3 tv-app/prepare_local_tv.py android439
+          python3 tv-app/prepare_native_catalogue.py android439
+          python3 tv-app/build_public_snapshot.py android439/app/src/main/assets/marketmarney-tv-catalogue.json
           python3 tv-app/verify_tv.py android439
           cp android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java qa/debug-MainActivity.java
           cp android439/app/src/main/java/com/marketmarney/mobile/StartupOverlay.java qa/debug-StartupOverlay.java
@@ -162,8 +165,11 @@ jobs:
           test -s "$AAB"
           unzip -t "$AAB" | tail -n 2
           unzip -Z1 "$AAB" | grep -F 'base/assets/only_light_ui.js'
+          unzip -Z1 "$AAB" | grep -F 'base/assets/marketmarney-tv-catalogue.json'
+          unzip -Z1 "$AAB" | grep -F 'base/assets/marketmarney-tv.html'
           cp "$AAB" play_artifact/MarketMarney-Play-Review.aab
           cp android439/play_candidate_metadata.json play_artifact/
+          cp android439/app/src/main/assets/marketmarney-tv-catalogue.json play_artifact/tv-published-snapshot.json
           if [ "$COUNT" -eq 4 ]; then
             jarsigner -verify "$AAB" | tee play_artifact/signature.txt
             grep -F 'jar verified' play_artifact/signature.txt
