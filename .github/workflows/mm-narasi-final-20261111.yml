@@ -1,0 +1,41 @@
+name: MarketMarney Narasi Final (temporary)
+on:
+  push:
+    branches:
+      - work/marketmarney-narasi-20261111
+jobs:
+  combine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Download approved educational video and narration
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 --max-time 180 -o source.mp4 'https://static.metricool.com/planner/202611/7967921-file-5228920504942608125.mp4'
+          curl --fail --location --retry 3 --retry-delay 3 --max-time 180 -o voice.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=bf2b6a6b0dc8424d92679aec76e4ed20.mp3'
+          echo 'Source and narration durations:'
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 source.mp4
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 voice.mp3
+          test "$(stat -c%s source.mp4)" -gt 1000000
+          test "$(stat -c%s voice.mp3)" -gt 500000
+      - name: Replace narration and export final MP4
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          DUR_VIDEO=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 source.mp4)
+          DUR_AUDIO=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 voice.mp3)
+          RATIO=$(awk -v a="$DUR_AUDIO" -v v="$DUR_VIDEO" 'BEGIN{printf "%.9f", a/v}')
+          echo "Retiming visuals by factor $RATIO"
+          ffmpeg -nostdin -y -hide_banner -loglevel warning -stats -i source.mp4 -i voice.mp3 -filter_complex "[0:v]setpts=PTS*$RATIO,fps=24,scale=1920:1080:flags=lanczos,format=yuv420p[v]" -map "[v]" -map 1:a:0 -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -c:a aac -b:a 192k -ar 48000 -af "loudnorm=I=-16:LRA=11:TP=-1.5" -movflags +faststart -shortest output/MarketMarney_Trading_Pemula_Suara_Natural_1080p.mp4
+          cp voice.mp3 output/MarketMarney_Narasi_Indonesia_CalmFinancial.mp3
+          ffprobe -v error -show_entries stream=codec_name,width,height:format=duration,size -of json output/MarketMarney_Trading_Pemula_Suara_Natural_1080p.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney_Trading_Pemula_Narasi_Natural
+          path: output/
+          retention-days: 7
+          if-no-files-found: error
