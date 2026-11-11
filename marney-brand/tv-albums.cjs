@@ -143,7 +143,7 @@ function browserClient(albumForVideo,groupPublishedVideos){
 }
 const CLIENT=albumForVideo.toString()+'\n'+groupPublishedVideos.toString()+
  '\n('+browserClient.toString()+')(albumForVideo,groupPublishedVideos);';
-const CSS=String.raw
+const CSS=String.raw`
 /* Album feature, restricted to the TV listing DOM; no category bar is reintroduced. */
 .mm-tv-albums{max-width:1220px;margin:8px auto 22px;padding:21px;border:1px solid #e0e7f0;border-radius:19px;background:#fff;box-shadow:0 8px 25px rgba(17,36,58,.04)}
 .mm-tv-albums-top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:17px}
@@ -170,7 +170,7 @@ const CSS=String.raw
 .mm-tv-album-tile:focus-visible,.mm-tv-albums-all:focus-visible{outline:3px solid #e58c25!important;outline-offset:3px}
 @media(max-width:760px){.mm-tv-albums-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.mm-tv-albums{padding:16px;border-radius:16px}.mm-tv-albums-top{align-items:flex-start;flex-direction:column;gap:12px}.mm-tv-albums-gallery{grid-template-columns:1fr}.mm-tv-album-tile{flex-direction:row}.mm-tv-album-cover{aspect-ratio:4/3;width:42%;max-width:150px;flex:0 0 42%}.mm-tv-album-copy{justify-content:center;flex:1}.mm-tv-albums-status{align-items:flex-start;flex-direction:column;gap:3px}}
-;
+`;
 function injectHtml(html,pathname){
  if(pathname!=='/'&&pathname!=='/index.html')return html;
  if(typeof html!=='string'||!/<\/head\s*>/i.test(html)||!/<html\b/i.test(html))return html;
