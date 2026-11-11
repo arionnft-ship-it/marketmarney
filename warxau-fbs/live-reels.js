@@ -7,7 +7,7 @@
   const REFRESH_MS=25000;
   const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const liveRootId='mmReelsLiveList',fabId='mmReelsLiveFab';
-  let current=[],request=null,poll=null,dialog=null,previousFocus=null,scheduled=false,observed=false;
+  let current=[],request=null,poll=null,observer=null,dialog=null,previousFocus=null,scheduled=false,observed=false;
   let lastChecked=0,requestSeq=0;
   const q=s=>document.querySelector(s);
   function reelsMode(){
@@ -160,7 +160,7 @@
       if(request===ctl)request=null;
     }
   }
-  function closeViewer(){
+  function closeViewer(updateList=true){
     if(!dialog)return;
     const old=dialog;
     dialog=null;
@@ -169,11 +169,11 @@
     document.removeEventListener('keydown',onKey);
     if(previousFocus&&previousFocus.isConnected)previousFocus.focus({preventScroll:true});
     previousFocus=null;
-    refresh(true);
+    if(updateList)refresh(true);
   }
   function onKey(event){if(event.key==='Escape'&&dialog){event.preventDefault();closeViewer();}}
   function wrapModal(titleText){
-    if(dialog)closeViewer();
+    if(dialog)closeViewer(false);
     previousFocus=document.activeElement;
     dialog=el('div','mm-reels-live-dialog',null);
     dialog.setAttribute('role','dialog');
@@ -199,7 +199,7 @@
     frame.className='mm-reels-live-frame';
     frame.title='Siaran langsung '+stream.title;
     frame.src='/live.html?watch='+encodeURIComponent(stream.id)+'&embed=reels';
-    frame.allow='autoplay; fullscreen; picture-in-picture';
+    frame.setAttribute('allow','autoplay; fullscreen; picture-in-picture');
     frame.referrerPolicy='same-origin';
     modal.appendChild(frame);
   }
@@ -223,19 +223,25 @@
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState==='hidden'){
         if(request)request.abort();
-        if(dialog)closeViewer();
+        if(dialog)closeViewer(false);
       }else refresh(true);
     });
     window.addEventListener('hashchange',()=>{
-      if(dialog&&!reelsMode())closeViewer();
+      if(dialog&&!reelsMode())closeViewer(false);
       schedule();
     });
-    window.addEventListener('pagehide',()=>{if(request)request.abort();if(dialog)closeViewer();});
+    window.addEventListener('pagehide',()=>{
+      requestSeq++;
+      if(request){request.abort();request=null;}
+      if(dialog)closeViewer(false);
+      if(poll){clearInterval(poll);poll=null;}
+      if(observer){observer.disconnect();observer=null;}
+    });
     document.addEventListener('click',event=>{
       if(event.target&&event.target.closest&&event.target.closest('a[href*="reel"],button[data-reels]'))
         setTimeout(()=>refresh(true),200);
     },true);
-    const observer=new MutationObserver(schedule);
+    observer=new MutationObserver(schedule);
     observer.observe(document.body,{childList:true,subtree:true});
     poll=setInterval(()=>{if(canPoll())refresh(false);else syncFab()},REFRESH_MS);
     schedule();
