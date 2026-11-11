@@ -9,9 +9,9 @@ s=java.read_text(encoding='utf-8')
 required=[
     'labels={"Beranda","Berita","MarketMarney TV","Market Live","Social Marney"}',
     '"MarketMarney\\nTV":labels[i]',
-    '"/index.html#mm-app-tv"',
-    'button[data-page=\\"MarketMarney TV\\"]',
-    "app.querySelector('.mm-tv-filters')",
+    '"/__android43/marketmarney-tv"',
+    'getAssets().open("marketmarney-tv.html")',
+    "document.getElementById('mm-tv-root')",
     'MMAPP_TV',
     'ready tab=2 catalogue=MarketMarney TV',
     'probeMarketmarneyTv(target,url,xauContentToken)',
@@ -24,4 +24,11 @@ assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not 
 assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in s
 assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in s
 assert 'showFailure("EMPTY","MarketMarney TV belum bisa dimuat.' in s
+assert (root/'app/src/main/assets/marketmarney-tv.html').is_file()
+tv=(root/'app/src/main/assets/marketmarney-tv.html').read_text(encoding='utf-8')
+assert "fetch('/api/content'" in tv
+assert 'id="mm-tv-root"' in tv
+assert 'id="grid"' in tv
+assert 'video.controls=true' in tv
+assert "www.youtube-nocookie.com/embed/" in tv
 print('PASS: Android bottom TV label, two-line layout, play icon, actual SPA navigation, readiness and failure handling')
