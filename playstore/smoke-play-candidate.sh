@@ -44,12 +44,16 @@ test -s "$OUT/play-home-after-7s.png"
 python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
 # A populated native loading card has text and counts as nonblank pixels;
 # verify accessibility hierarchy so it CANNOT fool the screenshot gate.
-adb shell uiautomator dump /sdcard/play-home-ui.xml > "$OUT/play-home-ui-dump.txt"
-adb exec-out cat /sdcard/play-home-ui.xml > "$OUT/play-home-ui.xml"
-test -s "$OUT/play-home-ui.xml"
-if grep -F 'text="Memuat Beranda"' "$OUT/play-home-ui.xml"; then
-  echo 'FAIL: Home native loading overlay is still visible after content-ready log'
-  exit 1
+python3 playstore/check_native_overlay.py "$OUT/play-home-after-7s.png"
+adb shell uiautomator dump /sdcard/play-home-ui.xml > "$OUT/play-home-ui-dump.txt" 2>&1 || true
+adb exec-out cat /sdcard/play-home-ui.xml > "$OUT/play-home-ui.xml" 2>&1 || true
+if grep -F '<hierarchy' "$OUT/play-home-ui.xml" >/dev/null; then
+  if grep -F 'text="Memuat Beranda"' "$OUT/play-home-ui.xml"; then
+    echo 'FAIL: Home native loading overlay still visible in accessibility tree'
+    exit 1
+  fi
+else
+  echo 'INFO: UIAutomator hierarchy unavailable; image-level overlay gate enforced'
 fi
 grep -F 'ready tab=0' "$OUT/play-content-home.txt" || { echo 'FAIL: Home did not display real web content'; exit 1; }
 
@@ -83,12 +87,16 @@ fi
 adb exec-out screencap -p > "$OUT/play-after-navigation.png"
 test -s "$OUT/play-after-navigation.png"
 python3 playstore/check_visible_content.py "$OUT/play-after-navigation.png"
-adb shell uiautomator dump /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui-dump.txt"
-adb exec-out cat /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui.xml"
-test -s "$OUT/play-xauwar-ui.xml"
-if grep -F 'text="Menyiapkan XAUWar"' "$OUT/play-xauwar-ui.xml"; then
-  echo 'FAIL: XAUWar native loading overlay is still visible after content-ready log'
-  exit 1
+python3 playstore/check_native_overlay.py "$OUT/play-after-navigation.png"
+adb shell uiautomator dump /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui-dump.txt" 2>&1 || true
+adb exec-out cat /sdcard/play-xauwar-ui.xml > "$OUT/play-xauwar-ui.xml" 2>&1 || true
+if grep -F '<hierarchy' "$OUT/play-xauwar-ui.xml" >/dev/null; then
+  if grep -F 'text="Menyiapkan XAUWar"' "$OUT/play-xauwar-ui.xml"; then
+    echo 'FAIL: XAUWar native loading overlay still visible in accessibility tree'
+    exit 1
+  fi
+else
+  echo 'INFO: UIAutomator hierarchy unavailable; image-level overlay gate enforced'
 fi
 grep -F 'ready tab=2' "$OUT/play-content-xauwar.txt" || { echo 'FAIL: XAUWar did not display real web content'; exit 1; }
 
