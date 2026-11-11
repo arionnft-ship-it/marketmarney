@@ -62,16 +62,14 @@ def apply(root:Path):
                 Log.i("MMAPP_TV","ready tab=2 catalogue=MarketMarney TV");
                 completePageReady(target,url);return;
             }
-            if("\"error\"".equals(value)){
-                Log.w("MMAPP_TV","shell tab=2 catalogue=unavailable");
-                completePageReady(target,url);return;
+            // The shell or a failed WebView fetch does NOT count as a loaded
+            // TV catalogue: give the native read/snapshot fallback time.
+            if(tvRoutePolls==20||tvRoutePolls==50){
+                Log.i("MMAPP_TV","waiting tab=2 public catalogue status="+value);
             }
-            if("\"shell\"".equals(value)&&tvRoutePolls>=16){
-                Log.i("MMAPP_TV","shell tab=2 loading=videos");
-                completePageReady(target,url);return;
-            }
-            if(++tvRoutePolls>=45){
-                showFailure("EMPTY","Halaman MarketMarney TV tidak dapat ditampilkan.");
+            if(++tvRoutePolls>=100){
+                Log.e("MMAPP_TV","catalogue timeout; no published videos rendered");
+                showFailure("EMPTY","Daftar video MarketMarney TV belum dapat ditampilkan.");
                 return;
             }
             frame.postDelayed(()->probeMarketmarneyTv(target,url,token),240);
