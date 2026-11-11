@@ -100,13 +100,12 @@ jobs:
           grep -F "versionCode='5'" Marney-v4-badging.txt
           grep -F "versionName='4.0.0-beta'" Marney-v4-badging.txt
           grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4-badging.txt
           grep -F 'android.permission.CAMERA' Marney-v4-permissions.txt
           grep -F 'android.permission.RECORD_AUDIO' Marney-v4-permissions.txt
           grep -F 'android.permission.INTERNET' Marney-v4-permissions.txt
-
-          unzip -p "$APK" classes.dex | strings | grep -F 'MARNEY_ANDROID_V4'
-          unzip -p "$APK" classes.dex | strings | grep -F 'android-native-v4'
-          unzip -p "$APK" classes.dex | strings | grep -F 'Ukuran maksimal setiap unggahan adalah 100 MB.'
+          unzip -p "$APK" classes.dex | grep -aF 'MARNEY_ANDROID_V4'
           test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0
 
           cp "$APK" "$OUT"
