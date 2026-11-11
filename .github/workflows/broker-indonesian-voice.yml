@@ -1,0 +1,74 @@
+name: Render Indonesian neural narration for MarketMarney TV broker guide
+on:
+  push:
+    branches:
+      - fix/broker-neural-voice-20261111
+    paths:
+      - .github/workflows/broker-indonesian-voice.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install audio and video dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-lato >/dev/null
+          python -m pip install --disable-pip-version-check --quiet "edge-tts>=7.0,<8.0" "numpy>=1.26,<3" "pillow>=11,<13" "pydub>=0.25,<1"
+      - name: Retrieve checked MarketMarney storyboard
+        run: |
+          set -euo pipefail
+          curl --fail --location --show-error --retry 3 --retry-delay 3 --max-time 90 \
+            "https://resource2.heygen.ai/document/6ce802183455464fa86b4a4a650bb7b0/original.zip" \
+            -o storyboard.zip
+          echo "9ed5d2e2e3128f07033001a993d3edb76e2614c175411c8e2e7013b126999bdb  storyboard.zip" | sha256sum --check
+          mkdir -p neural-project
+          unzip -q storyboard.zip -d neural-project
+          python -m py_compile neural-project/render_neural.py
+      - name: Render new Indonesian voice and synced animation
+        run: |
+          set -euo pipefail
+          cd neural-project
+          python -u render_neural.py 2>&1 | tee render-neural.log
+      - name: Normalize voice loudness and verify video output
+        run: |
+          set -euo pipefail
+          mkdir -p assets/broker-audio
+          ffmpeg -hide_banner -loglevel error -nostdin -y \
+            -i neural-project/out/MarketMarneyTV_Broker_Suara_Indonesia_Jelas.mp4 \
+            -map 0:v:0 -map 0:a:0 -c:v copy -c:a aac -b:a 192k -ar 48000 \
+            -af "loudnorm=I=-16:LRA=11:TP=-1.5" -movflags +faststart \
+            assets/broker-audio/marketmarney-broker-suara-jelas-20261111.mp4
+          cp neural-project/out/subtitle_indonesia.srt assets/broker-audio/marketmarney-broker-suara-jelas-20261111.srt
+          cp neural-project/out/naskah_narasi.txt assets/broker-audio/marketmarney-broker-naskah-20261111.txt
+          python - <<'PY'
+          import json,subprocess,os
+          p='assets/broker-audio/marketmarney-broker-suara-jelas-20261111.mp4'
+          d=json.loads(subprocess.check_output(['ffprobe','-v','error','-of','json','-show_format','-show_streams',p]))
+          seconds=float(d['format']['duration'])
+          streams=d['streams']
+          assert 95<=seconds<=300, f'Unexpected video duration: {seconds}'
+          assert any(s['codec_type']=='video' and s['codec_name']=='h264' for s in streams)
+          assert any(s['codec_type']=='audio' and s['codec_name']=='aac' for s in streams)
+          assert os.path.getsize(p)>1000000
+          print('BROKER_NEURAL_MEDIA_VERIFIED',json.dumps({'duration_seconds':seconds,'bytes':os.path.getsize(p),'codecs':[s['codec_name'] for s in streams]}))
+          PY
+      - name: Save finished MP4 to this production-candidate branch
+        run: |
+          set -euo pipefail
+          git config user.name "marketmarney-video-bot"
+          git config user.email "marketmarney-video-bot@users.noreply.github.com"
+          git add assets/broker-audio/marketmarney-broker-suara-jelas-20261111.*
+          git add assets/broker-audio/marketmarney-broker-naskah-20261111.txt
+          git commit -m "media(tv): replace unclear narration with natural Indonesian neural voice"
+          git push origin HEAD:fix/broker-neural-voice-20261111
