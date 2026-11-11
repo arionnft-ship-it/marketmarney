@@ -22,8 +22,7 @@ def apply(root:Path) -> None:
         'XAU content probe fields')
 
     mark='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";'
-    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;
-        Log.i("MMPLAY_UI","begin tab="+tab+" token="+xauContentToken);\n        if(tab==XAUWAR||tab==HOME||tab==MARKET)showXauLoading();else clearXauLoading();'
+    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;\n        Log.i("MMPLAY_UI","begin tab="+tab+" token="+xauContentToken);\n        if(tab==XAUWAR||tab==HOME||tab==MARKET)showXauLoading();else clearXauLoading();'
     s=exactly(s,mark,updated,'page wait initialization')
     s=exactly(s,'        cancelPageWait();navigationStarted=SystemClock.uptimeMillis();',
         '        cancelPageWait();clearXauLoading();navigationStarted=SystemClock.uptimeMillis();',
