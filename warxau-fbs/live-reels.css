@@ -1,0 +1,42 @@
+/* MarketMarney Live in Reels — responsive, light theme, viewer-only. */
+.mm-reels-live{margin:12px 0 14px;padding:14px;border-radius:16px;background:#fff;border:1px solid #e7eaf0;color:#1b2735;box-shadow:0 4px 16px rgba(17,32,51,.045);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.mm-reels-live-top,.mm-reels-live-title{display:flex;align-items:center;gap:8px}
+.mm-reels-live-top{justify-content:space-between;margin-bottom:9px}
+.mm-reels-live-title strong{font-size:14px;letter-spacing:-.25px}
+.mm-reels-live-all{font-size:12px;font-weight:650;color:#975d16;text-decoration:none}
+.mm-reels-live-dot{display:inline-block;width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#ed3434;box-shadow:0 0 0 3px rgba(235,52,52,.11)}
+.mm-reels-live-message{font-size:12px;color:#758193;margin:8px 0;line-height:1.5}
+.mm-reels-live-message[hidden]{display:none}
+.mm-reels-live-cards{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;padding:3px 1px 7px;scroll-snap-type:x proximity;scrollbar-width:thin}
+.mm-reels-live-card{display:flex;align-items:center;gap:10px;flex:0 0 min(260px,77vw);scroll-snap-align:start;text-align:left;border-radius:12px;background:#f7f9fc;border:1px solid #e8ebf1;padding:9px;color:#1b2735;cursor:pointer;min-height:78px}
+.mm-reels-live-card:hover,.mm-reels-live-card:focus-visible{border-color:#dfb37b;background:#fff9f3}
+.mm-reels-live-avatar{position:relative;flex:0 0 54px;width:54px;height:54px;border-radius:12px;background:linear-gradient(130deg,#273b50,#101e2e);display:grid;place-items:center;color:#fff}
+.mm-reels-live-avatar-letter{font-size:26px;font-weight:800}
+.mm-reels-live-avatar-label{position:absolute;bottom:-6px;left:7px;right:7px;padding:2px 3px;border-radius:4px;background:#e42f40;color:#fff;font-size:9px;font-weight:850;letter-spacing:.5px;text-align:center}
+.mm-reels-live-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.mm-reels-live-stream-title{font-size:12px;font-weight:750;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-reels-live-host,.mm-reels-live-viewers{font-size:11px;color:#687686;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-reels-live-fab{position:fixed;right:14px;top:calc(env(safe-area-inset-top,0px) + 78px);z-index:2147483399;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.75);border-radius:999px;color:white;background:rgba(14,26,42,.93);padding:10px 14px;font-size:12px;font-weight:800;box-shadow:0 5px 20px rgba(0,0,0,.23);cursor:pointer}
+.mm-reels-live-fab[hidden]{display:none!important}
+.mm-reels-live-dialog{position:fixed;inset:0;z-index:2147483600;display:flex;flex-direction:column;background:#0d1018;color:#fff;overscroll-behavior:contain}
+.mm-reels-live-dialog-top{display:flex;align-items:center;gap:12px;min-height:calc(env(safe-area-inset-top,0px) + 55px);padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 9px;flex-shrink:0;background:#171b24}
+.mm-reels-live-close{font-size:12px;font-weight:720;color:#fff;background:#323b48;border:1px solid #424d5b;border-radius:10px;padding:8px 11px;white-space:nowrap;cursor:pointer}
+.mm-reels-live-close:focus-visible,.mm-reels-live-card:focus-visible{outline:2px solid #f4a65a;outline-offset:2px}
+.mm-reels-live-dialog-title{min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-reels-live-frame{border:0;display:block;width:100%;flex:1;min-height:0;background:#080a11}
+.mm-reels-live-picker{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:18px 14px 24px}
+.mm-reels-live-picker .mm-reels-live-card{flex-basis:auto;width:100%;background:#252c39;border-color:#444b59;color:white}
+.mm-reels-live-picker .mm-reels-live-host,.mm-reels-live-picker .mm-reels-live-viewers{color:#b4bdc9}
+body.mm-reels-live-watching{overflow:hidden!important}
+@media(max-width:420px){.mm-reels-live{padding:11px;border-radius:12px}.mm-reels-live-card{min-height:72px;flex-basis:75vw}}
+@media(prefers-reduced-motion:reduce){.mm-reels-live-dot{box-shadow:none}}
+/* Same-origin viewer embed. Keep WebRTC player and its leave/share controls,
+   remove only duplicate page navigation and broadcaster-only UI. */
+body.mm-live-reels-embed{background:#0d1018}
+body.mm-live-reels-embed .mm-live-header{display:none!important}
+body.mm-live-reels-embed .mm-live-shell{min-height:100dvh;background:#0d1018}
+body.mm-live-reels-embed .mm-live-main{max-width:none;margin:0;padding:0;min-height:100dvh}
+body.mm-live-reels-embed #viewerStage.is-active{display:block}
+body.mm-live-reels-embed #viewerStage .mm-live-panel{max-width:none;margin:0;border:0;border-radius:0;box-shadow:none}
+body.mm-live-reels-embed #viewerStage .mm-live-video-wrap{width:100%;max-height:70dvh;aspect-ratio:9/16;background:#000}
+body.mm-live-reels-embed #viewerStage video{object-fit:contain;background:#000}
