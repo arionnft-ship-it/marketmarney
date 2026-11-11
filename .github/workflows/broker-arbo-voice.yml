@@ -29,6 +29,8 @@ jobs:
           git clone -q --depth=1 https://github.com/ARBO-TEAM/arboTTS.git /tmp/arbotts-src
           git -C /tmp/arbotts-src fetch -q --depth=1 origin f628060f0a3afdf86019c99eb057dcecb824d294
           git -C /tmp/arbotts-src checkout -q --detach f628060f0a3afdf86019c99eb057dcecb824d294
+          # Keep only the native offline synthesizer API: optional voice-cloning code imports PyTorch.
+          printf 'from arbotts.synthesizer import ArboTTS\n__version__ = "2.5.0"\n__all__ = ["ArboTTS"]\n' > /tmp/arbotts-src/arbotts/__init__.py
           python -m pip install -q --no-deps /tmp/arbotts-src
       - name: Fetch approved storyboard
         run: |
