@@ -22,7 +22,8 @@ def apply(root:Path) -> None:
         'XAU content probe fields')
 
     mark='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";'
-    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;\n        if(tab==XAUWAR||tab==HOME||tab==MARKET)showXauLoading();else clearXauLoading();'
+    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;
+        Log.i("MMPLAY_UI","begin tab="+tab+" token="+xauContentToken);\n        if(tab==XAUWAR||tab==HOME||tab==MARKET)showXauLoading();else clearXauLoading();'
     s=exactly(s,mark,updated,'page wait initialization')
     s=exactly(s,'        cancelPageWait();navigationStarted=SystemClock.uptimeMillis();',
         '        cancelPageWait();clearXauLoading();navigationStarted=SystemClock.uptimeMillis();',
@@ -38,10 +39,11 @@ def apply(root:Path) -> None:
         if(tab!=SOCIAL&&!socialAssetsReady)frame.postDelayed(this::preloadSocialAssets,650);
     }'''
     new='''    private void clearXauLoading(){
-        if(xauLoading!=null){frame.removeView(xauLoading);xauLoading=null;}
+        if(xauLoading!=null){Log.i("MMPLAY_UI","clear tab="+tab+" token="+xauContentToken);frame.removeView(xauLoading);xauLoading=null;}
     }
     private void showXauLoading(){
         if(destroyed||frame==null||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET))return;
+        Log.i("MMPLAY_UI","show tab="+tab+" token="+xauContentToken+" firstPaint="+firstPaint);
         clearXauLoading();
         LinearLayout box=column();box.setGravity(Gravity.CENTER);
         box.setPadding(dp(28),dp(24),dp(28),dp(24));
