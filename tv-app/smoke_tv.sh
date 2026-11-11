@@ -8,7 +8,7 @@ mkdir -p qa
 test -s "$APK"
 
 collect(){
-  adb logcat -d -v brief -s MMAPP_TV:V MM45_NAV:V MMPLAY_PAGE:V MMPLAY_UI:V MMPLAY_DIAG:V chromium:E > qa/play-tv-diagnostics.txt 2>/dev/null || true
+  adb logcat -d -v brief -s MMAPP_TV:V MMAPP_TV_NET:V MM45_NAV:V MMPLAY_PAGE:V MMPLAY_UI:V MMPLAY_DIAG:V chromium:E > qa/play-tv-diagnostics.txt 2>/dev/null || true
   adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-androidruntime.txt 2>/dev/null || true
 }
 trap collect EXIT
@@ -36,17 +36,25 @@ fi
 
 # App WebView asserts the live SPA has selected MarketMarney TV and rendered
 # the TV catalogue's actual .mm-tv-filters content before logging readiness.
-for count in $(seq 1 35); do
+for count in $(seq 1 45); do
   adb logcat -d -v brief -s MMAPP_TV:I > qa/play-tv-selection.txt
-  if grep -E 'ready tab=2 catalogue=MarketMarney TV|shell tab=2 (loading=videos|catalogue=unavailable)' qa/play-tv-selection.txt; then
+  if grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/play-tv-selection.txt; then
     break
   fi
   sleep 1
 done
-grep -E 'ready tab=2 catalogue=MarketMarney TV|shell tab=2 (loading=videos|catalogue=unavailable)' qa/play-tv-selection.txt || {
-  echo 'FAIL: TV catalogue was never selected/rendered'
+grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/play-tv-selection.txt || {
+  echo 'FAIL: Published TV catalogue did not render video cards from live API or bundled public snapshot'
   exit 1
 }
+adb logcat -d -v brief -s MMAPP_TV_NET:V > qa/play-tv-native-source.txt || true
+if grep -F 'source=bundled-snapshot' qa/play-tv-native-source.txt; then
+  echo 'CATALOGUE_SOURCE=bundled-snapshot; streaming requires online test' | tee qa/play-tv-source-summary.txt
+elif grep -F 'source=native-live' qa/play-tv-native-source.txt; then
+  echo 'CATALOGUE_SOURCE=native-live; streaming still requires separate playback test' | tee qa/play-tv-source-summary.txt
+else
+  echo 'CATALOGUE_SOURCE=webview-or-unknown; verify API in full regression' | tee qa/play-tv-source-summary.txt
+fi
 
 adb exec-out screencap -p > qa/play-tv-catalogue.png
 test -s qa/play-tv-catalogue.png
@@ -69,8 +77,4 @@ if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marke
   echo 'FAIL: Android app crash'
   exit 1
 fi
-if grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/play-tv-selection.txt; then
-  echo 'PASS: MarketMarney TV catalog loaded from public API on Android 16' | tee qa/play-tv-status.txt
-else
-  echo 'PASS: TV page opens with retry/status UI; public API video availability not verified' | tee qa/play-tv-status.txt
-fi
+echo 'PASS: MarketMarney TV displayed published video cards on Android 16 (live or bundled public snapshot)' | tee qa/play-tv-status.txt
