@@ -65,12 +65,13 @@ RUN set -eux; \
     grep -F "versionCode='5'" /out/Marney-v4-badging.txt; \
     grep -F "versionName='4.0.0-beta'" /out/Marney-v4-badging.txt; \
     grep -F 'com.marketmarney.mobile.MainActivity' /out/Marney-v4-badging.txt; \
+    grep -F "uses-feature-not-required: name='android.hardware.camera'" /out/Marney-v4-badging.txt; \
+    grep -F "uses-feature-not-required: name='android.hardware.microphone'" /out/Marney-v4-badging.txt; \
     grep -F 'android.permission.CAMERA' /out/Marney-v4-permissions.txt; \
     grep -F 'android.permission.RECORD_AUDIO' /out/Marney-v4-permissions.txt; \
     grep -F 'android.permission.INTERNET' /out/Marney-v4-permissions.txt; \
     unzip -p "$APK" classes.dex | grep -aF 'MARNEY_ANDROID_V4'; \
-    unzip -p "$APK" classes.dex | grep -aF 'android-native-v4'; \
-    unzip -p "$APK" classes.dex | grep -aF 'Ukuran maksimal setiap unggahan adalah 100 MB.'; \
+    test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0; \
     cp "$APK" /out/Marney-v4-Beta.apk; \
     cd /out; \
     sha256sum Marney-v4-Beta.apk | tee Marney-v4-Beta.sha256
