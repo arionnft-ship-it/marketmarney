@@ -35,6 +35,16 @@ test('layout covers full TV flow without altering homepage featured or other pag
  assert.doesNotMatch(CSS,/\.mm-tv-feature|\.navbtn|\.news-list|\.articletext|\.social-home|header\s*\{|body\s*\{/);
 });
 
+test('TV category buttons are hidden without hiding the video grid',()=>{
+ assert.equal(VERSION,'mm-tv-layout-20261111-v2');
+ assert.match(CSS,/\.mm-tv-filters\s*\{display:none!important\}/);
+ assert.ok(CSS.lastIndexOf('.mm-tv-filters{display:none!important}')>CSS.indexOf('.mm-tv-filters{'));
+ assert.doesNotMatch(CSS,/\.mm-tv-grid\s*\{display:none|\.mm-tv-card\s*\{display:none/);
+ const out=injectHtml(HTML,'/index.html');
+ assert.ok(out.includes('?v=mm-tv-layout-20261111-v2'));
+ assert.equal(injectHtml(HTML,'/about.html'),HTML);
+});
+
 test('style asset is valid text/CSS and cannot rewrite videos or accounts',()=>{
  const map=assets(),item=map.get(ASSET);
  assert.equal(map.size,1);
