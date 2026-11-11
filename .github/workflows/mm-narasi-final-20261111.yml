@@ -10,6 +10,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Install FFmpeg
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
       - name: Download approved educational video and narration
         shell: bash
         run: |
