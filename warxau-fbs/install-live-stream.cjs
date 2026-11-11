@@ -7,7 +7,15 @@ const crypto = require('node:crypto');
 const files = [
   {
     output: 'live-stream.cjs',
-    parts: ['live-stream.cjs.gz.b64.01', 'live-stream.cjs.gz.b64.02', 'live-stream.cjs.gz.b64.03'],
+    parts: [
+      'live-stream.cjs.gz.b64.01a',
+      'live-stream.cjs.gz.b64.01b',
+      'live-stream.cjs.gz.b64.01c',
+      'live-stream.cjs.gz.b64.02a',
+      'live-stream.cjs.gz.b64.02b',
+      'live-stream.cjs.gz.b64.02c',
+      'live-stream.cjs.gz.b64.03'
+    ],
     sha256: 'bf449406bbea398ff7c1451c8052a62f877b3d2a57f17afd4c8ffbb1016cca7a'
   },
   {
