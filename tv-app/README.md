@@ -1,13 +1,17 @@
 # MarketMarney TV pada APK Android
 
-Tujuan: mengganti tab bawah XAUWar (posisi ketiga) menjadi MarketMarney TV. Empat tab lain tetap Beranda, Berita, Market Live, Social Marney.
+Tab ketiga Android diganti dari XAUWar menjadi **MarketMarney TV**, dengan ikon televisi/play dan label dua baris. Tab lainnya tetap Beranda, Berita, Market Live, Social Marney.
 
-- Nama menu: MarketMarney TV. Label tampilan dua baris (MarketMarney / TV) agar muat di layar ponsel.
-- Ikon: bentuk layar video dan simbol play, menggantikan ikon XAUWar.
-- Tujuan: katalog TV yang sudah aktif di halaman utama https://marketmarney.com/index.html, bukan URL terpisah /tv.html (404).
-- Mekanisme: WebView mengakses halaman resmi dengan penanda #mm-app-tv, lalu memilih tombol navigasi data-page="MarketMarney TV" di halaman asli.
-- Pemeriksaan siap: menu TV harus benar-benar aktif dan area filter video .mm-tv-filters harus tampil di dalam konten utama. Layar beranda kosong atau loading dianggap gagal.
-- Link XAUWar lama dari website tidak dipetakan ke tab TV.
-- Tidak mengubah website, backend, database, atau APK beta lama.
+## Implementasi
+- WebView memuat halaman ringan **khusus APK Android** di URL same-origin https://marketmarney.com/__android43/marketmarney-tv. HTML dipaketkan di APK dan tidak bergantung pada homepage berat.
+- Video, kategori, judul, dan thumbnail tetap dimuat dari **API konten MarketMarney yang sudah ada** (GET /api/content). Tidak ada video atau berita baru yang dibuat.
+- Daftar responsif, filter kategori, pemutar MP4/YouTube dengan kontrol pengguna, dan tombol coba lagi jika server atau jaringan gagal.
+- Tidak membuka JavaScript bridge atau mengubah backend. Tidak mengubah web publik, database, ataupun APK beta yang sudah didistribusikan.
+- Halaman TV bisa tampil meskipun API sedang bermasalah. Pengujian mencatat secara terpisah apakah daftar video berhasil dimuat, atau hanya halaman + pesan coba lagi yang tersedia.
+- Tautan XAUWar lama pada website tidak membajak tab TV.
 
-Status: cabang pengembangan, bukan publikasi. Build AAB untuk Google Play harus menggunakan kunci upload resmi dan melewati tes perangkat nyata serta persyaratan privasi/UGC.
+## Pengujian dan publikasi
+- Build Android dan APK test/Play candidate dilakukan di GitHub Actions pada cabang feature/android-marketmarney-tv-20261111.
+- Native smoke test pada Android 16 wajib membuktikan tab 2 membuka UI TV dengan konten terlihat (bukan halaman hitam), dan mencatat status API.
+- Tes opening beta lama tetap merupakan persyaratan QA terpisah.
+- Kandidat AAB masih harus ditandatangani dengan kunci upload resmi dan diuji di perangkat nyata sebelum dirilis melalui Google Play.
