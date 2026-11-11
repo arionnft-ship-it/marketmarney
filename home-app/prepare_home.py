@@ -104,6 +104,15 @@ def apply(root: Path) -> None:
         }''',
         "skip heavy web adaptation for local pages",
     )
+    # Do not show a native full-screen opening overlay on the light Home.
+    # The legacy opening temporarily hides all descendants from Android
+    # accessibility; delayed overlay teardown can leave an otherwise-ready
+    # WebView blank/undiscoverable for startup users.
+    s = once(
+        s, 'if(state==null&&!getIntent().hasExtra("startTab"))showLaunchAnimation();',
+        'if(state==null&&!getIntent().hasExtra("startTab")&&initial!=HOME)showLaunchAnimation();',
+        "nonblocking light Home launch",
+    )
     java.write_text(s, encoding="utf-8")
 
     source = Path(__file__).with_name("home.html")
