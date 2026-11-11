@@ -1,9 +1,9 @@
-name: Build Marney Android v4 Beta
+name: Build Marney Android UI-Preserved Beta
 
 on:
   push:
     branches:
-      - feat/marney-android-v4-20261112
+      - fix/marney-preserve-original-ui-20261112
       - fix/site-performance-audit-20261108
     paths:
       - 'android-app/**'
@@ -25,10 +25,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Apply Marney Android v4 improvements
+      - name: Apply functional improvements without changing UI
         run: python3 android-app/apply-marney-v4.py
 
-      - name: Finalize generated Marney v4 source
+      - name: Verify original Marney interface is preserved
         run: python3 android-app/finalize-marney-v4.py
 
       - name: Configure Android SDK
@@ -52,74 +52,59 @@ jobs:
           mkdir -p "$(dirname "$ICON")"
           if ! curl -fLsS --retry 6 --retry-all-errors --connect-timeout 15 --max-time 150 \
             https://marketmarney.com/icons/icon-512.png -o "$ICON"; then
-            echo 'Public icon download failed; generating deterministic Marney fallback icon.'
-            ICON="$ICON" python3 - <<'PY'
-          import os, struct, zlib
-          path=os.environ['ICON']; w=h=512
-          px=[[(255,255,255,255) for _ in range(w)] for _ in range(h)]
-          def rect(x0,y0,x1,y1,c):
-              for y in range(max(0,y0),min(h,y1)):
-                  row=px[y]
-                  for x in range(max(0,x0),min(w,x1)): row[x]=c
-          def line(x0,y0,x1,y1,width,c):
-              steps=max(abs(x1-x0),abs(y1-y0),1)
-              for i in range(steps+1):
-                  x=round(x0+(x1-x0)*i/steps); y=round(y0+(y1-y0)*i/steps)
-                  rect(x-width//2,y-width//2,x+width//2+1,y+width//2+1,c)
-          black=(24,26,29,255); orange=(244,122,31,255)
-          rect(82,112,142,404,black); rect(370,112,430,404,black)
-          line(120,126,256,300,54,black); line(392,126,256,300,54,black)
-          line(270,224,404,90,28,orange); line(404,90,404,180,28,orange); line(404,90,314,90,28,orange)
-          raw=b''.join(b'\x00'+b''.join(bytes(p) for p in row) for row in px)
-          def chunk(kind,data):
-              return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data)&0xffffffff)
-          png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b'')
-          open(path,'wb').write(png)
-          PY
+            echo 'Public icon download failed; keeping the repository icon unchanged.'
+            test -s "$ICON"
           fi
           file "$ICON"
           test -s "$ICON"
 
-      - name: Compile Marney v4 debug APK
+      - name: Compile Marney UI-preserved debug APK
         working-directory: android-app
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Validate identity, permissions and v4 behavior
+      - name: Validate identity, permissions and preserved interface
         shell: bash
         run: |
           set -euo pipefail
           APK=android-app/app/build/outputs/apk/debug/app-debug.apk
-          OUT=Marney-v4-Beta.apk
+          OUT=Marney-v4.0.1-UI-Preserved-Beta.apk
           test -s "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -print -quit)"
           test -n "$AAPT"
 
-          "$AAPT" dump badging "$APK" | tee Marney-v4-badging.txt
-          "$AAPT" dump permissions "$APK" | tee Marney-v4-permissions.txt
-          grep -F "package: name='com.marketmarney.mobile'" Marney-v4-badging.txt
-          grep -F "versionCode='5'" Marney-v4-badging.txt
-          grep -F "versionName='4.0.0-beta'" Marney-v4-badging.txt
-          grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4-badging.txt
-          grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4-badging.txt
-          grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4-badging.txt
-          grep -F 'android.permission.CAMERA' Marney-v4-permissions.txt
-          grep -F 'android.permission.RECORD_AUDIO' Marney-v4-permissions.txt
-          grep -F 'android.permission.INTERNET' Marney-v4-permissions.txt
+          "$AAPT" dump badging "$APK" | tee Marney-v4.0.1-badging.txt
+          "$AAPT" dump permissions "$APK" | tee Marney-v4.0.1-permissions.txt
+          grep -F "package: name='com.marketmarney.mobile'" Marney-v4.0.1-badging.txt
+          grep -F "versionCode='6'" Marney-v4.0.1-badging.txt
+          grep -F "versionName='4.0.1-beta'" Marney-v4.0.1-badging.txt
+          grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4.0.1-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4.0.1-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4.0.1-badging.txt
+          grep -F 'android.permission.CAMERA' Marney-v4.0.1-permissions.txt
+          grep -F 'android.permission.RECORD_AUDIO' Marney-v4.0.1-permissions.txt
+          grep -F 'android.permission.INTERNET' Marney-v4.0.1-permissions.txt
+
+          grep -F 'private static final int NAVY = Color.rgb(5, 17, 33);' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'top.setBackgroundColor(Color.rgb(6, 21, 38));' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'String[] labels = {"Beranda", "Pasar", "Berita", "Social", "Akun"};' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          ! grep -F 'lightModeScript' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          ! grep -F "localStorage.setItem('mm_theme'" android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+
           test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0
-          unzip -t "$APK" | tee Marney-v4-archive-test.txt
+          unzip -t "$APK" | tee Marney-v4.0.1-archive-test.txt
 
           cp "$APK" "$OUT"
-          sha256sum "$OUT" | tee Marney-v4-Beta.sha256
+          sha256sum "$OUT" | tee Marney-v4.0.1-UI-Preserved-Beta.sha256
           ls -lh "$OUT"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Marney-v4-Beta-APK
+          name: Marney-v4.0.1-UI-Preserved-Beta
           path: |
-            Marney-v4-Beta.apk
-            Marney-v4-Beta.sha256
-            Marney-v4-badging.txt
-            Marney-v4-permissions.txt
-            Marney-v4-archive-test.txt
+            Marney-v4.0.1-UI-Preserved-Beta.apk
+            Marney-v4.0.1-UI-Preserved-Beta.sha256
+            Marney-v4.0.1-badging.txt
+            Marney-v4.0.1-permissions.txt
+            Marney-v4.0.1-archive-test.txt
           if-no-files-found: error
           retention-days: 30
