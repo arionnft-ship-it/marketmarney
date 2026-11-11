@@ -1,0 +1,30 @@
+name: MarketMarney Entry Lesson Media Check
+on:
+  push:
+    branches: [work/marketmarney-entry-academy-20261111]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions: {contents: read}
+    steps:
+      - name: Confirm transferred MP4 and thumbnail integrity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, urllib.request
+          sources=[
+            ('video','https://static.metricool.com/planner/202611/7967921-file-10416073823449969464.mp4','a458decd817116a1fb7dd8833d7e8c9490f0656d5149045242a3ad369a484ea8',12677992),
+            ('thumbnail','https://static.metricool.com/planner/202611/7967921-file-398450730662348571.jpeg','c2fedf5ec46ef12cbde4671fe3360be16ca13f9689834222fb11a6fc655b33ef',328159)
+          ]
+          for name,url,sha,nbytes in sources:
+            req=urllib.request.Request(url,headers={'User-Agent':'MarketMarney-TV-Media-Check/1.0'})
+            with urllib.request.urlopen(req,timeout=55) as resp:
+              data=resp.read(60*1024*1024)
+              ctype=resp.headers.get('content-type')
+            actual=hashlib.sha256(data).hexdigest()
+            print('MEDIA_CHECK',name,'size',len(data),'type',ctype,'sha',actual,flush=True)
+            assert len(data)==nbytes and actual==sha,(name,'unexpected_modified_file')
+            assert (data[4:8]==b'ftyp' if name=='video' else data[:3]==bytes.fromhex('ffd8ff'))
+          print('MEDIA_BOTH_OK',flush=True)
+          PY
