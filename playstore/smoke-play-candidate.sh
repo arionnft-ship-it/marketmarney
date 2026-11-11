@@ -26,9 +26,16 @@ adb exec-out screencap -p > "$OUT/play-first-launch.png"
 test -s "$OUT/play-first-launch.png"
 # Capture the fully loaded Home DOM separately to inspect early light-only CSS.
 sleep 4
+adb logcat -d -s MMPLAY_PAGE:I > "$OUT/play-content-home.txt"
+if ! grep -F 'ready tab=0' "$OUT/play-content-home.txt"; then
+  echo 'Home WebView still rendering after 7s; allow final bounded content check'
+  sleep 10
+  adb logcat -d -s MMPLAY_PAGE:I > "$OUT/play-content-home.txt"
+fi
 adb exec-out screencap -p > "$OUT/play-home-after-7s.png"
 test -s "$OUT/play-home-after-7s.png"
 python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
+grep -F 'ready tab=0' "$OUT/play-content-home.txt" || { echo 'FAIL: Home did not display real web content'; exit 1; }
 
 # Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
@@ -47,9 +54,16 @@ adb logcat -d -v brief -s MM45_NAV:I > "$OUT/play-xauwar-route.txt"
 grep -F 'cold tab=2' "$OUT/play-xauwar-route.txt"
 adb shell pidof "$PKG" | tee "$OUT/play-after-navigation.txt"
 test -s "$OUT/play-after-navigation.txt"
+adb logcat -d -s MMPLAY_PAGE:I > "$OUT/play-content-xauwar.txt"
+if ! grep -F 'ready tab=2' "$OUT/play-content-xauwar.txt"; then
+  echo 'XAUWar WebView still rendering; allow final bounded content check'
+  sleep 11
+  adb logcat -d -s MMPLAY_PAGE:I > "$OUT/play-content-xauwar.txt"
+fi
 adb exec-out screencap -p > "$OUT/play-after-navigation.png"
 test -s "$OUT/play-after-navigation.png"
 python3 playstore/check_visible_content.py "$OUT/play-after-navigation.png"
+grep -F 'ready tab=2' "$OUT/play-content-xauwar.txt" || { echo 'FAIL: XAUWar did not display real web content'; exit 1; }
 
 
 adb logcat -d -v time -s AndroidRuntime:E > "$OUT/play-crashes.txt"
