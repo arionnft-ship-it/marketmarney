@@ -1,49 +1,50 @@
 #!/usr/bin/env python3
-"""Small deterministic cleanup after the v4 source transformation."""
+"""Validate that Marney functional upgrades keep the original interface intact."""
 from pathlib import Path
 
-root = Path(__file__).resolve().parent
-main = root / "app/src/main/java/com/marketmarney/mobile/MainActivity.java"
-manifest_path = root / "app/src/main/AndroidManifest.xml"
-text = main.read_text(encoding="utf-8")
+ROOT = Path(__file__).resolve().parent
+MAIN = ROOT / "app/src/main/java/com/marketmarney/mobile/MainActivity.java"
+MANIFEST = ROOT / "app/src/main/AndroidManifest.xml"
+GRADLE = ROOT / "app/build.gradle"
 
-text = text.replace(
-    "    private LinearLayout page(    private LinearLayout page(",
-    "    private LinearLayout page(",
-    1,
-)
-text = text.replace(
-    "        browser.setDownloadListener(this::startDownload);",
-    "        browser.setDownloadListener((url, userAgent, disposition, mime, length) -> "
-    "startDownload(url, userAgent, disposition, mime));",
-    1,
-)
-text = text.replace(
-    '        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/4.0 AppShell");',
-    '        setting.setUserAgentString(setting.getUserAgentString() + " MarketMarneyAndroid/4.0 AppShell " + APP_BUILD);',
-    1,
-)
-
-manifest = manifest_path.read_text(encoding="utf-8")
-camera_feature = '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
-if camera_feature not in manifest:
-    anchor = '    <uses-feature android:name="android.hardware.camera.any" android:required="false" />\n'
-    if anchor not in manifest:
-        raise RuntimeError("Marney v4 finalization failed: camera feature anchor missing")
-    manifest = manifest.replace(anchor, anchor + camera_feature, 1)
+source = MAIN.read_text(encoding="utf-8")
+manifest = MANIFEST.read_text(encoding="utf-8")
+gradle = GRADLE.read_text(encoding="utf-8")
 
 checks = {
-    "single page method": text.count("private LinearLayout page(") == 1,
-    "download lambda": "setDownloadListener((url, userAgent, disposition, mime, length)" in text,
-    "no invalid method reference": "setDownloadListener(this::startDownload)" not in text,
-    "balanced braces": text.count("{") == text.count("}"),
-    "v4 marker": "MARNEY_ANDROID_V4" in text,
-    "runtime marker retained": 'AppShell " + APP_BUILD' in text,
-    "camera hardware optional": camera_feature.strip() in manifest,
+    "original navy palette": "private static final int NAVY = Color.rgb(5, 17, 33);" in source,
+    "original card palette": "private static final int CARD = Color.rgb(12, 31, 51);" in source,
+    "original gold palette": "private static final int GOLD = Color.rgb(255, 192, 59);" in source,
+    "original header background": "top.setBackgroundColor(Color.rgb(6, 21, 38));" in source,
+    "original header copy": "APLIKASI ANDROID  •  MARKET INTELLIGENCE" in source,
+    "original bottom background": "bottomBar.setBackgroundColor(Color.rgb(8, 23, 39));" in source,
+    "original navigation labels": 'String[] labels = {"Beranda", "Pasar", "Berita", "Social", "Akun"};' in source,
+    "original navigation symbols": 'String[] symbols = {"⌂", "⌁", "▤", "◎", "◉"};' in source,
+    "original hero styling": "hero.setBackground(bg(Color.rgb(21, 48, 68), 17));" in source,
+    "original web toolbar": 'toolbar.setPadding(dp(10), dp(5), dp(15), dp(5));' in source,
+    "no forced light theme": "mm_theme" not in source and "lightModeScript" not in source,
+    "no replacement chrome": "setNativeChromeVisible" not in source,
+    "preserved build marker": "MARNEY_ANDROID_V4_UI_PRESERVED" in source,
+    "100 MB validation": "MAX_UPLOAD_BYTES = 100L * 1024L * 1024L" in source,
+    "download support": "setDownloadListener" in source and "DownloadManager.Request" in source,
+    "live media support": "onPermissionRequest(PermissionRequest request)" in source,
+    "safe MarketMarney origin": "isTrustedMarketMarney" in source,
+    "balanced braces": source.count("{") == source.count("}"),
+    "single activity result": source.count("void onActivityResult(") == 1,
+    "camera optional": '<uses-feature android:name="android.hardware.camera" android:required="false" />' in manifest,
+    "microphone optional": '<uses-feature android:name="android.hardware.microphone" android:required="false" />' in manifest,
+    "camera permission": 'android.permission.CAMERA' in manifest,
+    "microphone permission": 'android.permission.RECORD_AUDIO' in manifest,
+    "version code": "versionCode 6" in gradle,
+    "version name": "versionName '4.0.1-beta'" in gradle,
 }
+
 failed = [name for name, ok in checks.items() if not ok]
 if failed:
-    raise RuntimeError("Marney v4 finalization failed: " + ", ".join(failed))
-main.write_text(text, encoding="utf-8")
-manifest_path.write_text(manifest, encoding="utf-8")
-print({"marneyAndroidV4Finalized": True, "checks": checks})
+    raise RuntimeError("Marney UI-preserved finalization failed: " + ", ".join(failed))
+
+print({
+    "marneyAndroidFinalized": True,
+    "uiPreserved": True,
+    "checks": checks,
+})
