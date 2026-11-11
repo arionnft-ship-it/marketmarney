@@ -27,13 +27,16 @@ for n in $(seq 1 26); do
   sleep 1
 done
 grep -F 'ready tab=0 lightweight-home' qa/beta440-home-ready.txt
-adb shell uiautomator dump /sdcard/mm-home-beta.xml > qa/beta440-home-ui-dump.txt 2>&1 || true
-adb exec-out cat /sdcard/mm-home-beta.xml > qa/beta440-home-ui.xml 2>/dev/null || true
-grep -F '<hierarchy' qa/beta440-home-ui.xml >/dev/null
-python3 home-app/check_home_visible.py qa/beta440-home-ui.xml
-adb exec-out screencap -p > qa/beta440-home.png
+# Always preserve visual evidence before accessibility assertions, so a
+# native overlay or a white WebView cannot make the diagnosis disappear.
+timeout 12s adb exec-out screencap -p > qa/beta440-home.png
+test -s qa/beta440-home.png
 python3 playstore/check_visible_content.py qa/beta440-home.png
 python3 playstore/check_native_overlay.py qa/beta440-home.png
+timeout 16s adb shell uiautomator dump /sdcard/mm-home-beta.xml > qa/beta440-home-ui-dump.txt 2>&1 || true
+timeout 10s adb exec-out cat /sdcard/mm-home-beta.xml > qa/beta440-home-ui.xml 2>/dev/null || true
+grep -F '<hierarchy' qa/beta440-home-ui.xml >/dev/null
+python3 home-app/check_home_visible.py qa/beta440-home-ui.xml
 
 # Real Android 16 launch into TV, not an inferred tap from screenshots.
 adb shell am force-stop "$PKG"
