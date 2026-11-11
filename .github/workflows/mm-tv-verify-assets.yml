@@ -1,0 +1,27 @@
+name: Verify MarketMarney TV media assets (read-only)
+on:
+  push:
+    branches: [work/marketmarney-tv-upload-20261111]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify independent hosted original media
+        run: |
+          python3 - <<'PY'
+          import urllib.request,hashlib
+          urls=[
+            ('video','https://static.metricool.com/planner/202611/7967921-file-15390346309692093810.mp4','6f729bf14509b4718c42417593e7216df9bb6641ec379e9f6882c721567f963c'),
+            ('thumbnail','https://static.metricool.com/planner/202611/7967921-file-3514171303260122702.jpeg','d31b75156c4f0104ba833f83a60d758dd1f58a331c1016fb7c563568f49b7bc3')
+          ]
+          for name,url,sha in urls:
+            req=urllib.request.Request(url,headers={'User-Agent':'MarketMarney-TV-Verification/1.0'})
+            with urllib.request.urlopen(req,timeout=30) as resp:
+              data=resp.read(25_000_000)
+              content_type=resp.headers.get('content-type')
+            actual=hashlib.sha256(data).hexdigest()
+            print(name,'bytes',len(data),'type',content_type,'sha256',actual,'matches_original',actual==sha)
+            if name=='video' and (data[4:8]!=b'ftyp' or len(data)<1_000_000):raise Exception('bad mp4')
+            if name=='thumbnail' and (not data.startswith(bytes.fromhex('ffd8ff')) or len(data)<10000):raise Exception('bad thumbnail')
+          PY
