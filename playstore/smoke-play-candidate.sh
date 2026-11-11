@@ -24,6 +24,10 @@ adb shell pidof "$PKG" | tee "$OUT/play-process.txt"
 test -s "$OUT/play-process.txt"
 adb exec-out screencap -p > "$OUT/play-first-launch.png"
 test -s "$OUT/play-first-launch.png"
+# Capture the fully loaded Home DOM separately to inspect early light-only CSS.
+sleep 4
+adb exec-out screencap -p > "$OUT/play-home-after-7s.png"
+test -s "$OUT/play-home-after-7s.png"
 
 # Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
