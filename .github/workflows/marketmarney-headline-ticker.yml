@@ -1,0 +1,43 @@
+name: MarketMarney Headline Ticker
+
+on:
+  push:
+    branches: [feat/marketmarney-headline-ticker-audio-20261111]
+    paths:
+      - 'warxau-fbs/news-ticker.cjs'
+      - 'warxau-fbs/news-ticker.test.cjs'
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/marketmarney-headline-ticker.yml'
+  pull_request:
+    branches: [feat/live-marney-streaming-v2-20261111]
+    paths:
+      - 'warxau-fbs/news-ticker.cjs'
+      - 'warxau-fbs/news-ticker.test.cjs'
+      - 'warxau-fbs/bootstrap.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+
+permissions:
+  contents: read
+
+jobs:
+  ticker-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and ticker unit tests
+        run: |
+          node --check warxau-fbs/news-ticker.cjs
+          node --check warxau-fbs/bootstrap.cjs
+          node --test warxau-fbs/news-ticker.test.cjs
+  site-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production Dockerfile build without deployment
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-ticker-ci .
