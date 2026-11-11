@@ -218,4 +218,5 @@ jobs:
             qa/emulator-runtime-errors.txt
             qa/play-*.txt
             qa/play-*.png
+            qa/play-*.xml
           if-no-files-found: warn
