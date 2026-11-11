@@ -1,0 +1,96 @@
+name: MarketMarney broker video native Indonesian voice
+on:
+  push:
+    branches:
+      - fix/broker-arbo-voice-20261111
+    paths:
+      - .github/workflows/broker-arbo-voice.yml
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out MarketMarney source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install renderer and TTS dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq espeak-ng ffmpeg fonts-lato >/dev/null
+          python -m pip install -q "numpy>=1.26,<3" "pillow>=11,<13" "pydub>=0.25,<1" "soundfile>=0.12" "onnxruntime>=1.17" "phonemizer>=3.2" "espeakng-loader>=0.1" "scipy>=1.10" "librosa>=0.10"
+          git clone -q --depth=1 https://github.com/ARBO-TEAM/arboTTS.git /tmp/arbotts-src
+          git -C /tmp/arbotts-src fetch -q --depth=1 origin f628060f0a3afdf86019c99eb057dcecb824d294
+          git -C /tmp/arbotts-src checkout -q --detach f628060f0a3afdf86019c99eb057dcecb824d294
+          python -m pip install -q --no-deps /tmp/arbotts-src
+      - name: Fetch approved storyboard
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 3 --max-time 90 \
+            https://resource2.heygen.ai/document/ee80b60ba18846b7941403c0d5435d63/original.zip -o storyboard.zip
+          echo '4d45e954c2cc7758bc301927635dd30c99cc68cbc25e4184ff690f2947618acc  storyboard.zip' | sha256sum -c
+          mkdir -p neural-project
+          unzip -q storyboard.zip -d neural-project
+          python tools/rebuild_broker_arbo.py
+          python -m py_compile neural-project/render_neural.py
+      - name: Test native Indonesian acoustic model
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os, soundfile as sf, numpy as np
+          from arbotts import ArboTTS
+          tts=ArboTTS(tier="standard")
+          tts.speak("Sebelum memilih broker, periksa izinnya dulu. Jangan terburu-buru menyetor uang.",output_file="sample-indonesian.wav",lang="id",speaker="arbo",speed=0.87)
+          y,sr=sf.read("sample-indonesian.wav")
+          assert 21000 <= sr <= 48000 and 2 <= len(y)/sr <= 25, (sr, len(y))
+          assert np.max(np.abs(y)) > 0.03
+          assert np.sqrt(np.mean(y*y)) > 0.004
+          print("INDONESIAN_VOICE_SAMPLE_VALID",{"seconds":round(len(y)/sr,2),"peak":float(np.max(np.abs(y))),"rms":float(np.sqrt(np.mean(y*y)))})
+          PY
+      - name: Render narration and video from the existing storyboard
+        run: |
+          set -euo pipefail
+          cd neural-project
+          python -u render_neural.py | tee render.log
+      - name: Master voice mix and verify streaming media
+        run: |
+          set -euo pipefail
+          mkdir -p assets/broker-audio
+          ffmpeg -hide_banner -loglevel error -nostdin -y \
+            -i neural-project/out/MarketMarneyTV_Broker_Suara_Indonesia_Jelas.mp4 \
+            -map 0:v:0 -map 0:a:0 -c:v copy -c:a aac -b:a 192k -ar 48000 \
+            -af 'loudnorm=I=-16:LRA=7:TP=-1.5' -movflags +faststart \
+            assets/broker-audio/marketmarney-broker-suara-indonesia-v3.mp4
+          ffmpeg -hide_banner -loglevel error -nostdin -y \
+            -ss 0 -i assets/broker-audio/marketmarney-broker-suara-indonesia-v3.mp4 \
+            -t 26 -map 0:a:0 -vn -c:a libmp3lame -b:a 160k \
+            assets/broker-audio/marketmarney-broker-preview-v3.mp3
+          cp neural-project/out/subtitle_indonesia.srt assets/broker-audio/marketmarney-broker-suara-indonesia-v3.srt
+          cp neural-project/out/naskah_narasi.txt assets/broker-audio/marketmarney-broker-naskah-v3.txt
+          python - <<'PY'
+          import json, subprocess, pathlib
+          mp4=pathlib.Path("assets/broker-audio/marketmarney-broker-suara-indonesia-v3.mp4")
+          meta=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_streams","-show_format","-of","json",str(mp4)]))
+          length=float(meta["format"]["duration"])
+          codecs={s["codec_name"] for s in meta["streams"]}
+          assert 95 < length < 420, length
+          assert {"h264","aac"}.issubset(codecs),codecs
+          assert mp4.stat().st_size>1000000
+          assert pathlib.Path("assets/broker-audio/marketmarney-broker-preview-v3.mp3").stat().st_size>100000
+          print("BROKER_ARBO_MP4_READY",{"duration":length,"bytes":mp4.stat().st_size,"codecs":sorted(codecs)})
+          PY
+      - name: Commit video and preview to review branch
+        run: |
+          set -euo pipefail
+          git config user.name "marketmarney-video-bot"
+          git config user.email "marketmarney-video-bot@users.noreply.github.com"
+          git add assets/broker-audio/marketmarney-broker-*-v3.*
+          git commit -m 'media(tv): native Indonesian broker narration replacement'
+          git push origin HEAD:fix/broker-arbo-voice-20261111
