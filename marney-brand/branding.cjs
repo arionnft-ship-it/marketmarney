@@ -2,6 +2,7 @@
 // Response-only MARNEY branding. No protected app files, accounts or media are written.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const SEO=require('./seo.cjs');
+const YOUTUBE=require('./youtube-referrer.cjs');
 const ABOUT=require('./about-refresh.cjs');
 const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
@@ -66,6 +67,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
  for(const [url,a] of ANALYSIS.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of ABOUT.assets())assets.set(url,[a.body,a.mime]);
+ for(const [url,a] of YOUTUBE.assets())assets.set(url,[a.body,a.mime]);
  function handle(req,res){
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
@@ -122,9 +124,12 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    const data=Buffer.concat(chunks,size),raw=data.toString('utf8'),changed=enhance(raw),out=changed===raw?data:Buffer.from(changed);
    const withAnalysis=ANALYSIS.injectHtml(out.toString('utf8'),p);
    const aboutHtml=ABOUT.injectHtml(withAnalysis,p);
-   const analysisOut=aboutHtml===out.toString('utf8')?out:Buffer.from(aboutHtml);
+   const videoHtml=YOUTUBE.injectHtml(aboutHtml,p);
+   const analysisOut=videoHtml===out.toString('utf8')?out:Buffer.from(videoHtml);
    const seoHtml=SEO.patchHtml(analysisOut.toString('utf8'),p,seoEnabled),final=seoHtml===analysisOut.toString('utf8')?analysisOut:Buffer.from(seoHtml);
    if(seoEnabled)SEO.clearBlockingHeader(this);
+   // Only the public SPA HTML requires an identifying Referer for YouTube embeds.
+   if(YOUTUBE.isVideoHostPage(p))this.setHeader('Referrer-Policy',YOUTUBE.POLICY);
    if(final!==data){this.removeHeader('etag');this.removeHeader('content-md5');this.removeHeader('transfer-encoding');this.setHeader('content-length',final.length);this.setHeader('X-Marney-Brand',VERSION);}
    chunks.length=0;head();restore();return original.end.call(this,final,callback);
   };
