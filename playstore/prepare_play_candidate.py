@@ -90,6 +90,10 @@ shutil.copy2(source_ui, root / 'app/src/main/assets/only_light_ui.js')
 from prepare_xau_readiness import apply as apply_xau_readiness
 apply_xau_readiness(root)
 
+# Inject the app-only theme suppression at first committed WebView frame.
+from prepare_early_theme import apply as apply_early_theme
+apply_early_theme(root)
+
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
     'applicationId': 'com.marketmarney.mobile',
