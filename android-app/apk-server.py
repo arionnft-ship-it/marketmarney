@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import base64
 import hashlib
 import json
 import os
@@ -10,6 +11,23 @@ APK = ROOT / 'Marney-v4-Beta.apk'
 SHA = ROOT / 'Marney-v4-Beta.sha256'
 BADGING = ROOT / 'Marney-v4-badging.txt'
 PERMISSIONS = ROOT / 'Marney-v4-permissions.txt'
+
+
+def emit_artifact_log() -> None:
+    """Emit small numbered chunks so the validated APK can be recovered safely."""
+    if not APK.is_file():
+        print('MARNEY_APK_EXPORT_ERROR missing_apk', flush=True)
+        return
+    raw = APK.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    encoded = base64.b64encode(raw).decode('ascii')
+    chunk_size = 1800
+    chunks = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
+    print(f'MARNEY_APK_EXPORT_BEGIN size={len(raw)} sha256={digest} chunks={len(chunks)}', flush=True)
+    for index, chunk in enumerate(chunks, 1):
+        print(f'MARNEY_APK_B64 {index:04d}/{len(chunks):04d} {chunk}', flush=True)
+    print(f'MARNEY_APK_EXPORT_END sha256={digest}', flush=True)
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = 'MarneyAPK/4.0'
@@ -70,5 +88,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print('APK_SERVER', self.address_string(), fmt % args, flush=True)
 
+
+emit_artifact_log()
 port = int(os.environ.get('PORT', '8080'))
 ThreadingHTTPServer(('0.0.0.0', port), Handler).serve_forever()
