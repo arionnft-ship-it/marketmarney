@@ -1,0 +1,34 @@
+name: Audit existing Live Marney contract for comments and free virtual gifts
+on:
+  push:
+    branches: [feature/live-comments-gifts-20261111]
+    paths: ['live-engagement/**', '.github/workflows/audit-live-engagement.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Inspect only bounded source sections, no accounts or user data
+        shell: bash
+        working-directory: warxau-fbs
+        run: |
+          node install-live-stream.cjs
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const source=fs.readFileSync('live-stream.cjs','utf8');
+          console.log('SOURCE_END_START');
+          console.log(source.slice(-14000));
+          console.log('SOURCE_END_FINISH');
+          const mod=require('./live-stream.cjs');
+          console.log('LIVE_MODULE_EXPORTS',Object.keys(mod));
+          const pre=require('./live-stream-preload.cjs');
+          console.log('LIVE_SERVICE_PUBLIC_KEYS',Object.keys(pre.live));
+          console.log('LIVE_PRELOAD_EXPORTS',Object.keys(pre));
+          const reels=require('./live-reels-preload.cjs');
+          console.log('REELS_EXPORTS',Object.keys(reels));
+          NODE
