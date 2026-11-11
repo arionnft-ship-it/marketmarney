@@ -5,6 +5,7 @@ const SEO=require('./seo.cjs');
 const YOUTUBE=require('./youtube-referrer.cjs');
 const TV_LAYOUT=require('./tv-layout.cjs');
 const TV_LEARNING=require('./tv-learning.cjs');
+const TV_HEYGEN_IMPORT=require('./tv-heygen-import.cjs');
 const ABOUT=require('./about-refresh.cjs');
 const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
 const {createPublicPerformance}=require(fs.existsSync(path.join(__dirname,'performance-runtime.cjs'))?'./performance-runtime.cjs':'../warxau-fbs/performance-runtime.cjs');
@@ -76,6 +77,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
   if(p==='/ads.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendAdsTxt(req,res);
+  if(TV_HEYGEN_IMPORT.handleMedia(req,res))return true;
   if(performance.handle(req,res))return true;
   let asset=assets.get(p);
   if(!asset&&(p==='/manifest.webmanifest'||p==='/sw.js')){
@@ -99,6 +101,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
   h['Content-Length']=asset[0].length;res.writeHead(200,h);res.end(req.method==='HEAD'?undefined:asset[0]);return true;
  }
  function wrap(req,res){
+  if(TV_HEYGEN_IMPORT.wrapCatalog(req,res))return;
   const p=String(req.url||'').split('?')[0];
   const seoEnabled=SEO.isPublicPage(req,p);
   if(req.method!=='GET'||/^\/(?:api|auth|_railway|media|uploads)(?:\/|$)/.test(p)||!(p==='/'||p.endsWith('.html')||seoEnabled))return;
