@@ -16,7 +16,7 @@ COPY warxau-fbs/relay.cjs warxau-fbs/page.cjs warxau-fbs/client.js warxau-fbs/bo
 COPY warxau-fbs/live-stream.cjs.gz.b64.01a warxau-fbs/live-stream.cjs.gz.b64.01b warxau-fbs/live-stream.cjs.gz.b64.01c warxau-fbs/live-stream.cjs.gz.b64.02a warxau-fbs/live-stream.cjs.gz.b64.02b warxau-fbs/live-stream.cjs.gz.b64.02c warxau-fbs/live-stream.cjs.gz.b64.03 warxau-fbs/live-stream-preload.cjs.gz.b64 warxau-fbs/live-stream.test.cjs.gz.b64 warxau-fbs/install-live-stream.cjs ./
 RUN node install-live-stream.cjs
 COPY warxau-fbs/article-reading-width.cjs ./
-COPY warxau-fbs/news-ticker.cjs warxau-fbs/news-ticker.test.cjs ./
+COPY warxau-fbs/news-ticker.cjs warxau-fbs/squawk-feed.cjs warxau-fbs/news-ticker.test.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
 COPY warxau-fbs/article-banner.cjs ./
 COPY warxau-fbs/topchat.cjs warxau-fbs/topchat-layout.js warxau-fbs/topchat.css warxau-fbs/start-topchat.cjs ./
