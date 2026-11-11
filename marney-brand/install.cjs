@@ -5,7 +5,7 @@ const file=process.argv[2];if(!file)throw Error('bootstrap path required');
 const BRAND_FROM='marney-m-arrow-20261110-v1';
 const BRAND_TO='marney-m-arrow-20261111-v2';
 const ABOUT_FROM='about-m-arrow-only-20261110-v2';
-const ABOUT_TO='about-m-arrow-only-20261111-v4';
+const ABOUT_TO='about-m-arrow-only-20261111-v5';
 function replaceVersion(filename,from,to){
  const target=path.join(__dirname,filename);if(!fs.existsSync(target))throw Error('Missing brand file: '+filename);
  let source=fs.readFileSync(target,'utf8');
