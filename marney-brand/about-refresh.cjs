@@ -7,6 +7,22 @@ function client(){
  if(location.pathname!=='/about.html')return;
  const source='/assets/brand-about-transparent.webp?v=about-m-arrow-only-20261110-v2';
  function label(n){return String(n?.textContent||'').replace(/\s+/g,' ').trim();}
+ // Remove only the About page's 04 / TIM section, never the adjacent community or risk sections.
+ function removeTeam(){
+  const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,span,p,strong,small')];
+  const heading=nodes.find(n=>/^Tim\\s+MarketMarney$/i.test(label(n)))||
+    nodes.find(n=>/^04\\s*\\/\\s*TIM$/i.test(label(n)));
+  if(!heading)return false;
+  for(let section=heading.parentElement;section&&section!==document.body&&section!==document.documentElement;section=section.parentElement){
+   const content=label(section);
+   if(!/04\\s*\\/\\s*TIM/i.test(content)||!/Tim\\s+MarketMarney/i.test(content))continue;
+   if(!['XXXTRIAN','BEMBENG','NYOK'].every(name=>content.includes(name)))continue;
+   if(/05\\s*\\/\\s*INFORMASI|Informasi\\s*&\\s*Risiko|03\\s*\\/\\s*KOMUNITAS|Tentang Social Marney/i.test(content))break;
+   section.remove();
+   return true;
+  }
+  return false;
+ }
  function apply(){
   const headings=[...document.querySelectorAll('h1,h2,h3')];
   const title=headings.find(h=>/informasi pasar/i.test(label(h)) && /perspektif lebih luas/i.test(label(h.parentElement))) ||
@@ -25,8 +41,9 @@ function client(){
   return true;
  }
  function start(){
+  removeTeam();
   if(apply())return;
-  const observer=new MutationObserver(()=>{if(apply())observer.disconnect();});
+  const observer=new MutationObserver(()=>{removeTeam();if(apply())observer.disconnect();});
   observer.observe(document.body,{subtree:true,childList:true});
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
