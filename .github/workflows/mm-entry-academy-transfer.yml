@@ -1,0 +1,34 @@
+name: MarketMarney Entry Video Audio Transfer
+on:
+  push:
+    branches: [work/marketmarney-entry-academy-20261111]
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Download Indonesian narration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audio
+          curl -fLsS --retry 3 --max-time 120 -o audio/narasi_1.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=b77d524bd4d6428ebb1353f143345278.mp3'
+          curl -fLsS --retry 3 --max-time 120 -o audio/narasi_2.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=620ab52744b54f6ebb615bba04ca7116.mp3'
+          curl -fLsS --retry 3 --max-time 120 -o audio/narasi_3.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=7b41a0035a0f4764bdaca2a093180271.mp3'
+          curl -fLsS --retry 3 --max-time 120 -o audio/narasi_4.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=ffa4885f19ad4a19aafb00140ff1bd09.mp3'
+          python3 - <<'PY'
+          import os
+          for i in range(1,5):
+              p='audio/narasi_'+str(i)+'.mp3'
+              data=open(p,'rb').read()
+              assert len(data)>200_000 and (data[:3]==b'ID3' or data[0]==0xff),(i,len(data),data[:5])
+              print('MM_AUDIO_TRANSFER_OK',i,len(data),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney-Entry-Academy-Audio
+          path: audio/
+          retention-days: 7
+          if-no-files-found: error
