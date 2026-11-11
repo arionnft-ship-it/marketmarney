@@ -88,6 +88,8 @@ jobs:
           python3 playstore/prepare_play_candidate.py android439
           node --check android439/app/src/main/assets/only_light_ui.js
           grep -F 'showXauLoading' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'Memuat Beranda' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'probeXauVisible' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           grep -F 'mm-play-early-light' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           cp android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java qa-source/PlayCandidateMainActivity.java
       - uses: actions/upload-artifact@v4
