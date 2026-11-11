@@ -80,7 +80,7 @@ test('composes with existing Live Marney server and preserves public API/auth',a
     assert.ok(Array.isArray(data.streams));
     assert.equal(data.streams.length,0,'Never fabricate a live broadcast');
     const invalid=await fetch(base+'/api/live/streams',{method:'POST',headers:{Origin:'https://marketmarney.com','Content-Type':'application/json'},body:'{}'});
-    assert.equal(invalid.status,404,'Do not invent a new write route');
+    assert.equal(invalid.status,401,'Existing live broadcast creation still requires a signed-in user');
   }finally{
     await new Promise(resolve=>server.close(resolve));
     http.createServer=originalCreateServer;
