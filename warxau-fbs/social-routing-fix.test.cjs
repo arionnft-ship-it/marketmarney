@@ -7,23 +7,26 @@ const routing=require('./social-routing-fix.cjs');
 test('reels route opens the existing reels panel',()=>{
  assert.equal(routing.redirectFor('/reels.html'),'/beranda-trader.html#shReelsPanel');
  assert.equal(routing.redirectFor('/unknown.html'),null);
+ assert.ok(routing.INJECT_PAGES.has('/reels.html'));
+ assert.match(routing.CLIENT,/location\.replace\('\/beranda-trader\.html#shReelsPanel'\)/);
 });
 
-test('live guard is injected only into live start pages',()=>{
+test('live guard is injected only into live and fallback routing pages',()=>{
  const html='<!doctype html><html><head></head><body></body></html>';
- for(const page of ['/live.html','/start-stream']){
+ for(const page of ['/live.html','/start-stream','/reels.html']){
   const once=routing.injectHtml(html,page);assert.match(once,/mm-social-routing\.js/);assert.equal(routing.injectHtml(once,page),once);
  }
  assert.equal(routing.injectHtml(html,'/beranda-trader.html'),html);
 });
 
 test('client catches route and exact camera start label before device permission',()=>{
- for(const token of ['/start-stream','Aktifkan kamera','location.replace','statusPromise','mmLiveRoutingBypass'])assert.ok(routing.CLIENT.includes(token),token);
+ for(const token of ['/start-stream','Aktifkan kamera','location.replace','statusPromise','mmLiveRoutingBypass','input[type="submit"]'])assert.ok(routing.CLIENT.includes(token),token);
  assert.doesNotMatch(routing.CLIENT,/getUserMedia|MediaRecorder/);
 });
 
 test('health metadata is versioned and contains no credentials',()=>{
  assert.equal(routing.HEALTH_PATH,'/api/social/routing');
+ assert.equal(routing.VERSION,'20261111-social-routing-v2');
  assert.ok(routing.INJECT_PAGES.has('/start-stream'));
  assert.doesNotMatch(routing.CLIENT,/(?:client_secret|api_key|bearer\s+[a-z0-9])/i);
 });
