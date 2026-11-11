@@ -8,8 +8,8 @@ mkdir -p qa
 test -s "$APK"
 
 collect(){
-  adb logcat -d -v brief -s MMAPP_TV:V MMAPP_TV_NET:V MM45_NAV:V MMPLAY_PAGE:V MMPLAY_UI:V MMPLAY_DIAG:V chromium:E > qa/play-tv-diagnostics.txt 2>/dev/null || true
-  adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-androidruntime.txt 2>/dev/null || true
+  timeout 14s adb logcat -d -v brief -s MMAPP_TV:V MMAPP_TV_NET:V MM45_NAV:V MMPLAY_PAGE:V MMPLAY_UI:V MMPLAY_DIAG:V chromium:E > qa/play-tv-diagnostics.txt 2>/dev/null || true
+  timeout 14s adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-androidruntime.txt 2>/dev/null || true
 }
 trap collect EXIT
 
@@ -27,17 +27,17 @@ adb shell pidof "$PKG" > qa/play-tv-process.txt
 test -s qa/play-tv-process.txt
 
 # Ensure native routing actually selected the third tab.
-adb logcat -d -v brief -s MM45_NAV:I > qa/play-tv-route.txt
+timeout 14s adb logcat -d -v brief -s MM45_NAV:I > qa/play-tv-route.txt
 if ! grep -F 'cold tab=2' qa/play-tv-route.txt; then
   sleep 1
-  adb logcat -d -v brief -s MM45_NAV:I > qa/play-tv-route.txt
+  timeout 14s adb logcat -d -v brief -s MM45_NAV:I > qa/play-tv-route.txt
   grep -F 'cold tab=2' qa/play-tv-route.txt
 fi
 
 # App WebView asserts the live SPA has selected MarketMarney TV and rendered
 # the TV catalogue's actual .mm-tv-filters content before logging readiness.
 for count in $(seq 1 45); do
-  adb logcat -d -v brief -s MMAPP_TV:I > qa/play-tv-selection.txt
+  timeout 14s adb logcat -d -v brief -s MMAPP_TV:I > qa/play-tv-selection.txt
   if grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/play-tv-selection.txt; then
     break
   fi
@@ -47,7 +47,7 @@ grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/play-tv-selection.txt || {
   echo 'FAIL: Published TV catalogue did not render video cards from live API or bundled public snapshot'
   exit 1
 }
-adb logcat -d -v brief -s MMAPP_TV_NET:V > qa/play-tv-native-source.txt || true
+timeout 14s adb logcat -d -v brief -s MMAPP_TV_NET:V > qa/play-tv-native-source.txt || true
 if grep -F 'source=bundled-snapshot' qa/play-tv-native-source.txt; then
   echo 'CATALOGUE_SOURCE=bundled-snapshot; streaming requires online test' | tee qa/play-tv-source-summary.txt
 elif grep -F 'source=native-live' qa/play-tv-native-source.txt; then
@@ -58,8 +58,8 @@ fi
 
 # UIAutomator waits for the rendered frame, while logs may precede first paint.
 # Require actual visible video buttons in the WebView's accessibility hierarchy.
-adb shell uiautomator dump /sdcard/mm-tv-ui.xml > qa/play-tv-ui-dump.txt 2>&1 || true
-adb exec-out cat /sdcard/mm-tv-ui.xml > qa/play-tv-ui.xml 2>/dev/null || true
+timeout 16s adb shell uiautomator dump /sdcard/mm-tv-ui.xml > qa/play-tv-ui-dump.txt 2>&1 || true
+timeout 10s adb exec-out cat /sdcard/mm-tv-ui.xml > qa/play-tv-ui.xml 2>/dev/null || true
 grep -F '<hierarchy' qa/play-tv-ui.xml >/dev/null || {
   echo 'FAIL: cannot verify visible TV catalogue UI hierarchy'
   exit 1
@@ -70,7 +70,7 @@ if grep -F 'text="Menyiapkan XAUWar"' qa/play-tv-ui.xml; then
 fi
 python3 tv-app/check_tv_visible_ui.py qa/play-tv-ui.xml
 sleep 1
-adb exec-out screencap -p > qa/play-tv-catalogue.png
+timeout 12s adb exec-out screencap -p > qa/play-tv-catalogue.png
 test -s qa/play-tv-catalogue.png
 python3 playstore/check_visible_content.py qa/play-tv-catalogue.png
 python3 playstore/check_native_overlay.py qa/play-tv-catalogue.png
@@ -100,7 +100,7 @@ else
 fi
 echo 'PASS: published TV video opens focused player interface; streaming still requires physical-device test' | tee qa/play-tv-player-status.txt
 
-adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-crashes.txt
+timeout 14s adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-crashes.txt
 if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marketmarney\.mobile' qa/play-tv-crashes.txt; then
   echo 'FAIL: Android app crash'
   exit 1
