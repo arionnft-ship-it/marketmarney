@@ -80,20 +80,24 @@ def apply(root:Path) -> None:
     private void probeXauVisible(WebView target,String url,long token){
         if(destroyed||target!=web||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET)||firstPaint||mainFailed||token!=xauContentToken
             ||!Recovery414.sameDocument(url,lastUrl))return;
-        // Require an actual completed document and visible page content, not
-        // an early onPageCommitVisible or a body with hidden/off-screen text.
+        // Require meaningful, visible page content, not merely page-commit, spinner,
+        // or hidden text. Do not gate on document.readyState: externally hosted
+        // embeds may stay loading after the primary UI is already readable.
         String js;
         if(tab==XAUWAR){
-            js="(function(){var b=document.body;if(!b||document.readyState==='loading')return false;"
+            js="(function(){var b=document.body;if(!b)return false;"
                 +"var h=document.querySelector('h1');var r=h&&h.getBoundingClientRect();"
-                +"var t=(b.innerText||'').replace(/\\\\s+/g,' ').trim();"
+                +"var t=(b.innerText||'').replace(/\\s+/g,' ').trim();"
                 +"return t.length>40&&b.scrollHeight>160&&r&&r.width>70&&r.height>10"
-                +"&&r.top>=0&&r.top<innerHeight&&/warxau|market assault|base buy|arena/i.test(t);})()";
+                +"&&r.top<innerHeight&&r.bottom>0&&/warxau|market assault|base buy|arena/i.test(t);})()";
         }else{
             js="(function(){var app=document.querySelector('#app');"
-                +"if(!app||document.readyState==='loading')return false;"
-                +"var r=app.getBoundingClientRect();var t=(app.innerText||'').replace(/\\\\s+/g,' ').trim();"
-                +"return t.length>95&&r.height>180&&r.width>200;})()";
+                +"if(!app)return false;"
+                +"var r=app.getBoundingClientRect();var t=(app.innerText||'').replace(/\\s+/g,' ').trim();"
+                +"var style=getComputedStyle(app);"
+                +"return t.length>95&&r.height>180&&r.width>200&&r.top<innerHeight"
+                +"&&r.bottom>0&&style.display!=='none'&&style.visibility!=='hidden'"
+                +"&&/marketmarney|berita|analisis|tradingview|pasar/i.test(t);})()";
         }
         target.evaluateJavascript(js,result->{
             if(destroyed||target!=web||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET)||firstPaint||mainFailed
