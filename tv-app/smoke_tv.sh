@@ -56,21 +56,38 @@ else
   echo 'CATALOGUE_SOURCE=webview-or-unknown; verify API in full regression' | tee qa/play-tv-source-summary.txt
 fi
 
+# UIAutomator waits for the rendered frame, while logs may precede first paint.
+# Require actual visible video buttons in the WebView's accessibility hierarchy.
+adb shell uiautomator dump /sdcard/mm-tv-ui.xml > qa/play-tv-ui-dump.txt 2>&1 || true
+adb exec-out cat /sdcard/mm-tv-ui.xml > qa/play-tv-ui.xml 2>/dev/null || true
+grep -F '<hierarchy' qa/play-tv-ui.xml >/dev/null || {
+  echo 'FAIL: cannot verify visible TV catalogue UI hierarchy'
+  exit 1
+}
+if grep -F 'text="Menyiapkan XAUWar"' qa/play-tv-ui.xml; then
+  echo 'FAIL: old XAUWar loading screen still visible'
+  exit 1
+fi
+python3 tv-app/check_tv_visible_ui.py qa/play-tv-ui.xml
+sleep 1
 adb exec-out screencap -p > qa/play-tv-catalogue.png
 test -s qa/play-tv-catalogue.png
 python3 playstore/check_visible_content.py qa/play-tv-catalogue.png
 python3 playstore/check_native_overlay.py qa/play-tv-catalogue.png
 
-adb shell uiautomator dump /sdcard/mm-tv-ui.xml > qa/play-tv-ui-dump.txt 2>&1 || true
-adb exec-out cat /sdcard/mm-tv-ui.xml > qa/play-tv-ui.xml 2>/dev/null || true
-if grep -F '<hierarchy' qa/play-tv-ui.xml >/dev/null; then
-  if grep -F 'text="Menyiapkan XAUWar"' qa/play-tv-ui.xml; then
-    echo 'FAIL: old XAUWar loading screen still visible'
-    exit 1
-  fi
-else
-  echo 'INFO: UIAutomator hierarchy unavailable; screenshot + native TV DOM checks enforced'
-fi
+# Exercise a real tap on the first visible video card to verify playback UI.
+read TAP_X TAP_Y <<< "$(python3 tv-app/check_tv_visible_ui.py qa/play-tv-ui.xml --tap)"
+adb shell input tap "$TAP_X" "$TAP_Y"
+sleep 2
+adb shell uiautomator dump /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui-dump.txt 2>&1 || true
+adb exec-out cat /sdcard/mm-tv-player-ui.xml > qa/play-tv-player-ui.xml 2>/dev/null || true
+grep -F 'Kembali ke daftar video' qa/play-tv-player-ui.xml >/dev/null || {
+  echo 'FAIL: video card did not open TV player UI'
+  exit 1
+}
+adb exec-out screencap -p > qa/play-tv-player.png
+test -s qa/play-tv-player.png
+echo 'PASS: first published video card opens the playback interface' | tee qa/play-tv-player-status.txt
 
 adb logcat -d -v time -s AndroidRuntime:E > qa/play-tv-crashes.txt
 if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marketmarney\.mobile' qa/play-tv-crashes.txt; then
