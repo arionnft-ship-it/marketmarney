@@ -3,87 +3,86 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
-const {STYLE_ID,CLIENT_ID,ROOT_ID,EMBED_URL,PROVIDER_URL,WIDGET_SCRIPT,CLIENT,CSS,injectTickerHtml}=require('./news-ticker.cjs');
-function page(){return '<!doctype html><html lang="id"><head><meta charset="utf-8"></head><body><main id="app"><h1>MarketMarney</h1></main></body></html>';}
-class FakeNode {
- constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.hidden=false;this.className='';this.textContent='';this.handlers={};this.src='';this.href='';}
- setAttribute(k,v){this.attrs[k]=String(v);}
- getAttribute(k){return this.attrs[k]??null;}
- append(...items){this.children.push(...items);}
- appendChild(n){this.children.push(n);}
- prepend(n){this.children.unshift(n);}
- addEventListener(type,cb){this.handlers[type]=cb;}
+const {STYLE_ID,CLIENT_ID,ROOT_ID,HEADLINES_URL,PROVIDER_URL,PROFILE_URL,CLIENT,CSS,injectTickerHtml}=require('./news-ticker.cjs');
+function original(){return '<!doctype html><html><head><meta charset="utf-8"></head><body><main id="app"><h1>MarketMarney</h1></main></body></html>';}
+class Node{
+ constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.textContent='';this.className='';this.handlers={};this.hidden=false;}
+ setAttribute(key,value){this.attrs[key]=String(value);}
+ append(...args){this.children.push(...args);}
+ appendChild(child){this.children.push(child);}
+ prepend(child){this.children.unshift(child);}
+ addEventListener(kind,fn){this.handlers[kind]=fn;}
 }
-test('FinancialJuice X embed replaces Banx and preserves existing website HTML',()=>{
- const before=page(),out=injectTickerHtml(before);
- assert.ok(out.includes('id="'+STYLE_ID+'"'));
- assert.ok(out.includes('id="'+CLIENT_ID+'"'));
- assert.ok(out.includes('MarketMarney</h1>'));
- assert.equal(injectTickerHtml(out),out);
+test('Official FinancialJuice Headlines widget replaces broken X timeline, with unchanged main page',()=>{
+ const page=original(),html=injectTickerHtml(page);
+ assert.match(html,new RegExp('id="'+STYLE_ID+'"'));
+ assert.match(html,new RegExp('id="'+CLIENT_ID+'"'));
+ assert.ok(html.includes('MarketMarney</h1>'));
+ assert.equal(injectTickerHtml(html),html);
  assert.equal(injectTickerHtml('<html><body>Invalid</body></html>'),'<html><body>Invalid</body></html>');
- assert.ok(!out.includes('banxnetwork.com'));
- assert.ok(!out.includes('BERITA 24/7'));
- assert.ok(out.includes('financialjuice'));
- assert.equal(before,page());
+ assert.equal(page,original());
+ assert.ok(!html.includes('twitter-timeline'));
+ assert.ok(!html.includes('platform.twitter.com/widgets.js'));
+ assert.ok(!html.includes('BERITA 24/7'));
+ assert.ok(html.includes('Baca berita'));
+ assert.ok(html.includes('feed.financialjuice.com'));
 });
-test('Official timeline is accessible, clearly attributed, and lazy-loaded on click',()=>{
- const body=new FakeNode('body'),head=new FakeNode('head');
- const doc={body,head,getElementById(){return null;},createElement(tag){return new FakeNode(tag);}};
- const window={};
- vm.runInNewContext(CLIENT,{document:doc,window},{timeout:350});
+test('Panel presents FinancialJuice source and never becomes empty if external embed fails',()=>{
+ const body=new Node('body'),head=new Node('head');
+ const document={body,head,getElementById(){return null;},createElement(tag){return new Node(tag);}};
+ vm.runInNewContext(CLIENT,{document},{timeout:500});
  assert.equal(body.children.length,1);
- const root=body.children[0];
- assert.equal(root.tag,'section');assert.equal(root.id,ROOT_ID);
- assert.equal(root.attrs.role,'region');
- const [strip,panel]=root.children;
+ const section=body.children[0];
+ assert.equal(section.tag,'section');
+ assert.equal(section.id,ROOT_ID);
+ assert.equal(section.attrs.role,'region');
+ const [bar,panel]=section.children;
+ const [mark,copy,button,xlink]=bar.children;
+ assert.equal(mark.textContent,'FJ');
+ assert.equal(copy.children[0].textContent,'FINANCIALJUICE NEWS');
+ assert.equal(button.textContent,'Baca berita');
+ assert.equal(button.attrs['aria-expanded'],'false');
+ assert.equal(xlink.href,PROFILE_URL);
+ assert.equal(xlink.rel,'noopener noreferrer');
  assert.equal(panel.hidden,true);
- assert.equal(head.children.length,0,'No X script until user opens feed');
- const [mark,copy,toggle,external]=strip.children;
- assert.equal(mark.textContent,'X');
- assert.equal(copy.children[0].textContent,'FINANCIALJUICE · X');
- assert.equal(external.href,PROVIDER_URL);
- assert.equal(external.target,'_blank');
- assert.equal(external.rel,'noopener noreferrer');
- assert.equal(toggle.attrs['aria-expanded'],'false');
- const timeline=panel.children[1].children[0];
- assert.equal(timeline.className,'twitter-timeline');
- assert.equal(timeline.href,EMBED_URL);
- assert.equal(timeline.attrs['data-height'],'460');
- assert.equal(timeline.attrs['data-dnt'],'true');
- assert.match(timeline.textContent,/FinancialJuice/);
- toggle.handlers.click();
+ const [intro,shell,foot]=panel.children;
+ assert.match(intro.children[0].textContent,/Headline pasar FinancialJuice/);
+ assert.match(intro.children[1].textContent,/bahasa aslinya/);
+ assert.match(foot.children[0].textContent,/Jika daftar berita tidak tampil/);
+ assert.equal(foot.children[1].href,PROVIDER_URL);
+ assert.equal(shell.children.length,0,'iframe loads on demand');
+ button.handlers.click();
  assert.equal(panel.hidden,false);
- assert.equal(toggle.attrs['aria-expanded'],'true');
- assert.equal(toggle.textContent,'Tutup berita');
- assert.equal(head.children.length,1);
- assert.equal(head.children[0].src,WIDGET_SCRIPT);
- assert.equal(head.children[0].async,true);
- assert.equal(head.children[0].attrs['data-mm-financialjuice-widget'],'v1');
- toggle.handlers.click();
+ assert.equal(button.textContent,'Tutup berita');
+ assert.equal(button.attrs['aria-expanded'],'true');
+ assert.equal(shell.children.length,1);
+ const iframe=shell.children[0];
+ assert.equal(iframe.tag,'iframe');
+ assert.equal(iframe.src,HEADLINES_URL);
+ assert.equal(iframe.loading,'lazy');
+ assert.equal(iframe.attrs.referrerpolicy,'strict-origin-when-cross-origin');
+ assert.match(iframe.title,/FinancialJuice/);
+ button.handlers.click();
  assert.equal(panel.hidden,true);
- assert.equal(head.children.length,1,'Reopening does not add duplicate widget scripts');
- toggle.handlers.click();
- assert.equal(panel.hidden,false);
- assert.equal(head.children.length,1);
+ button.handlers.click();
+ assert.equal(shell.children.length,1,'no repeated external widget iframes on reopening');
 });
-test('Official X profile, no copied tweets, scraping, API keys or fake translations',()=>{
- const source=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
- assert.equal(EMBED_URL,'https://x.com/financialjuice');
- assert.equal(PROVIDER_URL,'https://x.com/financialjuice');
- assert.equal(WIDGET_SCRIPT,'https://platform.twitter.com/widgets.js');
- assert.ok(CLIENT.includes('Postingan tetap dalam bahasa aslinya'));
+test('Official source, no scraping, fabricated posts, hidden credentials, or misleading translation',()=>{
+ assert.equal(HEADLINES_URL,'https://feed.financialjuice.com/widgets/headlines.aspx?affurl=&backC=1e222d&container=financialjuice-news-widget-container&fontC=b2b5be&height=100%25&mode=Dark&width=100%25&wtype=NEWS');
+ assert.equal(PROFILE_URL,'https://x.com/financialjuice');
+ assert.equal(PROVIDER_URL,'https://www.financialjuice.com/widgets/get-widget.aspx');
+ const code=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
+ assert.doesNotMatch(code,/platform\.twitter\.com|twitter-timeline|banxnetwork\.com|BERITA 24\/7|api\/content|api\/admin|api\/marketmarney\/headlines|fetch\(|XMLHttpRequest|localStorage|Bearer |apiKey|x-api-key/);
+ assert.ok(CSS.includes('#mm-fj-headlines-v2'));
  assert.ok(CSS.includes('.mm-fj-panel[hidden]'));
- assert.ok(CSS.includes('@media(max-width:650px)'));
- assert.doesNotMatch(source,/banxnetwork|BERITA 24\/7|FinancialJuice\s+headline:\s+[A-Z]/i);
- assert.doesNotMatch(source,/api\/content|api\/admin|api\/marketmarney\/headlines|Bearer |apiKey|x-api-key|DOMParser|XMLHttpRequest|fetch\(|localStorage/i);
+ assert.ok(CSS.includes('@media(max-width:620px)'));
 });
-test('Website bootstrap injection remains only on page HTML',()=>{
+test('Ticker injection keeps public page and other gateway behavior intact',()=>{
  const bootstrap=fs.readFileSync(require.resolve('./bootstrap.cjs'),'utf8');
  assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(html\)\)/);
  assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(raw\)\)/);
- const code=injectTickerHtml(page());
- assert.equal((code.match(/<script id=/g)||[]).length,1);
- assert.equal((code.match(/<style id=/g)||[]).length,1);
- assert.ok(!code.includes('<script src="https://platform.twitter.com'));
- assert.match(code,/document\.head\.appendChild\(script\)/);
+ const html=injectTickerHtml(original());
+ assert.equal((html.match(/<script id=/g)||[]).length,1);
+ assert.equal((html.match(/<style id=/g)||[]).length,1);
+ assert.doesNotMatch(html,/<script[^>]+src=["']https?:/i,'no third-party script injected globally');
 });
