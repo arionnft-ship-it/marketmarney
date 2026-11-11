@@ -23,6 +23,7 @@ jobs:
           bash -n tv-app/smoke_tv.sh
           bash -n playstore/smoke-play-candidate.sh
           node --check playstore/only_light_ui.js
+          python3 tv-app/check_inline_js.py tv-app/marketmarney-tv.html
       - uses: actions/setup-java@v5
         with: {distribution: temurin, java-version: '17'}
       - name: Prepare Android SDK
