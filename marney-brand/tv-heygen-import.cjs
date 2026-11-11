@@ -3,6 +3,7 @@
 // MarketMarney TV catalog. Read-only public routes; no unauthenticated write API.
 const https=require('node:https');
 const crypto=require('node:crypto');
+const HEDRA=require('./tv-hedra-audio.cjs');
 const VERSION='mm-broker-native-indonesian-20261111-v3';
 const VIDEO_ID='85440075-e5d4-4637-b034-6f8b3051b287';
 const RECORD=Object.freeze({
@@ -28,7 +29,8 @@ function injectCatalog(src){
  if(!doc||typeof doc!=='object'||!Array.isArray(doc.videos))return src;
  if(doc.videos.some(v=>String(v?.id||'')===VIDEO_ID||
    String(v?.title||'').trim().toLowerCase()===RECORD.title.toLowerCase()))return src;
- return JSON.stringify({...doc,videos:[RECORD,...doc.videos]});
+ const entry=HEDRA.ready()?{...RECORD,url:'/media/'+VIDEO_ID+'.mp4?v=hedra-rizky-v4'}:RECORD;
+ return JSON.stringify({...doc,videos:[entry,...doc.videos]});
 }
 function wrapCatalog(req,res){
  if(req.method!=='GET'||String(req.url||'').split('?')[0]!=='/api/content')return false;
