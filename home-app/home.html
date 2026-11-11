@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f7f9fc">
+<title>Beranda | MarketMarney</title>
+<style>
+:root{color-scheme:light;--ink:#192c41;--muted:#61758a;--gold:#a36b23;--line:#dce5ed;--paper:#fff;--bg:#f7f9fc;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;max-width:100%;overflow-x:hidden;background:var(--bg);color:var(--ink)}
+body{padding:0 0 26px}
+header{padding:18px 20px 14px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.mark{height:36px;width:36px;display:grid;place-items:center;border-radius:11px;background:#ad792f;color:white;font-size:24px;font-weight:800;letter-spacing:-2px}
+.brand{font-size:19px;font-weight:760;letter-spacing:-.5px}.brand em{font-style:normal;color:var(--gold)}
+main{max-width:680px;margin:0 auto;padding:20px 18px}
+.kicker{font-size:10px;letter-spacing:2.2px;color:#96641b;font-weight:800}
+.hero{border:1px solid #ecdcc6;background:linear-gradient(132deg,#fffbf5,#fff 58%,#f3f7fb);padding:24px 20px 22px;border-radius:19px}
+h1{font-size:clamp(27px,7vw,34px);line-height:1.13;letter-spacing:-1.2px;margin:12px 0 12px;font-weight:800}
+p{font-size:14px;line-height:1.6;color:var(--muted);margin:0}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+a{color:inherit}
+.action{min-height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;padding:0 14px;text-decoration:none;font-size:13px;font-weight:700;border:1px solid var(--line)}
+.action.main{background:#223348;color:#fff;border-color:#223348}
+.action.alt{background:#fff;color:#34485a}
+.section{margin-top:23px}.sectionhead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+h2{font-size:19px;line-height:1.3;letter-spacing:-.4px;margin:3px 0 0}
+.more{font-size:12px;color:#8b5719;text-decoration:none;font-weight:700;white-space:nowrap}
+.feed{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+.feedrow{padding:14px 15px;border-bottom:1px solid #edf1f5}
+.feedrow:last-child{border-bottom:0}
+.cat{font-size:10px;color:var(--gold);font-weight:800;letter-spacing:.65px;text-transform:uppercase}
+.headline{font-size:14px;line-height:1.42;font-weight:700;margin:5px 0 0;overflow-wrap:anywhere}
+.status{padding:17px;color:var(--muted);font-size:13px;line-height:1.55}
+.tv{display:flex;align-items:center;gap:15px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;text-decoration:none;min-height:96px}
+.play{display:grid;place-items:center;flex:none;width:53px;height:53px;background:#fff0d7;color:#9c671c;border:1px solid #efcc90;border-radius:15px;font-size:23px}
+.tv strong{display:block;font-size:15px;margin-bottom:4px}.tv small{display:block;color:var(--muted);line-height:1.45}
+.note{margin-top:20px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:#7b8b9a}
+@media (max-width:360px){header{padding-left:15px}main{padding:16px 13px}.hero{padding:19px 16px}.action{flex:1}h1{font-size:29px}}
+@media(prefers-reduced-motion:no-preference){.action:active,.tv:active{transform:scale(.985)}}
+</style>
+</head>
+<body>
+<div id="mm-home-root">
+<header><span class="mark" aria-hidden="true">M</span><span class="brand">Market<em>Marney</em></span></header>
+<main>
+<section class="hero" aria-label="Selamat datang">
+<div class="kicker">MARKETMARNEY / FINANCIAL MEDIA</div>
+<h1>Informasi pasar.<br>Perspektif lebih luas.</h1>
+<p>Baca berita finansial, pelajari pergerakan market, dan ikuti video edukasi dalam satu aplikasi yang mudah digunakan.</p>
+<div class="actions">
+<a class="action main" href="/__android43/news">Baca berita</a>
+<a class="action alt" href="/__android43/marketmarney-tv">MarketMarney TV</a>
+</div>
+</section>
+<section class="section" aria-label="Berita finansial">
+<div class="sectionhead"><div><span class="kicker">BERITA PILIHAN</span><h2>Yang perlu diketahui</h2></div><a class="more" href="/__android43/news">Semua berita ›</a></div>
+<div id="mm-home-feed" class="feed" aria-live="polite"><div class="status">Menyiapkan ringkasan berita. Kamu tetap bisa membuka tab Berita kapan saja.</div></div>
+</section>
+<section class="section" aria-label="Belajar trading">
+<div class="sectionhead"><div><span class="kicker">VIDEO & EDUKASI</span><h2>Belajar di MarketMarney TV</h2></div></div>
+<a class="tv" href="/__android43/marketmarney-tv"><span class="play" aria-hidden="true">▶</span><span><strong>Video edukasi dan analisis</strong><small>Jelajahi video baru dan materi untuk pemula, langsung dari MarketMarney TV.</small></span></a>
+</section>
+<p class="note">Konten bersifat informatif dan edukatif, bukan rekomendasi investasi. Gunakan tab Market Live untuk memantau grafik pasar.</p>
+</main>
+</div>
+<script>
+(function(){
+  "use strict";
+  // Static local home is usable without JS, account state, or network.
+  document.documentElement.dataset.mmHomeReady="true";
+  var box=document.getElementById("mm-home-feed");
+  var timer=null, controller=window.AbortController?new AbortController():null;
+  function clear(){if(timer!==null){clearTimeout(timer);timer=null;}}
+  function fallback(){
+    box.replaceChildren();
+    var note=document.createElement("div");note.className="status";
+    note.textContent="Ringkasan berita belum tersedia. Ketuk Semua berita untuk membaca artikel terbaru.";
+    box.appendChild(note);
+  }
+  function show(data){
+    var records=Array.isArray(data&&data.articles)?data.articles:[];
+    var published=records.filter(function(a){return a&&typeof a.title==="string"&&a.title.trim()&&(!a.status||a.status==="published");}).slice(0,3);
+    if(!published.length){fallback();return;}
+    box.replaceChildren();
+    published.forEach(function(a){
+      var card=document.createElement("div");card.className="feedrow";
+      var category=document.createElement("div");category.className="cat";
+      category.textContent=(typeof a.category==="string"?a.category:"Berita").slice(0,35);
+      var title=document.createElement("p");title.className="headline";
+      title.textContent=a.title.slice(0,200);
+      card.append(category,title);box.appendChild(card);
+    });
+  }
+  try{
+    fetch("/api/content",{cache:"no-store",credentials:"same-origin",signal:controller?controller.signal:undefined})
+      .then(function(r){if(!r.ok)throw Error("API unavailable");return r.json();})
+      .then(function(data){clear();show(data);})
+      .catch(function(){clear();fallback();});
+    timer=setTimeout(function(){if(controller)controller.abort();fallback();},6000);
+  }catch(e){clear();fallback();}
+})();
+</script>
+</body>
+</html>
