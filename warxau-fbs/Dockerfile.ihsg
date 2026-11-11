@@ -24,14 +24,14 @@ COPY warxau-fbs/oil-feed.js warxau-fbs/oil-addon.cjs warxau-fbs/oil-preload.cjs 
 COPY warxau-fbs/nasdaq-addon.cjs warxau-fbs/nasdaq-preload.cjs warxau-fbs/start-nasdaq.cjs ./
 COPY warxau-fbs/ihsg-addon.cjs warxau-fbs/ihsg-preload.cjs warxau-fbs/start-ihsg.cjs ./
 COPY warxau-fbs/analysis-upload.cjs warxau-fbs/analysis-upload-admin.js warxau-fbs/analysis-upload-public.js warxau-fbs/analysis-upload.css warxau-fbs/analysis-modern.css warxau-fbs/xauwar-beta.js warxau-fbs/xauwar-beta.css warxau-fbs/analysis-article.js warxau-fbs/analysis-article.css warxau-fbs/analysis-upload.test.cjs ./
-COPY marney-brand/branding.cjs marney-brand/seo.cjs marney-brand/about-refresh.cjs marney-brand/about-refresh.test.cjs marney-brand/logo-asset.test.cjs marney-brand/youtube-referrer.cjs marney-brand/youtube-referrer.test.cjs marney-brand/tv-layout.cjs marney-brand/tv-layout.test.cjs ./
+COPY marney-brand/branding.cjs marney-brand/seo.cjs marney-brand/about-refresh.cjs marney-brand/about-refresh.test.cjs marney-brand/logo-asset.test.cjs marney-brand/youtube-referrer.cjs marney-brand/youtube-referrer.test.cjs marney-brand/tv-layout.cjs marney-brand/tv-layout.test.cjs marney-brand/tv-albums.cjs marney-brand/tv-albums.test.cjs ./
 COPY marney-brand/install.cjs ./brand-install.cjs
 COPY signup ./signup
 COPY sidebar3d ./sidebar3d
 COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
 RUN node signup/otp/install.cjs && node signup/otp/activation.cjs && node signup/password/install.cjs && node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs && node sidebar3d/install.cjs branding.cjs
 RUN for file in *.cjs *.js signup/*.cjs signup/otp/*.cjs signup/password/*.cjs sidebar3d/*.cjs sidebar3d/*.js; do node --check "$file" || exit 1; done
-RUN node --test logo-asset.test.cjs about-refresh.test.cjs youtube-referrer.test.cjs tv-layout.test.cjs analysis-upload.test.cjs live-stream.test.cjs && node social-upload-preload.test.cjs && node social-upload-runtime-patch.test.cjs && node social-upload-sw-preload.test.cjs && node automatic-pivot.test.cjs && node automatic-pivot-internal-route.test.cjs && node xau-public-live.test.cjs && node xau-public-live-preload.test.cjs
+RUN node --test logo-asset.test.cjs about-refresh.test.cjs youtube-referrer.test.cjs tv-layout.test.cjs tv-albums.test.cjs analysis-upload.test.cjs live-stream.test.cjs && node social-upload-preload.test.cjs && node social-upload-runtime-patch.test.cjs && node social-upload-sw-preload.test.cjs && node automatic-pivot.test.cjs && node automatic-pivot-internal-route.test.cjs && node xau-public-live.test.cjs && node xau-public-live-preload.test.cjs
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs --require=/opt/warxau-fbs/social-upload-preload.cjs --require=/opt/warxau-fbs/social-upload-runtime-patch.cjs --require=/opt/warxau-fbs/gateway-integrity-compat.cjs --require=/opt/warxau-fbs/release-verification-diagnostic.cjs --require=/opt/warxau-fbs/social-upload-sw-preload.cjs --require=/opt/warxau-fbs/live-stream-preload.cjs --require=/opt/warxau-fbs/xau-public-live-preload.cjs --require=/opt/warxau-fbs/automatic-pivot.cjs --require=/opt/warxau-fbs/automatic-pivot-internal-route.cjs"
 CMD ["node", "/opt/warxau-fbs/start-ihsg.cjs"]
