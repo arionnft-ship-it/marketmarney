@@ -3,7 +3,7 @@
 // MarketMarney TV catalog. Read-only public routes; no unauthenticated write API.
 const https=require('node:https');
 const crypto=require('node:crypto');
-const VERSION='mm-broker-audio-clear-20261111-v2';
+const VERSION='mm-broker-native-indonesian-20261111-v3';
 const VIDEO_ID='85440075-e5d4-4637-b034-6f8b3051b287';
 const RECORD=Object.freeze({
  id:VIDEO_ID,
@@ -11,7 +11,7 @@ const RECORD=Object.freeze({
  cat:'Edukasi',
  desc:'Panduan memilih broker trading secara hati-hati untuk pemula. Pelajari cara memverifikasi izin dan identitas perusahaan, memeriksa biaya dan risiko leverage, memahami syarat deposit serta penarikan, menggunakan akun demo, dan mengenali tanda penipuan. Perbandingan broker dalam video bersifat fiktif. Materi edukasi, bukan rekomendasi broker atau nasihat investasi; trading berisiko kehilangan modal.',
  type:'mp4',
- url:'/media/'+VIDEO_ID+'.mp4',
+ url:'/media/'+VIDEO_ID+'.mp4?v=indonesia-v3',
  thumb:'/media/'+VIDEO_ID+'.jpg',
  status:'published',
  date:'2026-11-11T12:47:01.857Z',
@@ -20,7 +20,7 @@ const RECORD=Object.freeze({
  learningStage:'mulai'
 });
 const ROUTES=new Map([
- [RECORD.url,{url:'https://raw.githubusercontent.com/arionnft-ship-it/marketmarney/854eb3558f397630b9d61f8ebace6a07a06e3fbf/assets/broker-audio/marketmarney-broker-suara-jelas-20261111.mp4',mime:'video/mp4',maxBytes:25000000}],
+ [RECORD.url.split('?')[0],{url:'https://raw.githubusercontent.com/arionnft-ship-it/marketmarney/45cc34a647ad317a5a1684a0854ba6902d2a1046/assets/broker-audio/marketmarney-broker-suara-indonesia-v3.mp4',mime:'video/mp4',maxBytes:25000000}],
  [RECORD.thumb,{url:'https://dynamic.heygen.ai/image/e5e32e8ae4a44f3cba5b29371c11f835/original.jpg',mime:'image/jpeg',maxBytes:3000000}]
 ]);
 function injectCatalog(src){
