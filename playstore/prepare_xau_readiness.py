@@ -62,9 +62,9 @@ def apply(root:Path) -> None:
         ProgressBar wheel=new ProgressBar(this);wheel.setIndeterminate(true);
         LinearLayout.LayoutParams wheelPos=new LinearLayout.LayoutParams(dp(30),dp(30));
         wheelPos.gravity=Gravity.CENTER_HORIZONTAL;box.addView(wheel,wheelPos);
-        Button home=new Button(this);home.setText("Kembali ke Beranda");home.setAllCaps(false);
+        Button home=new Button(this);home.setText(tab==HOME?"Coba Lagi":"Kembali ke Beranda");home.setAllCaps(false);
         DepthStyle423.applyButton(home,true,false);
-        home.setOnClickListener(v->navigate(HOME));
+        home.setOnClickListener(v->{if(tab==HOME){if(web!=null)web.reload();}else navigate(HOME);});
         LinearLayout.LayoutParams homePos=new LinearLayout.LayoutParams(-1,dp(46));
         homePos.topMargin=dp(24);box.addView(home,homePos);
         xauLoading=box;
@@ -73,6 +73,7 @@ def apply(root:Path) -> None:
     private void completePageReady(WebView target,String url){
         if(target!=web||!own(url)||mainFailed||destroyed)return;
         firstPaint=true;cancelPageWait();clearXauLoading();clearOffline();
+        Log.i("MMPLAY_PAGE","ready tab="+tab+" path="+Uri.parse(url).getPath());
         progress.setVisibility(View.GONE);
         if(tab!=SOCIAL&&!socialAssetsReady)frame.postDelayed(this::preloadSocialAssets,650);
     }
@@ -83,14 +84,14 @@ def apply(root:Path) -> None:
         // an early onPageCommitVisible or a body with hidden/off-screen text.
         String js;
         if(tab==XAUWAR){
-            js="(function(){var b=document.body;if(!b||document.readyState!=='complete')return false;"
+            js="(function(){var b=document.body;if(!b||document.readyState==='loading')return false;"
                 +"var h=document.querySelector('h1');var r=h&&h.getBoundingClientRect();"
                 +"var t=(b.innerText||'').replace(/\\\\s+/g,' ').trim();"
                 +"return t.length>40&&b.scrollHeight>160&&r&&r.width>70&&r.height>10"
                 +"&&r.top>=0&&r.top<innerHeight&&/warxau|market assault|base buy|arena/i.test(t);})()";
         }else{
             js="(function(){var app=document.querySelector('#app');"
-                +"if(!app||document.readyState!=='complete')return false;"
+                +"if(!app||document.readyState==='loading')return false;"
                 +"var r=app.getBoundingClientRect();var t=(app.innerText||'').replace(/\\\\s+/g,' ').trim();"
                 +"return t.length>95&&r.height>180&&r.width>200;})()";
         }
