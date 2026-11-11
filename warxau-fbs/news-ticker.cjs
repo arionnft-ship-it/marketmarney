@@ -1,98 +1,75 @@
 'use strict';
-// Official X embedded public profile — no scraping, unauthorized text copying,
-// synthetic tweets, automatic translation claims, or X API credentials.
-const STYLE_ID='mm-fj-x-style-v1';
-const CLIENT_ID='mm-fj-x-client-v1';
-const ROOT_ID='mm-fj-x-feed-v1';
-const EMBED_URL='https://x.com/financialjuice';
-const PROVIDER_URL='https://x.com/financialjuice';
-const WIDGET_SCRIPT='https://platform.twitter.com/widgets.js';
-function client(){
+// FinancialJuice official Headlines widget (publisher-provided iframe).
+// This intentionally does NOT scrape X, copy posts, or claim auto-translation.
+const STYLE_ID='mm-fj-headlines-style-v2';
+const CLIENT_ID='mm-fj-headlines-client-v2';
+const ROOT_ID='mm-fj-headlines-v2';
+const HEADLINES_URL='https://feed.financialjuice.com/widgets/headlines.aspx?affurl=&backC=1e222d&container=financialjuice-news-widget-container&fontC=b2b5be&height=100%25&mode=Dark&width=100%25&wtype=NEWS';
+const PROVIDER_URL='https://www.financialjuice.com/widgets/get-widget.aspx';
+const PROFILE_URL='https://x.com/financialjuice';
+function browserClient(){
  'use strict';
- if(document.getElementById('mm-fj-x-feed-v1'))return;
- const root=document.createElement('section');
- root.id='mm-fj-x-feed-v1';
- root.setAttribute('role','region');
- root.setAttribute('aria-label','Berita pasar resmi FinancialJuice dari X');
- const strip=document.createElement('div');
- strip.className='mm-fj-strip';
- const mark=document.createElement('span');
- mark.className='mm-fj-mark';mark.setAttribute('aria-hidden','true');mark.textContent='X';
- const copy=document.createElement('div');
- copy.className='mm-fj-copy';
- const name=document.createElement('strong');
- name.textContent='FINANCIALJUICE · X';
- const subtitle=document.createElement('span');
- subtitle.textContent='Berita finansial dari akun resmi @financialjuice';
- copy.append(name,subtitle);
- const toggle=document.createElement('button');
- toggle.type='button';toggle.className='mm-fj-show';
- toggle.textContent='Lihat berita';toggle.setAttribute('aria-expanded','false');
- toggle.setAttribute('aria-controls','mm-fj-x-timeline');
- const link=document.createElement('a');
- link.className='mm-fj-link';
- link.href='https://x.com/financialjuice';
- link.target='_blank';link.rel='noopener noreferrer';
- link.textContent='Buka X';link.title='Buka akun FinancialJuice di X';
- strip.append(mark,copy,toggle,link);
- const panel=document.createElement('div');
- panel.id='mm-fj-x-timeline';panel.className='mm-fj-panel';panel.hidden=true;
- const header=document.createElement('div');
- header.className='mm-fj-panel-heading';
- const headLabel=document.createElement('strong');
- headLabel.textContent='Postingan terbaru FinancialJuice';
- const notice=document.createElement('small');
- notice.textContent='Feed resmi X. Postingan tetap dalam bahasa aslinya; ketersediaan dan urutan diatur X.';
- header.append(headLabel,notice);
- const shell=document.createElement('div');
- shell.className='mm-fj-timeline-shell';
- const anchor=document.createElement('a');
- anchor.className='twitter-timeline';
- anchor.href='https://x.com/financialjuice';
- anchor.textContent='Baca postingan FinancialJuice (@financialjuice) di X';
- anchor.setAttribute('data-theme','light');
- anchor.setAttribute('data-height','460');
- anchor.setAttribute('data-dnt','true');
- anchor.setAttribute('data-lang','id');
- shell.appendChild(anchor);
- const footer=document.createElement('div');
- footer.className='mm-fj-panel-foot';
- const sourceNote=document.createElement('span');
- sourceNote.textContent='Sumber: X / @financialjuice · Buka X bila feed tidak tampil.';
- const profile=document.createElement('a');
- profile.className='mm-fj-profile';
- profile.href='https://x.com/financialjuice';
- profile.target='_blank';profile.rel='noopener noreferrer';
- profile.textContent='Lihat profil di X';
- footer.append(sourceNote,profile);
- panel.append(header,shell,footer);
- root.append(strip,panel);
- document.body.prepend(root);
+ if(document.getElementById('mm-fj-headlines-v2'))return;
+ function el(tag,cls,text){
+  const o=document.createElement(tag);
+  if(cls)o.className=cls;
+  if(text!==undefined)o.textContent=String(text);
+  return o;
+ }
+ const section=el('section');
+ section.id='mm-fj-headlines-v2';
+ section.setAttribute('role','region');
+ section.setAttribute('aria-label','Berita resmi FinancialJuice');
+ const bar=el('div','mm-fj-bar');
+ const mark=el('span','mm-fj-mark','FJ');
+ mark.setAttribute('aria-hidden','true');
+ const copy=el('div','mm-fj-copy');
+ copy.append(el('strong','','FINANCIALJUICE NEWS'));
+ copy.append(el('span','','Headline finansial dari widget resmi FinancialJuice'));
+ const toggle=el('button','mm-fj-toggle','Baca berita');
+ toggle.type='button';
+ toggle.setAttribute('aria-expanded','false');
+ toggle.setAttribute('aria-controls','mm-fj-headlines-panel');
+ const xlink=el('a','mm-fj-link','Akun X');
+ xlink.href='https://x.com/financialjuice';
+ xlink.target='_blank';xlink.rel='noopener noreferrer';
+ xlink.title='Lihat akun FinancialJuice di X';
+ bar.append(mark,copy,toggle,xlink);
+ const panel=el('div','mm-fj-panel');
+ panel.id='mm-fj-headlines-panel';panel.hidden=true;
+ const intro=el('div','mm-fj-intro');
+ intro.append(el('strong','','Headline pasar FinancialJuice'));
+ intro.append(el('p','','Sumber resmi FinancialJuice. Ditampilkan dalam bahasa aslinya; pembaruan dan ketersediaan berita mengikuti penyedia.'));
+ const shell=el('div','mm-fj-frame-shell');
+ const foot=el('div','mm-fj-bottom');
+ foot.append(el('span','','Jika daftar berita tidak tampil, buka halaman widget resmi FinancialJuice. MarketMarney tidak mengubah isi beritanya.'));
+ const source=el('a','mm-fj-provider','Buka FinancialJuice');
+ source.href='https://www.financialjuice.com/widgets/get-widget.aspx';
+ source.target='_blank';source.rel='noopener noreferrer';
+ foot.append(source);
+ panel.append(intro,shell,foot);
+ section.append(bar,panel);
+ document.body.prepend(section);
  let loaded=false;
  toggle.addEventListener('click',function(){
   panel.hidden=!panel.hidden;
-  const open=!panel.hidden;
-  toggle.setAttribute('aria-expanded',String(open));
-  toggle.textContent=open?'Tutup berita':'Lihat berita';
-  if(!open)return;
-  if(loaded){
-   if(window.twttr&&window.twttr.widgets&&window.twttr.widgets.load)window.twttr.widgets.load(panel);
-   return;
-  }
+  const opened=!panel.hidden;
+  toggle.textContent=opened?'Tutup berita':'Baca berita';
+  toggle.setAttribute('aria-expanded',String(opened));
+  if(!opened||loaded)return;
   loaded=true;
-  const script=document.createElement('script');
-  script.src='https://platform.twitter.com/widgets.js';
-  script.async=true;script.charset='utf-8';
-  script.setAttribute('data-mm-financialjuice-widget','v1');
-  script.onload=function(){
-   if(window.twttr&&window.twttr.widgets&&window.twttr.widgets.load)window.twttr.widgets.load(panel);
-  };
-  document.head.appendChild(script);
+  const iframe=el('iframe','mm-fj-headlines-frame');
+  iframe.src='https://feed.financialjuice.com/widgets/headlines.aspx?affurl=&backC=1e222d&container=financialjuice-news-widget-container&fontC=b2b5be&height=100%25&mode=Dark&width=100%25&wtype=NEWS';
+  iframe.title='Widget headline resmi FinancialJuice';
+  iframe.loading='lazy';
+  iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+  iframe.setAttribute('scrolling','yes');
+  shell.appendChild(iframe);
  });
 }
-const CSS="\n/* Official FinancialJuice X profile, displayed on demand. No copied tweets. */\n#mm-fj-x-feed-v1{position:relative;z-index:9998;width:100%;box-sizing:border-box;background:#0f1724;color:#f8fafc;border-bottom:1px solid #f5a33755;font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-x-feed-v1 *{box-sizing:border-box}\n#mm-fj-x-feed-v1 .mm-fj-strip{display:flex;align-items:center;gap:12px;min-height:54px;padding:7px clamp(12px,2.4vw,34px);width:100%}\n#mm-fj-x-feed-v1 .mm-fj-mark{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border-radius:9px;background:#ffad39;color:#152236;font-weight:900;font-size:18px}\n#mm-fj-x-feed-v1 .mm-fj-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}\n#mm-fj-x-feed-v1 .mm-fj-copy strong{font-size:12px;font-weight:850;letter-spacing:.015em;line-height:1.2;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-copy span{font-size:11px;color:#abb9cb;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n#mm-fj-x-feed-v1 .mm-fj-show{flex:none;min-height:34px;padding:7px 14px;border-radius:9px;border:1px solid #efb15d;background:#263244;color:#ffe0af;cursor:pointer;font:750 12px/1.25 system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-x-feed-v1 .mm-fj-show:hover{background:#38445a;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-show:focus-visible,#mm-fj-x-feed-v1 .mm-fj-link:focus-visible,#mm-fj-x-feed-v1 .mm-fj-profile:focus-visible{outline:2px solid #ffb14d;outline-offset:2px}\n#mm-fj-x-feed-v1 .mm-fj-link{flex:none;font-size:11px;font-weight:800;color:#ffc47d;text-decoration:none}\n#mm-fj-x-feed-v1 .mm-fj-link:hover{text-decoration:underline;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-panel{max-width:860px;width:calc(100% - 28px);margin:0 auto 16px;border-radius:15px;overflow:hidden;background:#fff;color:#26384a;border:1px solid #d9e1eb}\n#mm-fj-x-feed-v1 .mm-fj-panel[hidden]{display:none!important}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading{padding:13px 16px;background:#f8fafc;border-bottom:1px solid #e5eaf1}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading strong{display:block;color:#172b40;font-size:14px;line-height:1.4}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading small{display:block;color:#617186;font-size:12px;line-height:1.5;margin-top:4px}\n#mm-fj-x-feed-v1 .mm-fj-timeline-shell{padding:6px 10px;min-height:120px;max-height:520px;overflow-y:auto;overscroll-behavior:contain}\n#mm-fj-x-feed-v1 .mm-fj-timeline-shell .twitter-timeline{display:block;text-align:center;padding:26px 6px;font-size:13px;font-weight:700;color:#a95e14}\n#mm-fj-x-feed-v1 .mm-fj-panel-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid #e8edf3;background:#f8fafc}\n#mm-fj-x-feed-v1 .mm-fj-panel-foot span{font-size:11px;color:#6d7b8d;line-height:1.45}\n#mm-fj-x-feed-v1 .mm-fj-profile{flex:none;font-size:12px;color:#9e5c18;font-weight:800;text-decoration:none}\n#mm-fj-x-feed-v1 .mm-fj-profile:hover{text-decoration:underline}\n@media(max-width:650px){\n #mm-fj-x-feed-v1 .mm-fj-strip{gap:8px;padding:7px 10px;min-height:56px}\n #mm-fj-x-feed-v1 .mm-fj-mark{width:28px;height:28px;font-size:16px}\n #mm-fj-x-feed-v1 .mm-fj-copy strong{font-size:11px}\n #mm-fj-x-feed-v1 .mm-fj-copy span{font-size:10px}\n #mm-fj-x-feed-v1 .mm-fj-show{padding:7px 9px;font-size:11px}\n #mm-fj-x-feed-v1 .mm-fj-link{font-size:10px}\n #mm-fj-x-feed-v1 .mm-fj-timeline-shell{max-height:450px}\n #mm-fj-x-feed-v1 .mm-fj-panel-foot{align-items:flex-start;flex-direction:column}\n}\n@media(prefers-reduced-motion:reduce){#mm-fj-x-feed-v1 .mm-fj-show{transition:none}}\n";
+const CSS="\n#mm-fj-headlines-v2{box-sizing:border-box;position:relative;z-index:9999;width:100%;background:#0e1827;color:#f8fafc;border-bottom:1px solid rgba(242,159,59,.48);font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-headlines-v2 *{box-sizing:border-box}\n#mm-fj-headlines-v2 .mm-fj-bar{display:flex;align-items:center;gap:11px;padding:8px clamp(12px,2.4vw,30px);min-height:52px;width:100%}\n#mm-fj-headlines-v2 .mm-fj-mark{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:#f9a438;color:#182535;font-size:12px;font-weight:900;border-radius:9px;letter-spacing:-.02em}\n#mm-fj-headlines-v2 .mm-fj-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}\n#mm-fj-headlines-v2 .mm-fj-copy strong{font-size:12px;color:#fff;font-weight:850;line-height:1.25;letter-spacing:.02em}\n#mm-fj-headlines-v2 .mm-fj-copy span{font-size:11px;color:#aebed0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n#mm-fj-headlines-v2 .mm-fj-toggle{flex:none;min-height:35px;padding:8px 13px;border:1px solid #e6a154;border-radius:9px;background:#243247;color:#ffdbac;color-scheme:dark;font:750 12px/1.25 system-ui,-apple-system,\"Segoe UI\",sans-serif;cursor:pointer}\n#mm-fj-headlines-v2 .mm-fj-toggle:hover{background:#37465c;color:#fff}\n#mm-fj-headlines-v2 .mm-fj-link{flex:none;color:#f4c184;font-weight:800;font-size:11px;text-decoration:none;padding:5px}\n#mm-fj-headlines-v2 .mm-fj-link:hover{text-decoration:underline;color:#fff}\n#mm-fj-headlines-v2 .mm-fj-toggle:focus-visible,#mm-fj-headlines-v2 .mm-fj-link:focus-visible,#mm-fj-headlines-v2 .mm-fj-provider:focus-visible{outline:2px solid #ffbd71;outline-offset:2px}\n#mm-fj-headlines-v2 .mm-fj-panel{max-width:970px;width:calc(100% - 24px);margin:0 auto 15px;border:1px solid #d8e1ed;border-radius:15px;overflow:hidden;background:#fff;color:#192d45}\n#mm-fj-headlines-v2 .mm-fj-panel[hidden]{display:none!important}\n#mm-fj-headlines-v2 .mm-fj-intro{padding:13px 16px;background:#f7f9fc;border-bottom:1px solid #e5ebf2}\n#mm-fj-headlines-v2 .mm-fj-intro strong{display:block;font-size:14px;color:#182e44;font-weight:800}\n#mm-fj-headlines-v2 .mm-fj-intro p{font-size:12px;margin:4px 0 0;line-height:1.55;color:#6b7a8b}\n#mm-fj-headlines-v2 .mm-fj-frame-shell{height:360px;min-height:240px;position:relative;background:#1e222d}\n#mm-fj-headlines-v2 .mm-fj-headlines-frame{display:block;width:100%;height:100%;border:0;background:#1e222d}\n#mm-fj-headlines-v2 .mm-fj-bottom{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fafc;border-top:1px solid #e3e9f0}\n#mm-fj-headlines-v2 .mm-fj-bottom span{font-size:11px;line-height:1.5;color:#61758a;min-width:0}\n#mm-fj-headlines-v2 .mm-fj-provider{flex:none;color:#925813;text-decoration:none;font-weight:800;font-size:12px}\n#mm-fj-headlines-v2 .mm-fj-provider:hover{text-decoration:underline}\n@media(max-width:620px){\n #mm-fj-headlines-v2 .mm-fj-bar{gap:8px;padding:8px 10px}\n #mm-fj-headlines-v2 .mm-fj-mark{width:30px;height:30px}\n #mm-fj-headlines-v2 .mm-fj-copy strong{font-size:11px}\n #mm-fj-headlines-v2 .mm-fj-copy span{font-size:10px}\n #mm-fj-headlines-v2 .mm-fj-toggle{min-height:33px;padding:7px 9px;font-size:11px}\n #mm-fj-headlines-v2 .mm-fj-link{font-size:10px}\n #mm-fj-headlines-v2 .mm-fj-frame-shell{height:340px}\n #mm-fj-headlines-v2 .mm-fj-bottom{align-items:flex-start;flex-direction:column;gap:7px}\n}\n";
 
-const CLIENT='('+client.toString()+')();';
+const CLIENT='('+browserClient.toString()+')();';
 const STYLE='<style id="'+STYLE_ID+'">'+CSS+'</style>';
 const SCRIPT='<script id="'+CLIENT_ID+'">'+CLIENT+'</script>';
 function injectTickerHtml(html){
@@ -101,4 +78,4 @@ function injectTickerHtml(html){
  if(!html.includes('id="'+CLIENT_ID+'"'))html=html.replace(/<\/body\s*>/i,SCRIPT+'</body>');
  return html;
 }
-module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,EMBED_URL,PROVIDER_URL,WIDGET_SCRIPT,CLIENT,CSS,injectTickerHtml};
+module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,HEADLINES_URL,PROVIDER_URL,PROFILE_URL,CLIENT,CSS,injectTickerHtml};
