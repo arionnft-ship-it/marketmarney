@@ -54,7 +54,9 @@ def apply(root:Path):
         String js="(function(){var el=document.getElementById('mm-tv-root');"
             +"if(!el||el.getBoundingClientRect().height<150)return 'wait';"
             +"var state=document.documentElement.dataset.mmTvStatus;"
-            +"return state==='ready'?'ready':state==='error'?'error':'shell';})()";
+            +"var grid=document.getElementById('grid');"
+            +"var count=grid?grid.querySelectorAll('.card').length:0;"
+            +"return state==='ready'&&count>0?'ready':state==='error'?'error':'shell';})()";
         target.evaluateJavascript(js,value->{
             if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed||token!=xauContentToken
                 ||!Recovery414.sameDocument(url,lastUrl))return;
