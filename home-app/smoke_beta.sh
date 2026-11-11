@@ -7,7 +7,7 @@ mkdir -p qa
 test -s "$APK"
 
 collect(){
-  adb logcat -d -v brief -s MMAPP_HOME:I MMAPP_TV:I MMAPP_TV_NET:I MMPLAY_PAGE:I MM45_NAV:I AndroidRuntime:E > qa/beta440-diagnostics.txt 2>/dev/null || true
+  timeout 14s adb logcat -d -v brief -s MMAPP_HOME:I MMAPP_TV:I MMAPP_TV_NET:I MMPLAY_PAGE:I MM45_NAV:I AndroidRuntime:E > qa/beta440-diagnostics.txt 2>/dev/null || true
 }
 trap collect EXIT
 
@@ -22,7 +22,7 @@ adb shell am start -W -n "$PKG/com.marketmarney.mobile.MainActivity" | tee qa/be
 grep -E 'Status: ok|Status: warning' qa/beta440-home-launch.txt
 
 for n in $(seq 1 26); do
-  adb logcat -d -v brief -s MMAPP_HOME:I > qa/beta440-home-ready.txt
+  timeout 14s adb logcat -d -v brief -s MMAPP_HOME:I > qa/beta440-home-ready.txt
   if grep -F 'ready tab=0 lightweight-home' qa/beta440-home-ready.txt;then break;fi
   sleep 1
 done
@@ -44,19 +44,19 @@ adb logcat -c
 adb shell am start -W -n "$PKG/com.marketmarney.mobile.MainActivity" --ei startTab 2 | tee qa/beta440-tv-launch.txt
 grep -E 'Status: ok|Status: warning' qa/beta440-tv-launch.txt
 for n in $(seq 1 42); do
-  adb logcat -d -v brief -s MMAPP_TV:I > qa/beta440-tv-ready.txt
+  timeout 14s adb logcat -d -v brief -s MMAPP_TV:I > qa/beta440-tv-ready.txt
   if grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/beta440-tv-ready.txt;then break;fi
   sleep 1
 done
 grep -F 'ready tab=2 catalogue=MarketMarney TV' qa/beta440-tv-ready.txt
-adb shell uiautomator dump /sdcard/mm-tv-beta.xml > qa/beta440-tv-ui-dump.txt 2>&1 || true
-adb exec-out cat /sdcard/mm-tv-beta.xml > qa/beta440-tv-ui.xml 2>/dev/null || true
+timeout 16s adb shell uiautomator dump /sdcard/mm-tv-beta.xml > qa/beta440-tv-ui-dump.txt 2>&1 || true
+timeout 10s adb exec-out cat /sdcard/mm-tv-beta.xml > qa/beta440-tv-ui.xml 2>/dev/null || true
 grep -F '<hierarchy' qa/beta440-tv-ui.xml >/dev/null
 python3 tv-app/check_tv_visible_ui.py qa/beta440-tv-ui.xml
-adb exec-out screencap -p > qa/beta440-tv.png
+timeout 12s adb exec-out screencap -p > qa/beta440-tv.png
 python3 playstore/check_visible_content.py qa/beta440-tv.png
 
-adb logcat -d -v time -s AndroidRuntime:E > qa/beta440-crashes.txt
+timeout 14s adb logcat -d -v time -s AndroidRuntime:E > qa/beta440-crashes.txt
 if grep -E 'FATAL EXCEPTION|ANR in com\.marketmarney\.mobile\.beta440' qa/beta440-crashes.txt;then
   echo "FAIL: Android crash"; exit 1
 fi
