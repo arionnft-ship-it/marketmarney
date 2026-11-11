@@ -120,7 +120,7 @@ function browserClient(albumForVideo,groupPublishedVideos){
   try{
    const videos=await published();
    // Never mount into a stale grid after SPA navigation.
-   if(!grid.isConnected||listing()!==grid)return;
+   if(!grid.isConnected||listing()!==grid||grid.dataset.mmTvAlbumVersion===VERSION)return;
    renderAlbums(grid,videos);
   }catch{console.warn('MarketMarney TV: album belum tersedia; semua video tetap bisa dibuka.');}
  }
@@ -132,7 +132,7 @@ function browserClient(albumForVideo,groupPublishedVideos){
  const root=document.getElementById('app')||document.body;
  const observer=new MutationObserver(records=>{
   if(records.some(rec=>[...rec.addedNodes].some(n=>
-    n.nodeType===1&&(n.matches?.('.mm-tv-grid')||n.querySelector?.('.mm-tv-grid')))))schedule();
+    n.nodeType===1&&(n.matches?.('.mm-tv-grid,.mm-tv-card')||n.querySelector?.('.mm-tv-grid,.mm-tv-card')))))schedule();
  });
  observer.observe(root,{childList:true,subtree:true});
  document.addEventListener('click',e=>{
