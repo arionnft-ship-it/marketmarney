@@ -1,0 +1,35 @@
+name: Verify MarketMarney TV broker MP4 HTTP playback
+on:
+  push:
+    branches:
+      - fix/broker-neural-voice-20261111
+    paths:
+      - .github/workflows/broker-playback-check.yml
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Verify full and partial MP4 responses
+        run: |
+          set -euo pipefail
+          url='https://marketmarney.com/media/85440075-e5d4-4637-b034-6f8b3051b287.mp4'
+          curl -fsSL --retry 2 --max-time 55 -D full-headers.txt -o video.mp4 "$url"
+          ffprobe -v error -show_entries format=duration -show_entries stream=codec_name,codec_type -of json video.mp4
+          file_bytes=$(stat -c %s video.mp4)
+          test "$file_bytes" -gt 1000000
+          curl -fsSL --retry 2 --max-time 30 -H 'Range: bytes=0-1023' -D ranged-headers.txt -o ranged.bin "$url"
+          echo 'FULL HEADERS'; grep -Ei '^HTTP|content-type|content-length|accept-ranges' full-headers.txt || :
+          echo 'RANGED HEADERS'; grep -Ei '^HTTP|content-type|content-length|content-range|accept-ranges' ranged-headers.txt || :
+          echo 'RANGE BYTES:' $(stat -c %s ranged.bin)
+          echo 'FTYP HEX:' $(head -c 16 ranged.bin | xxd -p)
+          python - <<'PY'
+          import pathlib
+          full=pathlib.Path('video.mp4').read_bytes()[:32]
+          partial=pathlib.Path('ranged.bin').read_bytes()[:32]
+          assert b'ftyp' in full[:16], full
+          assert b'ftyp' in partial[:16], partial
+          print('MARKETMARNEY_BROKER_VIDEO_FTYP_OK')
+          PY
