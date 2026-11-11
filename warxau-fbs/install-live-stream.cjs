@@ -35,7 +35,9 @@ for (const item of files) {
   const source = zlib.gunzipSync(Buffer.from(encoded, 'base64'), { maxOutputLength: 256 * 1024 });
   const digest = crypto.createHash('sha256').update(source).digest('hex');
   if (digest !== item.sha256) throw new Error('live_source_integrity_mismatch:' + item.output);
-  fs.writeFileSync(item.output, source, { mode: 0o600 });
+  // Runtime preloads are executed again by the restricted release verifier (uid 1000).
+  // They contain no secrets and must remain readable, but never writable, by that process.
+  fs.writeFileSync(item.output, source, { mode: 0o644 });
 }
 
-console.log('MM_LIVE_STREAM_SOURCE_READY ' + JSON.stringify({ files: files.map(item => item.output) }));
+console.log('MM_LIVE_STREAM_SOURCE_READY ' + JSON.stringify({ files: files.map(item => item.output), mode: '0644' }));
