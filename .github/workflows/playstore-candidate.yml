@@ -130,6 +130,8 @@ jobs:
           python3 playstore/prepare_play_candidate.py android439
           node --check android439/app/src/main/assets/only_light_ui.js
           grep -F 'asset("only_light_ui.js")' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'showXauLoading' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'mm-play-early-light' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           COUNT=0
           for item in "$MM_UPLOAD_KEYSTORE_B64" "$MM_PLAY_STORE_PASSWORD" "$MM_PLAY_KEY_ALIAS" "$MM_PLAY_KEY_PASSWORD"; do
             if [ -n "$item" ]; then COUNT=$((COUNT+1)); fi
