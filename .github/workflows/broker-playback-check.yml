@@ -15,6 +15,8 @@ jobs:
       - name: Verify full and partial MP4 responses
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg >/dev/null
           url='https://marketmarney.com/media/85440075-e5d4-4637-b034-6f8b3051b287.mp4'
           curl -fsSL --retry 2 --max-time 55 -D full-headers.txt -o video.mp4 "$url"
           ffprobe -v error -show_entries format=duration -show_entries stream=codec_name,codec_type -of json video.mp4
