@@ -10,7 +10,9 @@ const VIDEO_ID='85440075-e5d4-4637-b034-6f8b3051b287';
 const VERSION='marketmarney-tv-broker-hedra-rizky-v4';
 const MEDIA_PATH='/media/'+VIDEO_ID+'.mp4';
 const ROOT=process.env.MM_DATA_DIR||'/persist/site-r1/MarketMarney-Railway-Staging/data';
-const DIR=path.join(ROOT,'marketmarney-tv');
+// Store directly under the existing writable data root. A previously created
+// marketmarney-tv subfolder can be owned by another UID and reject child files.
+const DIR=ROOT;
 const FINAL=path.join(DIR,'broker-hedra-rizky-v4.mp4');
 const PREVIOUS='https://raw.githubusercontent.com/arionnft-ship-it/marketmarney/45cc34a647ad317a5a1684a0854ba6902d2a1046/assets/broker-audio/marketmarney-broker-suara-indonesia-v3.mp4';
 let running=null;
