@@ -1,16 +1,99 @@
 'use strict';
-// Official provider-managed iframe; no scraping, licensed squawk rebroadcast,
-// local article feed, API secrets, or changes to MarketMarney data.
-const STYLE_ID='mm-banx-ticker-style-v2';
-const CLIENT_ID='mm-banx-ticker-client-v2';
-const ROOT_ID='mm-banx-ticker-v1';
-const EMBED_URL='https://www.banxnetwork.com/embed/ticker?theme=dark';
-const PROVIDER_URL='https://www.banxnetwork.com/widgets';
-const READ_URL='https://www.banxnetwork.com/embed/news?limit=5&theme=dark';
-const CSS="\n#mm-banx-ticker-v1{box-sizing:border-box;position:sticky;top:0;z-index:99991;display:flex;align-items:center;width:100%;min-height:44px;height:44px;overflow:hidden;background:#0b1420;color:#f8fafc;border-bottom:1px solid rgba(255,154,33,.42);font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-banx-ticker-v1 *{box-sizing:border-box}\n#mm-banx-ticker-v1 .mm-banx-label{display:flex;align-items:center;gap:7px;align-self:stretch;flex:none;white-space:nowrap;background:#f59a23;color:#17120c;font-weight:800;font-size:11px;letter-spacing:.03em;padding:0 13px}\n#mm-banx-ticker-v1 .mm-banx-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.23)}\n#mm-banx-ticker-v1 .mm-banx-viewport{min-width:0;flex:1;overflow:hidden;align-self:stretch}\n#mm-banx-ticker-v1 .mm-banx-widget{display:block;border:0;margin:0;width:100%;height:44px;background:#0b1420}\n#mm-banx-ticker-v1 .mm-banx-source{display:flex;align-items:center;justify-content:center;flex:none;align-self:stretch;min-width:57px;padding:0 8px;white-space:nowrap;font-weight:700;font-size:10px;color:#fbd28b;text-decoration:none;border-left:1px solid rgba(255,255,255,.14)}\n#mm-banx-ticker-v1 .mm-banx-source:hover,#mm-banx-ticker-v1 .mm-banx-source:focus-visible{color:#fff;text-decoration:underline;outline-offset:-3px;outline:2px solid #efa547}\n@media(max-width:640px){#mm-banx-ticker-v1 .mm-banx-label{font-size:10px;padding:0 8px;gap:5px}#mm-banx-ticker-v1 .mm-banx-source{min-width:40px;font-size:9px;padding:0 5px}}\n@media(max-width:350px){#mm-banx-ticker-v1 .mm-banx-label{font-size:9px;padding:0 6px}#mm-banx-ticker-v1 .mm-banx-source{min-width:34px;padding:0 4px}}\n";
-const CLIENT="\n(function(){\n 'use strict';\n if(document.getElementById('mm-banx-ticker-v1'))return;\n var bar=document.createElement('section');\n bar.id='mm-banx-ticker-v1';\n bar.setAttribute('role','region');\n bar.setAttribute('aria-label','Headline berita global, widget Banx Network');\n var viewport=document.createElement('div');viewport.className='mm-banx-viewport';\n var iframe=document.createElement('iframe');\n iframe.className='mm-banx-widget';\n iframe.src='https://www.banxnetwork.com/embed/ticker?theme=dark';\n iframe.title='Ticker judul berita terbaru oleh Banx Network';\n iframe.width='100%';\n iframe.height='44';\n iframe.setAttribute('scrolling','no');\n iframe.setAttribute('frameborder','0');\n iframe.setAttribute('loading','eager');\n iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');\n viewport.appendChild(iframe);\n var toggle=document.createElement('button');\n toggle.className='mm-banx-toggle';toggle.type='button';toggle.textContent='Baca Santai';toggle.title='Buka daftar judul Banx yang tidak bergerak';toggle.setAttribute('aria-pressed','false');\n var reading=false;\n toggle.addEventListener('click',function(){reading=!reading;bar.classList.toggle('mm-banx-reading',reading);iframe.src=reading?'https://www.banxnetwork.com/embed/news?limit=5&theme=dark':'https://www.banxnetwork.com/embed/ticker?theme=dark';iframe.height=reading?'300':'44';iframe.title=reading?'Daftar berita Banx Network tanpa gerakan ticker':'Ticker judul berita terbaru oleh Banx Network';iframe.setAttribute('scrolling',reading?'auto':'no');toggle.textContent=reading?'Ticker Berjalan':'Baca Santai';toggle.setAttribute('aria-pressed',String(reading));});\n var source=document.createElement('a');\n source.className='mm-banx-source';\n source.href='https://www.banxnetwork.com/widgets';\n source.target='_blank';source.rel='noopener noreferrer';\n source.textContent='BANX';\n source.title='Sumber berita: Banx Network — buka situs penyedia';\n bar.append(viewport,toggle,source);\n document.body.prepend(bar);\n})();\n";
-const READ_CSS="\n#mm-banx-ticker-v1{height:auto!important}\n#mm-banx-ticker-v1 .mm-banx-toggle{flex:none;align-self:center;margin:0 6px;padding:7px 9px;border:1px solid #f4ac5f;border-radius:7px;background:#182637;color:#ffcf92;font:700 11px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;white-space:nowrap;cursor:pointer}\n#mm-banx-ticker-v1 .mm-banx-toggle:hover{background:#2d3b50;color:white}\n#mm-banx-ticker-v1 .mm-banx-toggle:focus-visible{outline:2px solid #ffbb6e;outline-offset:2px}\n#mm-banx-ticker-v1.mm-banx-reading{align-items:flex-start!important}\n#mm-banx-ticker-v1.mm-banx-reading .mm-banx-viewport,#mm-banx-ticker-v1.mm-banx-reading .mm-banx-widget{height:300px!important}\n#mm-banx-ticker-v1.mm-banx-reading .mm-banx-toggle,#mm-banx-ticker-v1.mm-banx-reading .mm-banx-source{align-self:flex-start;margin-top:7px}\n@media(max-width:640px){#mm-banx-ticker-v1 .mm-banx-toggle{font-size:10px;padding:6px}#mm-banx-ticker-v1.mm-banx-reading .mm-banx-viewport,#mm-banx-ticker-v1.mm-banx-reading .mm-banx-widget{height:250px!important}}";
-const STYLE='<style id="'+STYLE_ID+'">'+CSS+READ_CSS+'</style>';
+// Official X embedded public profile — no scraping, unauthorized text copying,
+// synthetic tweets, automatic translation claims, or X API credentials.
+const STYLE_ID='mm-fj-x-style-v1';
+const CLIENT_ID='mm-fj-x-client-v1';
+const ROOT_ID='mm-fj-x-feed-v1';
+const EMBED_URL='https://x.com/financialjuice';
+const PROVIDER_URL='https://x.com/financialjuice';
+const WIDGET_SCRIPT='https://platform.twitter.com/widgets.js';
+function client(){
+ 'use strict';
+ if(document.getElementById('mm-fj-x-feed-v1'))return;
+ const root=document.createElement('section');
+ root.id='mm-fj-x-feed-v1';
+ root.setAttribute('role','region');
+ root.setAttribute('aria-label','Berita pasar resmi FinancialJuice dari X');
+ const strip=document.createElement('div');
+ strip.className='mm-fj-strip';
+ const mark=document.createElement('span');
+ mark.className='mm-fj-mark';mark.setAttribute('aria-hidden','true');mark.textContent='X';
+ const copy=document.createElement('div');
+ copy.className='mm-fj-copy';
+ const name=document.createElement('strong');
+ name.textContent='FINANCIALJUICE · X';
+ const subtitle=document.createElement('span');
+ subtitle.textContent='Berita finansial dari akun resmi @financialjuice';
+ copy.append(name,subtitle);
+ const toggle=document.createElement('button');
+ toggle.type='button';toggle.className='mm-fj-show';
+ toggle.textContent='Lihat berita';toggle.setAttribute('aria-expanded','false');
+ toggle.setAttribute('aria-controls','mm-fj-x-timeline');
+ const link=document.createElement('a');
+ link.className='mm-fj-link';
+ link.href='https://x.com/financialjuice';
+ link.target='_blank';link.rel='noopener noreferrer';
+ link.textContent='Buka X';link.title='Buka akun FinancialJuice di X';
+ strip.append(mark,copy,toggle,link);
+ const panel=document.createElement('div');
+ panel.id='mm-fj-x-timeline';panel.className='mm-fj-panel';panel.hidden=true;
+ const header=document.createElement('div');
+ header.className='mm-fj-panel-heading';
+ const headLabel=document.createElement('strong');
+ headLabel.textContent='Postingan terbaru FinancialJuice';
+ const notice=document.createElement('small');
+ notice.textContent='Feed resmi X. Postingan tetap dalam bahasa aslinya; ketersediaan dan urutan diatur X.';
+ header.append(headLabel,notice);
+ const shell=document.createElement('div');
+ shell.className='mm-fj-timeline-shell';
+ const anchor=document.createElement('a');
+ anchor.className='twitter-timeline';
+ anchor.href='https://x.com/financialjuice';
+ anchor.textContent='Baca postingan FinancialJuice (@financialjuice) di X';
+ anchor.setAttribute('data-theme','light');
+ anchor.setAttribute('data-height','460');
+ anchor.setAttribute('data-dnt','true');
+ anchor.setAttribute('data-lang','id');
+ shell.appendChild(anchor);
+ const footer=document.createElement('div');
+ footer.className='mm-fj-panel-foot';
+ const sourceNote=document.createElement('span');
+ sourceNote.textContent='Sumber: X / @financialjuice · Buka X bila feed tidak tampil.';
+ const profile=document.createElement('a');
+ profile.className='mm-fj-profile';
+ profile.href='https://x.com/financialjuice';
+ profile.target='_blank';profile.rel='noopener noreferrer';
+ profile.textContent='Lihat profil di X';
+ footer.append(sourceNote,profile);
+ panel.append(header,shell,footer);
+ root.append(strip,panel);
+ document.body.prepend(root);
+ let loaded=false;
+ toggle.addEventListener('click',function(){
+  panel.hidden=!panel.hidden;
+  const open=!panel.hidden;
+  toggle.setAttribute('aria-expanded',String(open));
+  toggle.textContent=open?'Tutup berita':'Lihat berita';
+  if(!open)return;
+  if(loaded){
+   if(window.twttr&&window.twttr.widgets&&window.twttr.widgets.load)window.twttr.widgets.load(panel);
+   return;
+  }
+  loaded=true;
+  const script=document.createElement('script');
+  script.src='https://platform.twitter.com/widgets.js';
+  script.async=true;script.charset='utf-8';
+  script.setAttribute('data-mm-financialjuice-widget','v1');
+  script.onload=function(){
+   if(window.twttr&&window.twttr.widgets&&window.twttr.widgets.load)window.twttr.widgets.load(panel);
+  };
+  document.head.appendChild(script);
+ });
+}
+const CSS="\n/* Official FinancialJuice X profile, displayed on demand. No copied tweets. */\n#mm-fj-x-feed-v1{position:relative;z-index:9998;width:100%;box-sizing:border-box;background:#0f1724;color:#f8fafc;border-bottom:1px solid #f5a33755;font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-x-feed-v1 *{box-sizing:border-box}\n#mm-fj-x-feed-v1 .mm-fj-strip{display:flex;align-items:center;gap:12px;min-height:54px;padding:7px clamp(12px,2.4vw,34px);width:100%}\n#mm-fj-x-feed-v1 .mm-fj-mark{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border-radius:9px;background:#ffad39;color:#152236;font-weight:900;font-size:18px}\n#mm-fj-x-feed-v1 .mm-fj-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}\n#mm-fj-x-feed-v1 .mm-fj-copy strong{font-size:12px;font-weight:850;letter-spacing:.015em;line-height:1.2;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-copy span{font-size:11px;color:#abb9cb;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n#mm-fj-x-feed-v1 .mm-fj-show{flex:none;min-height:34px;padding:7px 14px;border-radius:9px;border:1px solid #efb15d;background:#263244;color:#ffe0af;cursor:pointer;font:750 12px/1.25 system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-x-feed-v1 .mm-fj-show:hover{background:#38445a;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-show:focus-visible,#mm-fj-x-feed-v1 .mm-fj-link:focus-visible,#mm-fj-x-feed-v1 .mm-fj-profile:focus-visible{outline:2px solid #ffb14d;outline-offset:2px}\n#mm-fj-x-feed-v1 .mm-fj-link{flex:none;font-size:11px;font-weight:800;color:#ffc47d;text-decoration:none}\n#mm-fj-x-feed-v1 .mm-fj-link:hover{text-decoration:underline;color:#fff}\n#mm-fj-x-feed-v1 .mm-fj-panel{max-width:860px;width:calc(100% - 28px);margin:0 auto 16px;border-radius:15px;overflow:hidden;background:#fff;color:#26384a;border:1px solid #d9e1eb}\n#mm-fj-x-feed-v1 .mm-fj-panel[hidden]{display:none!important}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading{padding:13px 16px;background:#f8fafc;border-bottom:1px solid #e5eaf1}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading strong{display:block;color:#172b40;font-size:14px;line-height:1.4}\n#mm-fj-x-feed-v1 .mm-fj-panel-heading small{display:block;color:#617186;font-size:12px;line-height:1.5;margin-top:4px}\n#mm-fj-x-feed-v1 .mm-fj-timeline-shell{padding:6px 10px;min-height:120px;max-height:520px;overflow-y:auto;overscroll-behavior:contain}\n#mm-fj-x-feed-v1 .mm-fj-timeline-shell .twitter-timeline{display:block;text-align:center;padding:26px 6px;font-size:13px;font-weight:700;color:#a95e14}\n#mm-fj-x-feed-v1 .mm-fj-panel-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid #e8edf3;background:#f8fafc}\n#mm-fj-x-feed-v1 .mm-fj-panel-foot span{font-size:11px;color:#6d7b8d;line-height:1.45}\n#mm-fj-x-feed-v1 .mm-fj-profile{flex:none;font-size:12px;color:#9e5c18;font-weight:800;text-decoration:none}\n#mm-fj-x-feed-v1 .mm-fj-profile:hover{text-decoration:underline}\n@media(max-width:650px){\n #mm-fj-x-feed-v1 .mm-fj-strip{gap:8px;padding:7px 10px;min-height:56px}\n #mm-fj-x-feed-v1 .mm-fj-mark{width:28px;height:28px;font-size:16px}\n #mm-fj-x-feed-v1 .mm-fj-copy strong{font-size:11px}\n #mm-fj-x-feed-v1 .mm-fj-copy span{font-size:10px}\n #mm-fj-x-feed-v1 .mm-fj-show{padding:7px 9px;font-size:11px}\n #mm-fj-x-feed-v1 .mm-fj-link{font-size:10px}\n #mm-fj-x-feed-v1 .mm-fj-timeline-shell{max-height:450px}\n #mm-fj-x-feed-v1 .mm-fj-panel-foot{align-items:flex-start;flex-direction:column}\n}\n@media(prefers-reduced-motion:reduce){#mm-fj-x-feed-v1 .mm-fj-show{transition:none}}\n";
+
+const CLIENT='('+client.toString()+')();';
+const STYLE='<style id="'+STYLE_ID+'">'+CSS+'</style>';
 const SCRIPT='<script id="'+CLIENT_ID+'">'+CLIENT+'</script>';
 function injectTickerHtml(html){
  if(typeof html!=='string'||!/<\/head\s*>/i.test(html)||!/<\/body\s*>/i.test(html))return html;
@@ -18,4 +101,4 @@ function injectTickerHtml(html){
  if(!html.includes('id="'+CLIENT_ID+'"'))html=html.replace(/<\/body\s*>/i,SCRIPT+'</body>');
  return html;
 }
-module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,EMBED_URL,READ_URL,PROVIDER_URL,injectTickerHtml};
+module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,EMBED_URL,PROVIDER_URL,WIDGET_SCRIPT,CLIENT,CSS,injectTickerHtml};
