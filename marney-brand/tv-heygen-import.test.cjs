@@ -12,7 +12,7 @@ test('approved broker video has stable metadata and allowlisted HeyGen sources',
  assert.equal(RECORD.album,'MarketMarney Academy');
  assert.equal(RECORD.learningStage,'mulai');
  for(const route of [RECORD.url,RECORD.thumb]){
-  const target=ROUTES.get(route);
+  const target=ROUTES.get(route.split('?')[0]);
   assert.ok(target);
   assert.equal(isAllowedTarget(new URL(target.url)),true);
  }
