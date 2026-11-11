@@ -82,6 +82,12 @@
       remove.type='button';remove.setAttribute('aria-label','Hapus komentar '+(data.sender||'Penonton'));
       remove.addEventListener('click',()=>removeComment(data.id));
       line.appendChild(remove);
+      if(data.senderId&&data.senderId!=='host'){
+        const mute=el('button','mm-live-mod-button','Bisukan');
+        mute.type='button';mute.setAttribute('aria-label','Bisukan komentar penonton '+(data.sender||''));
+        mute.addEventListener('click',()=>muteViewer(data.senderId));
+        line.appendChild(mute);
+      }
     }else{
       const report=el('button','mm-live-report-button','Laporkan');
       report.type='button';
@@ -163,6 +169,13 @@
     try{await api('comments/'+encodeURIComponent(id),{method:'DELETE'});}
     catch{}
   }
+  async function muteViewer(viewerId){
+    if(!session||session.role!=='host')return;
+    try{
+      await api('mutes',{method:'POST',body:JSON.stringify({viewerId})});
+      showStatus('Komentar penonton ini sudah dibatasi.');
+    }catch{}
+  }
   async function reportComment(id){
     if(!session)return;
     try{
@@ -173,19 +186,20 @@
   async function readEvents(){
     if(!session)return;
     const current=session;
-    readAbort=new AbortController();
+    const ctl=new AbortController();
+    readAbort=ctl;
     let attempts=0;
-    while(!readAbort.signal.aborted&&session===current){
+    while(!ctl.signal.aborted&&session===current){
       try{
         const response=await fetch(BASE+encodeURIComponent(current.id)+'/events',{
           credentials:'same-origin',cache:'no-store',
           headers:{Accept:'text/event-stream',Authorization:'Bearer '+current.token},
-          signal:readAbort.signal
+          signal:ctl.signal
         });
         if(!response.ok||!response.body)throw Error('EVENTS_'+response.status);
         const reader=response.body.getReader(),decoder=new TextDecoder();
         let text='';attempts=0;
-        while(session===current&&!readAbort.signal.aborted){
+        while(session===current&&!ctl.signal.aborted){
           const part=await reader.read();if(part.done)break;
           text+=decoder.decode(part.value,{stream:true});
           let index;
@@ -201,7 +215,7 @@
           }
         }
       }catch(error){
-        if(readAbort?.signal.aborted||session!==current)return;
+        if(ctl.signal.aborted||session!==current)return;
         attempts++;
         showStatus('Memulihkan koneksi komentar LIVE…');
         await new Promise(resolve=>window.setTimeout(resolve,Math.min(6000,700*Math.pow(1.7,attempts))));
