@@ -1,0 +1,33 @@
+name: MarketMarney Academy Narration Transfer (temporary)
+on:
+  push:
+    branches: [work/marketmarney-academy-depth-20261111]
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch approved Bahasa Indonesia narration parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audio
+          curl --retry 3 --retry-delay 2 -fL --max-time 100 -o audio/narasi_bagian_1.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=fa6544de315840ae8ec7b58dc51198da.mp3'
+          curl --retry 3 --retry-delay 2 -fL --max-time 100 -o audio/narasi_bagian_2.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=dc78068d9f73498798829491f6c69ef2.mp3'
+          curl --retry 3 --retry-delay 2 -fL --max-time 100 -o audio/narasi_bagian_3.mp3 'https://resource2.heygen.ai/text_to_speech/f4c84d30bff8414ca75fe8d821529431/97b597132bc44079affbb598c7ce73c1/id=66a2cae5f26f425d9a795336e55203a1.mp3'
+          python3 - <<'PY'
+          import os
+          for index in (1,2,3):
+              f=f'audio/narasi_bagian_{index}.mp3'
+              data=open(f,'rb').read()
+              assert len(data)>200000 and data[:2] in (b'ID',bytes.fromhex('fffb'),bytes.fromhex('fff3')),('invalid_audio',index,len(data),data[:4])
+              print('NARRATION_TRANSFER_OK',index,len(data),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney-Academy-Deep-Voice
+          path: audio/
+          retention-days: 5
+          if-no-files-found: error
