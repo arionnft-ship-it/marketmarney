@@ -1,0 +1,58 @@
+name: MarketMarney Live inside Reels QA
+on:
+  push:
+    branches: [feature/live-streams-in-reels-20261111]
+    paths:
+      - 'warxau-fbs/live-reels*'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/live-reels-qa.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+concurrency:
+  group: mm-live-reels-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-live-reels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Reconstruct verified Live Marney source
+        shell: bash
+        working-directory: warxau-fbs
+        run: |
+          set -euo pipefail
+          node install-live-stream.cjs
+          node --check live-stream.cjs
+          node --check live-stream-preload.cjs
+          node --check live-reels-preload.cjs
+          node --check live-reels.js
+      - name: Verify existing live signaling and new Reels viewer integration
+        shell: bash
+        working-directory: warxau-fbs
+        run: |
+          set -euo pipefail
+          MM_LIVE_REELS_UNIT_TEST=1 node --test live-stream.test.cjs live-reels.test.cjs
+      - name: Check build wiring and app-only stream permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'COPY warxau-fbs/live-reels-preload.cjs warxau-fbs/live-reels.js' warxau-fbs/Dockerfile.ihsg
+          grep -F -- '--require=/opt/warxau-fbs/live-reels-preload.cjs' warxau-fbs/Dockerfile.ihsg
+          grep -F "const API='/api/live/streams'" warxau-fbs/live-reels.js
+          ! grep -E 'getUserMedia|CAMERA|RECORD_AUDIO' warxau-fbs/live-reels.js
+          echo 'PASS: viewer-only live cards and same-origin WebRTC viewer route'
+  build-candidate:
+    needs: test-live-reels
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production Docker image without deploying
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-live-reels:qa .
+          docker image inspect marketmarney-live-reels:qa --format 'IMAGE_BUILT {{.Id}}'
