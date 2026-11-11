@@ -1,73 +1,62 @@
 'use strict';
-// FinancialJuice official Headlines widget (publisher-provided iframe).
-// This intentionally does NOT scrape X, copy posts, or claim auto-translation.
-const STYLE_ID='mm-fj-headlines-style-v2';
-const CLIENT_ID='mm-fj-headlines-client-v2';
-const ROOT_ID='mm-fj-headlines-v2';
-const HEADLINES_URL='https://feed.financialjuice.com/widgets/headlines.aspx?affurl=&backC=1e222d&container=financialjuice-news-widget-container&fontC=b2b5be&height=100%25&mode=Dark&width=100%25&wtype=NEWS';
-const PROVIDER_URL='https://www.financialjuice.com/widgets/get-widget.aspx';
-const PROFILE_URL='https://x.com/financialjuice';
+// Provider-owned TradingView Top Stories embed. No scraping or republishing news.
+// TradingView's legacy timeline script remains supported per widget documentation.
+const STYLE_ID='mm-tv-news-style-v1';
+const CLIENT_ID='mm-tv-news-client-v1';
+const ROOT_ID='mm-tv-news-v1';
+const WIDGET_SCRIPT='https://s3.tradingview.com/external-embedding/embed-widget-timeline.js';
+const PROVIDER_URL='https://id.tradingview.com/news/';
+const CONFIG={displayMode:'regular',feedMode:'all_symbols',colorTheme:'light',isTransparent:false,locale:'id',width:'100%',height:370};
 function browserClient(){
  'use strict';
- if(document.getElementById('mm-fj-headlines-v2'))return;
- function el(tag,cls,text){
-  const o=document.createElement(tag);
-  if(cls)o.className=cls;
-  if(text!==undefined)o.textContent=String(text);
-  return o;
- }
- const section=el('section');
- section.id='mm-fj-headlines-v2';
- section.setAttribute('role','region');
- section.setAttribute('aria-label','Berita resmi FinancialJuice');
- const bar=el('div','mm-fj-bar');
- const mark=el('span','mm-fj-mark','FJ');
- mark.setAttribute('aria-hidden','true');
- const copy=el('div','mm-fj-copy');
- copy.append(el('strong','','FINANCIALJUICE NEWS'));
- copy.append(el('span','','Headline finansial dari widget resmi FinancialJuice'));
- const toggle=el('button','mm-fj-toggle','Baca berita');
- toggle.type='button';
- toggle.setAttribute('aria-expanded','false');
- toggle.setAttribute('aria-controls','mm-fj-headlines-panel');
- const xlink=el('a','mm-fj-link','Akun X');
- xlink.href='https://x.com/financialjuice';
- xlink.target='_blank';xlink.rel='noopener noreferrer';
- xlink.title='Lihat akun FinancialJuice di X';
- bar.append(mark,copy,toggle,xlink);
- const panel=el('div','mm-fj-panel');
- panel.id='mm-fj-headlines-panel';panel.hidden=true;
- const intro=el('div','mm-fj-intro');
- intro.append(el('strong','','Headline pasar FinancialJuice'));
- intro.append(el('p','','Sumber resmi FinancialJuice. Ditampilkan dalam bahasa aslinya; pembaruan dan ketersediaan berita mengikuti penyedia.'));
- const shell=el('div','mm-fj-frame-shell');
- const foot=el('div','mm-fj-bottom');
- foot.append(el('span','','Jika daftar berita tidak tampil, buka halaman widget resmi FinancialJuice. MarketMarney tidak mengubah isi beritanya.'));
- const source=el('a','mm-fj-provider','Buka FinancialJuice');
- source.href='https://www.financialjuice.com/widgets/get-widget.aspx';
- source.target='_blank';source.rel='noopener noreferrer';
- foot.append(source);
- panel.append(intro,shell,foot);
- section.append(bar,panel);
- document.body.prepend(section);
+ if(document.getElementById('mm-tv-news-v1'))return;
+ const widgetScript='https://s3.tradingview.com/external-embedding/embed-widget-timeline.js';
+ const sourceUrl='https://id.tradingview.com/news/';
+ const config={displayMode:'regular',feedMode:'all_symbols',colorTheme:'light',isTransparent:false,locale:'id',width:'100%',height:370};
+ function el(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=String(txt);return n;}
+ const root=el('section');
+ root.id='mm-tv-news-v1';root.setAttribute('role','region');root.setAttribute('aria-label','Headline pasar TradingView');
+ const strip=el('div','mm-tv-news-strip');
+ const mark=el('span','mm-tv-news-mark','TV');mark.setAttribute('aria-hidden','true');
+ const info=el('div','mm-tv-news-info');
+ info.append(el('strong','','MARKET NEWS · TRADINGVIEW'));
+ info.append(el('span','','Berita pasar dalam satu panel, tanpa ticker bergerak cepat'));
+ const btn=el('button','mm-tv-news-toggle','Lihat berita');btn.type='button';btn.setAttribute('aria-expanded','false');btn.setAttribute('aria-controls','mm-tv-news-panel');
+ const link=el('a','mm-tv-news-link','Sumber');link.href=sourceUrl;link.target='_blank';link.rel='noopener noreferrer';
+ strip.append(mark,info,btn,link);
+ const panel=el('div','mm-tv-news-panel');panel.id='mm-tv-news-panel';panel.hidden=true;
+ const intro=el('div','mm-tv-news-intro');
+ intro.append(el('strong','','Berita Pasar Terbaru'));
+ intro.append(el('p','','Diperbarui oleh TradingView. Bahasa judul mengikuti penyedia dan mungkin tidak selalu bahasa Indonesia.'));
+ const host=el('div','mm-tv-news-host');
+ const footer=el('div','mm-tv-news-foot');
+ footer.append(el('span','','Jika widget tidak memuat berita, buka sumber TradingView. Data bukan berita buatan MarketMarney.'));
+ const source=el('a','mm-tv-news-provider','Buka Berita TradingView');
+ source.href=sourceUrl;source.target='_blank';source.rel='noopener noreferrer';
+ footer.append(source);panel.append(intro,host,footer);root.append(strip,panel);
+ document.body.prepend(root);
  let loaded=false;
- toggle.addEventListener('click',function(){
+ btn.addEventListener('click',function(){
   panel.hidden=!panel.hidden;
-  const opened=!panel.hidden;
-  toggle.textContent=opened?'Tutup berita':'Baca berita';
-  toggle.setAttribute('aria-expanded',String(opened));
-  if(!opened||loaded)return;
+  const isOpen=!panel.hidden;
+  btn.textContent=isOpen?'Tutup berita':'Lihat berita';
+  btn.setAttribute('aria-expanded',String(isOpen));
+  if(!isOpen||loaded)return;
   loaded=true;
-  const iframe=el('iframe','mm-fj-headlines-frame');
-  iframe.src='https://feed.financialjuice.com/widgets/headlines.aspx?affurl=&backC=1e222d&container=financialjuice-news-widget-container&fontC=b2b5be&height=100%25&mode=Dark&width=100%25&wtype=NEWS';
-  iframe.title='Widget headline resmi FinancialJuice';
-  iframe.loading='lazy';
-  iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
-  iframe.setAttribute('scrolling','yes');
-  shell.appendChild(iframe);
+  const status=el('span','mm-tv-news-status','Memuat berita…');host.append(status);
+  const container=el('div','tradingview-widget-container');
+  const widget=el('div','tradingview-widget-container__widget');
+  container.append(widget);
+  const script=el('script');
+  script.src=widgetScript;script.async=true;
+  script.type='text/javascript';
+  script.textContent=JSON.stringify(config);
+  script.onload=function(){status.textContent='Sumber: TradingView';};
+  script.onerror=function(){status.textContent='Widget tidak tersedia. Gunakan tautan sumber di bawah.';};
+  container.append(script);host.append(container);
  });
 }
-const CSS="\n#mm-fj-headlines-v2{box-sizing:border-box;position:relative;z-index:9999;width:100%;background:#0e1827;color:#f8fafc;border-bottom:1px solid rgba(242,159,59,.48);font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-fj-headlines-v2 *{box-sizing:border-box}\n#mm-fj-headlines-v2 .mm-fj-bar{display:flex;align-items:center;gap:11px;padding:8px clamp(12px,2.4vw,30px);min-height:52px;width:100%}\n#mm-fj-headlines-v2 .mm-fj-mark{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:#f9a438;color:#182535;font-size:12px;font-weight:900;border-radius:9px;letter-spacing:-.02em}\n#mm-fj-headlines-v2 .mm-fj-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}\n#mm-fj-headlines-v2 .mm-fj-copy strong{font-size:12px;color:#fff;font-weight:850;line-height:1.25;letter-spacing:.02em}\n#mm-fj-headlines-v2 .mm-fj-copy span{font-size:11px;color:#aebed0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n#mm-fj-headlines-v2 .mm-fj-toggle{flex:none;min-height:35px;padding:8px 13px;border:1px solid #e6a154;border-radius:9px;background:#243247;color:#ffdbac;color-scheme:dark;font:750 12px/1.25 system-ui,-apple-system,\"Segoe UI\",sans-serif;cursor:pointer}\n#mm-fj-headlines-v2 .mm-fj-toggle:hover{background:#37465c;color:#fff}\n#mm-fj-headlines-v2 .mm-fj-link{flex:none;color:#f4c184;font-weight:800;font-size:11px;text-decoration:none;padding:5px}\n#mm-fj-headlines-v2 .mm-fj-link:hover{text-decoration:underline;color:#fff}\n#mm-fj-headlines-v2 .mm-fj-toggle:focus-visible,#mm-fj-headlines-v2 .mm-fj-link:focus-visible,#mm-fj-headlines-v2 .mm-fj-provider:focus-visible{outline:2px solid #ffbd71;outline-offset:2px}\n#mm-fj-headlines-v2 .mm-fj-panel{max-width:970px;width:calc(100% - 24px);margin:0 auto 15px;border:1px solid #d8e1ed;border-radius:15px;overflow:hidden;background:#fff;color:#192d45}\n#mm-fj-headlines-v2 .mm-fj-panel[hidden]{display:none!important}\n#mm-fj-headlines-v2 .mm-fj-intro{padding:13px 16px;background:#f7f9fc;border-bottom:1px solid #e5ebf2}\n#mm-fj-headlines-v2 .mm-fj-intro strong{display:block;font-size:14px;color:#182e44;font-weight:800}\n#mm-fj-headlines-v2 .mm-fj-intro p{font-size:12px;margin:4px 0 0;line-height:1.55;color:#6b7a8b}\n#mm-fj-headlines-v2 .mm-fj-frame-shell{height:360px;min-height:240px;position:relative;background:#1e222d}\n#mm-fj-headlines-v2 .mm-fj-headlines-frame{display:block;width:100%;height:100%;border:0;background:#1e222d}\n#mm-fj-headlines-v2 .mm-fj-bottom{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fafc;border-top:1px solid #e3e9f0}\n#mm-fj-headlines-v2 .mm-fj-bottom span{font-size:11px;line-height:1.5;color:#61758a;min-width:0}\n#mm-fj-headlines-v2 .mm-fj-provider{flex:none;color:#925813;text-decoration:none;font-weight:800;font-size:12px}\n#mm-fj-headlines-v2 .mm-fj-provider:hover{text-decoration:underline}\n@media(max-width:620px){\n #mm-fj-headlines-v2 .mm-fj-bar{gap:8px;padding:8px 10px}\n #mm-fj-headlines-v2 .mm-fj-mark{width:30px;height:30px}\n #mm-fj-headlines-v2 .mm-fj-copy strong{font-size:11px}\n #mm-fj-headlines-v2 .mm-fj-copy span{font-size:10px}\n #mm-fj-headlines-v2 .mm-fj-toggle{min-height:33px;padding:7px 9px;font-size:11px}\n #mm-fj-headlines-v2 .mm-fj-link{font-size:10px}\n #mm-fj-headlines-v2 .mm-fj-frame-shell{height:340px}\n #mm-fj-headlines-v2 .mm-fj-bottom{align-items:flex-start;flex-direction:column;gap:7px}\n}\n";
+const CSS="\n#mm-tv-news-v1{position:relative;z-index:9998;width:100%;background:#0c1623;color:#f5f7fb;border-bottom:1px solid #de974666;font-family:system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif}\n#mm-tv-news-v1 *{box-sizing:border-box}\n#mm-tv-news-v1 .mm-tv-news-strip{display:flex;align-items:center;gap:11px;min-height:54px;padding:7px clamp(12px,2.5vw,28px)}\n#mm-tv-news-v1 .mm-tv-news-mark{display:flex;align-items:center;justify-content:center;flex:none;width:35px;height:35px;border-radius:10px;background:#ec9d34;color:#172337;font-size:12px;font-weight:900}\n#mm-tv-news-v1 .mm-tv-news-info{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}\n#mm-tv-news-v1 .mm-tv-news-info strong{font-size:12px;font-weight:850;letter-spacing:.04em}\n#mm-tv-news-v1 .mm-tv-news-info span{color:#b5c0d1;font-size:11px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n#mm-tv-news-v1 .mm-tv-news-toggle{flex:none;min-height:34px;background:#253247;color:#ffdbad;border:1px solid #dba562;border-radius:9px;padding:7px 13px;font:750 12px/1.2 system-ui,-apple-system,\"Segoe UI\",Arial,sans-serif;cursor:pointer}\n#mm-tv-news-v1 .mm-tv-news-toggle:hover{background:#36455b;color:white}\n#mm-tv-news-v1 .mm-tv-news-link{flex:none;font-size:11px;font-weight:800;color:#f8ca91;text-decoration:none}\n#mm-tv-news-v1 .mm-tv-news-link:hover{text-decoration:underline;color:#fff}\n#mm-tv-news-v1 .mm-tv-news-toggle:focus-visible,#mm-tv-news-v1 a:focus-visible{outline:2px solid #ffb45e;outline-offset:3px}\n#mm-tv-news-v1 .mm-tv-news-panel{width:calc(100% - 24px);max-width:980px;margin:0 auto 16px;border-radius:15px;border:1px solid #dae2eb;overflow:hidden;background:#fff;color:#23344a}\n#mm-tv-news-v1 .mm-tv-news-panel[hidden]{display:none!important}\n#mm-tv-news-v1 .mm-tv-news-intro{padding:12px 16px;border-bottom:1px solid #e6ebf1;background:#f8fafc}\n#mm-tv-news-v1 .mm-tv-news-intro strong{display:block;color:#1d344b;font-size:14px}\n#mm-tv-news-v1 .mm-tv-news-intro p{font-size:12px;line-height:1.6;color:#69798b;margin:4px 0 0}\n#mm-tv-news-v1 .mm-tv-news-host{min-height:330px;height:370px;width:100%;overflow:hidden;background:#fff;position:relative}\n#mm-tv-news-v1 .tradingview-widget-container{width:100%;height:100%;background:#fff}\n#mm-tv-news-v1 .tradingview-widget-container__widget{width:100%;height:100%}\n#mm-tv-news-v1 .mm-tv-news-foot{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px 16px;border-top:1px solid #e4eaf1;background:#f8fafc}\n#mm-tv-news-v1 .mm-tv-news-foot span{font-size:11px;line-height:1.5;color:#65768a}\n#mm-tv-news-v1 .mm-tv-news-provider{font-size:12px;font-weight:800;white-space:nowrap;color:#9d5e18;text-decoration:none}\n#mm-tv-news-v1 .mm-tv-news-provider:hover{text-decoration:underline}\n#mm-tv-news-v1 .mm-tv-news-status{position:absolute;top:8px;right:8px;z-index:2;font-size:10px;background:#ffffffdc;color:#6e7989;padding:4px 6px;border-radius:5px;pointer-events:none}\n@media(max-width:650px){#mm-tv-news-v1 .mm-tv-news-strip{padding:7px 10px;gap:8px}#mm-tv-news-v1 .mm-tv-news-mark{width:31px;height:31px;font-size:11px}#mm-tv-news-v1 .mm-tv-news-info strong{font-size:11px}#mm-tv-news-v1 .mm-tv-news-info span{font-size:10px}#mm-tv-news-v1 .mm-tv-news-toggle{padding:7px 9px;font-size:11px}#mm-tv-news-v1 .mm-tv-news-link{font-size:10px}#mm-tv-news-v1 .mm-tv-news-host{height:340px}#mm-tv-news-v1 .mm-tv-news-foot{flex-direction:column;align-items:flex-start}}\n";
 
 const CLIENT='('+browserClient.toString()+')();';
 const STYLE='<style id="'+STYLE_ID+'">'+CSS+'</style>';
@@ -78,4 +67,4 @@ function injectTickerHtml(html){
  if(!html.includes('id="'+CLIENT_ID+'"'))html=html.replace(/<\/body\s*>/i,SCRIPT+'</body>');
  return html;
 }
-module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,HEADLINES_URL,PROVIDER_URL,PROFILE_URL,CLIENT,CSS,injectTickerHtml};
+module.exports={STYLE_ID,CLIENT_ID,ROOT_ID,WIDGET_SCRIPT,PROVIDER_URL,CONFIG,CLIENT,CSS,injectTickerHtml};
