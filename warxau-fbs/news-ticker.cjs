@@ -1,0 +1,73 @@
+'use strict';
+// Public, read-only MarketMarney headline feed and top-of-page ticker.
+// Does not ingest, publish, or redistribute licensed third-party squawk content.
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {DatabaseSync}=require('node:sqlite');
+const API_PATH='/api/marketmarney/headlines';
+const STYLE_ID='mm-news-ticker-style-v1';
+const CLIENT_ID='mm-news-ticker-client-v1';
+const CSS_TEXT="\n#mm-news-ticker-v1{position:sticky;top:0;z-index:99991;display:flex;align-items:center;min-height:42px;width:100%;box-sizing:border-box;background:#0b1524;color:#edf3fb;border-bottom:1px solid rgba(255,163,35,.36);box-shadow:0 2px 10px rgba(4,9,15,.22);font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;overflow:hidden}\n#mm-news-ticker-v1 *{box-sizing:border-box}\n#mm-news-ticker-v1 .mm-ticker-label{display:flex;align-items:center;gap:7px;align-self:stretch;flex:none;white-space:nowrap;font-weight:800;font-size:11px;letter-spacing:.035em;padding:0 14px;color:#fff;background:#eb8c19}\n#mm-news-ticker-v1 .mm-ticker-dot{width:7px;height:7px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.17)}\n#mm-news-ticker-v1 .mm-ticker-viewport{flex:1;min-width:0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(to right,transparent,#000 12px,#000 calc(100% - 12px),transparent)}\n#mm-news-ticker-v1 .mm-ticker-rail{display:flex;align-items:center;width:max-content;min-height:40px;animation:mm-news-marquee 94s linear infinite}\n#mm-news-ticker-v1 .mm-ticker-group{display:flex;align-items:center;flex:none;white-space:nowrap}\n#mm-news-ticker-v1 .mm-ticker-item{display:inline-flex;align-items:center;gap:8px;flex:none;color:#edf3fb;text-decoration:none;font-size:12.5px;font-weight:550;padding:0 21px;line-height:1.3}\n#mm-news-ticker-v1 .mm-ticker-item:hover,#mm-news-ticker-v1 .mm-ticker-item:focus-visible{color:#ffaf44;text-decoration:underline;outline-offset:3px}\n#mm-news-ticker-v1 .mm-ticker-item:before{content:\"◆\";color:#ff982c;font-size:8px;flex:none}\n#mm-news-ticker-v1 .mm-ticker-controls{display:flex;align-items:center;gap:2px;flex:none;border-left:1px solid rgba(255,255,255,.13);padding:0 7px}\n#mm-news-ticker-v1 .mm-ticker-control{min-width:34px;min-height:34px;border:0;background:transparent;color:#f2f5f9;border-radius:7px;cursor:pointer;font:600 12px/1 system-ui,sans-serif}\n#mm-news-ticker-v1 .mm-ticker-control:hover,#mm-news-ticker-v1 .mm-ticker-control:focus-visible{background:rgba(255,255,255,.12);outline:2px solid rgba(255,165,53,.8)}\n#mm-news-ticker-v1.mm-ticker-paused .mm-ticker-rail,#mm-news-ticker-v1:hover .mm-ticker-rail,#mm-news-ticker-v1:focus-within .mm-ticker-rail{animation-play-state:paused}\n#mm-news-ticker-v1 .mm-ticker-fallback{display:inline-flex;align-items:center;min-height:40px;padding:0 18px;font-size:12px;color:#cbd5e1}\n@keyframes mm-news-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}\n@media(max-width:650px){#mm-news-ticker-v1{min-height:38px}#mm-news-ticker-v1 .mm-ticker-label{font-size:10px;padding:0 8px;gap:5px}#mm-news-ticker-v1 .mm-ticker-rail{min-height:38px}#mm-news-ticker-v1 .mm-ticker-item{font-size:12px;padding:0 15px}#mm-news-ticker-v1 .mm-ticker-controls{padding:0 2px}#mm-news-ticker-v1 .mm-ticker-control{min-width:30px;min-height:30px}}\n@media(prefers-reduced-motion:reduce){#mm-news-ticker-v1 .mm-ticker-rail{animation:none!important}#mm-news-ticker-v1 .mm-ticker-viewport{overflow-x:auto;scrollbar-width:thin}#mm-news-ticker-v1 .mm-ticker-group[aria-hidden=\"true\"]{display:none}}\n";
+const CLIENT_TEXT="(function(){\n 'use strict';\n if(document.getElementById('mm-news-ticker-v1'))return;\n var bar=document.createElement('section');\n bar.id='mm-news-ticker-v1';\n bar.setAttribute('role','region');\n bar.setAttribute('aria-label','Judul berita terbaru MarketMarney');\n var label=document.createElement('div');\n label.className='mm-ticker-label';\n var dot=document.createElement('span');dot.className='mm-ticker-dot';dot.setAttribute('aria-hidden','true');\n var title=document.createElement('span');title.textContent='BERITA 24/7';\n label.append(dot,title);\n var viewport=document.createElement('div');viewport.className='mm-ticker-viewport';\n var fallback=document.createElement('span');fallback.className='mm-ticker-fallback';fallback.textContent='Memuat judul berita MarketMarney…';\n viewport.appendChild(fallback);\n var controls=document.createElement('div');controls.className='mm-ticker-controls';\n var pause=document.createElement('button');pause.className='mm-ticker-control';pause.type='button';pause.textContent='Ⅱ';pause.setAttribute('aria-label','Jeda judul berjalan');pause.title='Jeda / lanjutkan ticker';\n var audio=document.createElement('button');audio.className='mm-ticker-control';audio.type='button';audio.textContent='🔈';audio.setAttribute('aria-label','Dengarkan judul berita');audio.title='Baca judul dengan suara browser';\n controls.append(pause,audio);bar.append(label,viewport,controls);\n document.body.prepend(bar);\n var feed=[],seen=new Set(),lastSignature='',audioOn=false,paused=false;\n var speechAvailable=('speechSynthesis'in window&&'SpeechSynthesisUtterance'in window);\n if(!speechAvailable){audio.hidden=true;audio.disabled=true;}\n function readHeadlines(items){\n  if(!audioOn||!speechAvailable)return;\n  var next=items.filter(function(x){return !seen.has(x.id);}).slice(0,2);\n  for(var k=0;k<items.length;k++)seen.add(items[k].id);\n  for(var j=0;j<next.length;j++){\n   var utterance=new SpeechSynthesisUtterance('Berita Market Marney. '+next[j].title);\n   utterance.lang='id-ID';utterance.rate=1.04;utterance.volume=.9;\n   window.speechSynthesis.speak(utterance);\n  }\n }\n function makeGroup(items,clone){\n  var group=document.createElement('div');group.className='mm-ticker-group';\n  if(clone)group.setAttribute('aria-hidden','true');\n  for(var i=0;i<items.length;i++){\n   var link=document.createElement('a');link.className='mm-ticker-item';\n   link.href=items[i].url;link.textContent=items[i].title;\n   if(clone)link.tabIndex=-1;\n   else link.title=items[i].category?items[i].category+' • '+items[i].title:items[i].title;\n   group.appendChild(link);\n  }\n  return group;\n }\n function render(items){\n  var signature=JSON.stringify(items.map(function(x){return [x.id,x.title];}));\n  if(signature===lastSignature)return;\n  lastSignature=signature;\n  var rail=document.createElement('div');rail.className='mm-ticker-rail';\n  rail.append(makeGroup(items,false),makeGroup(items,true));\n  viewport.replaceChildren(rail);\n  if(paused)bar.classList.add('mm-ticker-paused');\n }\n function refresh(){\n  if(document.visibilityState==='hidden')return;\n  fetch('/api/marketmarney/headlines',{credentials:'omit',cache:'no-cache'})\n   .then(function(response){if(!response.ok)throw Error('feed_unavailable');return response.json();})\n   .then(function(data){\n    if(!data||!data.ok||!Array.isArray(data.headlines))throw Error('invalid_feed');\n    var fresh=data.headlines.filter(function(x){return x&&typeof x.id==='string'&&typeof x.title==='string'&&typeof x.url==='string'&&x.url.indexOf('/berita/')===0;}).slice(0,12);\n    if(!fresh.length){if(!feed.length)fallback.textContent='Belum ada berita yang diterbitkan.';return;}\n    if(audioOn)readHeadlines(fresh);\n    feed=fresh;render(fresh);\n   })\n   .catch(function(){if(!feed.length)fallback.textContent='Berita sedang tidak tersedia. Coba beberapa saat lagi.';});\n }\n pause.addEventListener('click',function(){paused=!paused;bar.classList.toggle('mm-ticker-paused',paused);pause.textContent=paused?'▶':'Ⅱ';pause.setAttribute('aria-label',paused?'Lanjutkan judul berjalan':'Jeda judul berjalan');});\n audio.addEventListener('click',function(){\n  if(!speechAvailable)return;\n  audioOn=!audioOn;audio.textContent=audioOn?'🔊':'🔈';audio.setAttribute('aria-pressed',String(audioOn));\n  audio.setAttribute('aria-label',audioOn?'Matikan pembacaan berita':'Dengarkan judul berita');\n  if(!audioOn){window.speechSynthesis.cancel();return;}\n  seen=new Set();readHeadlines(feed.slice(0,2));\n });\n window.addEventListener('pagehide',function(){if(speechAvailable)window.speechSynthesis.cancel();});\n document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refresh();});\n refresh();setInterval(refresh,90000);\n})();";
+const STYLE='<style id="'+STYLE_ID+'">'+CSS_TEXT+'</style>';
+const SCRIPT='<script id="'+CLIENT_ID+'">'+CLIENT_TEXT+'</script>';
+function injectTickerHtml(html){
+ if(typeof html!=='string'||!/<\/head\s*>/i.test(html)||!/<\/body\s*>/i.test(html))return html;
+ if(!html.includes('id="'+STYLE_ID+'"'))html=html.replace(/<\/head\s*>/i,STYLE+'</head>');
+ if(!html.includes('id="'+CLIENT_ID+'"'))html=html.replace(/<\/body\s*>/i,SCRIPT+'</body>');
+ return html;
+}
+function normalArticle(a){
+ if(!a||typeof a!=='object'||a.status!=='published'||a.tipe==='analysis')return null;
+ const id=String(a.id??'').trim(),title=String(a.title??'').trim();
+ if(!/^[A-Za-z0-9_-]{2,110}$/.test(id)||title.length<8||title.length>210||/^mm-analysis-/i.test(id))return null;
+ const raw=String(a.createdAt||a.date||a.updatedAt||'');
+ const millis=Date.parse(raw);
+ return {
+  id,title:title.slice(0,160),category:String(a.category||a.cat||'BERITA').slice(0,30),
+  date:Number.isFinite(millis)?new Date(millis).toISOString():null,
+  sort:Number.isFinite(millis)?millis:0,
+  url:'/berita/'+encodeURIComponent(id)
+ };
+}
+function createNewsTicker({dataDirectory=process.env.MM_DATA_DIR,allowTestDirectory=false,clock=Date.now,cacheMs=45000}={}){
+ let snapshot=null;
+ function getSnapshot(){
+  const now=clock();
+  if(snapshot&&now-snapshot.at<cacheMs)return snapshot;
+  if(typeof dataDirectory!=='string'||!dataDirectory)throw Error('ticker_db_unconfigured');
+  const dir=fs.realpathSync(path.resolve(dataDirectory));
+  if(!allowTestDirectory&&!(dir==='/persist'||dir.startsWith('/persist/')))throw Error('ticker_unsafe_db');
+  const dbFile=path.join(dir,'marketmarney.sqlite');
+  const st=fs.lstatSync(dbFile);if(!st.isFile()||st.isSymbolicLink())throw Error('ticker_db_not_regular');
+  const db=new DatabaseSync(dbFile,{readOnly:true,timeout:3000});
+  let list;
+  try{
+   const row=db.prepare('SELECT value FROM settings WHERE key=?').get('articles');
+   const articles=JSON.parse(row?.value||'[]');
+   if(!Array.isArray(articles))throw Error('ticker_articles_not_array');
+   list=articles.map(normalArticle).filter(Boolean).sort((a,b)=>b.sort-a.sort).slice(0,12).map(({sort,...headline})=>headline);
+  }finally{db.close();}
+  const body=JSON.stringify({ok:true,source:'MarketMarney',headlines:list});
+  const etag='"'+crypto.createHash('sha256').update(body).digest('hex').slice(0,24)+'"';
+  snapshot={at:now,body,etag};return snapshot;
+ }
+ function owns(req){return !!req&&['GET','HEAD'].includes(req.method)&&String(req.url||'').split('?')[0]===API_PATH;}
+ function handle(req,res){
+  if(!owns(req))return false;
+  try{
+   const feed=getSnapshot();
+   const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'public, max-age=30, stale-while-revalidate=30','ETag':feed.etag,'X-Content-Type-Options':'nosniff'};
+   if(req.headers['if-none-match']===feed.etag){res.writeHead(304,headers);res.end();return true;}
+   res.writeHead(200,headers);
+   res.end(req.method==='HEAD'?'':feed.body);return true;
+  }catch(err){
+   console.error('MM_NEWS_TICKER_FEED_ERROR',String(err?.message||'unknown').slice(0,100));
+   res.writeHead(503,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
+   res.end(JSON.stringify({ok:false,error:'headlines_temporarily_unavailable'}));return true;
+  }
+ }
+ return {owns,handle};
+}
+module.exports={API_PATH,STYLE_ID,CLIENT_ID,injectTickerHtml,normalArticle,createNewsTicker};
