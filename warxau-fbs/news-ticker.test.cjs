@@ -1,90 +1,69 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const http=require('node:http');
-const {API_PATH,STYLE_ID,CLIENT_ID,injectTickerHtml,createNewsTicker}=require('./news-ticker.cjs');
-const {providerFor,checkedUrl,parseFeed}=require('./squawk-feed.cjs');
+const vm=require('node:vm');
+const fs=require('node:fs');
+const {STYLE_ID,CLIENT_ID,ROOT_ID,EMBED_URL,PROVIDER_URL,injectTickerHtml}=require('./news-ticker.cjs');
 
-async function launch(instance){
- const server=http.createServer((req,res)=>{if(instance.owns(req)){void instance.handle(req,res);return;}res.writeHead(404);res.end('no route');});
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- return {url:'http://127.0.0.1:'+server.address().port,close:()=>new Promise(resolve=>server.close(resolve))};
+function original(){return '<!doctype html><html><head><meta charset="utf-8"></head><body><main id="app"><h1>MarketMarney</h1></main></body></html>';}
+function scriptFrom(html){const re=new RegExp('<script id="'+CLIENT_ID+'">([\\s\\S]*?)<\\/script>');return re.exec(html)?.[1]||'';}
+class Node {
+ constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.textContent='';this.className='';}
+ setAttribute(name,value){this.attrs[name]=String(value);}
+ append(){this.children.push(...arguments);}
+ appendChild(child){this.children.push(child);}
+ prepend(child){this.children.unshift(child);}
 }
-test('visible ticker uses only Newsquawk and never local MarketMarney news',()=>{
- const html='<!doctype html><html><head></head><body><main id="app">Berita dalam konten asli</main></body></html>';
- const result=injectTickerHtml(html);
- assert.match(result,new RegExp('id="'+STYLE_ID+'"'));
- assert.match(result,new RegExp('id="'+CLIENT_ID+'"'));
- assert.match(result,/NEWSQUAWK/);
- assert.match(result,/Newsquawk belum terhubung/);
- assert.match(result,/pause\.addEventListener/);
- assert.match(result,/prefers-reduced-motion/);
- assert.match(result,/Berita dalam konten asli/);
- assert.equal(injectTickerHtml(result),result);
- assert.doesNotMatch(require('node:fs').readFileSync(require.resolve('./squawk-feed.cjs'),'utf8'),/marketmarney\.sqlite|DatabaseSync/);
+test('responsive ticker HTML is injected once and leaves original page unchanged',()=>{
+ const page=original(),patched=injectTickerHtml(page);
+ assert.match(patched,new RegExp('id="'+STYLE_ID+'"'));
+ assert.match(patched,new RegExp('id="'+CLIENT_ID+'"'));
+ assert.match(patched,/MarketMarney<\/h1>/);
+ assert.match(patched,/@media\(max-width:640px\)/);
+ assert.match(patched,/#mm-banx-ticker-v1/);
+ assert.equal(injectTickerHtml(patched),patched);
+ assert.equal(injectTickerHtml('<html><body>Invalid</body></html>'),'<html><body>Invalid</body></html>');
+ assert.equal(page,original());
 });
-test('no provider license: zero external requests and unconfigured response, not site news',async t=>{
- let requests=0;
- const ticker=createNewsTicker({feedUrl:'https://api.newsquawk.com/feed',licensed:false,fetchImpl:async()=>{requests++;throw Error('should not request');}});
- const srv=await launch(ticker);t.after(srv.close);
- const r=await fetch(srv.url+API_PATH);
- assert.equal(r.status,200);
- const j=await r.json();
- assert.deepEqual(j,{ok:false,status:'not_connected',source:'Newsquawk',headlines:[]});
- assert.equal(r.headers.get('x-squawk-connected'),'false');
- assert.equal(requests,0);
- assert.equal((await fetch(srv.url+'/admin.html')).status,404);
+test('official free Banx iframe carries dark theme and visible attribution',()=>{
+ const html=injectTickerHtml(original());
+ const js=scriptFrom(html);
+ assert.ok(js.length>500);
+ const body=new Node('body');
+ const doc={body,createElement(tag){return new Node(tag)},getElementById(){return null;}};
+ vm.runInNewContext(js,{document:doc},{timeout:2500});
+ assert.equal(body.children.length,1);
+ const root=body.children[0];assert.equal(root.tag,'section');assert.equal(root.id,ROOT_ID);
+ assert.equal(root.attrs['aria-label'],'Headline berita global, widget Banx Network');
+ const [badge,viewport,attribution]=root.children;
+ assert.equal(badge.children[1].textContent,'BERITA 24/7');
+ const frame=viewport.children[0];
+ assert.equal(frame.tag,'iframe');
+ assert.equal(frame.src,EMBED_URL);
+ assert.equal(frame.src,'https://www.banxnetwork.com/embed/ticker?theme=dark');
+ assert.equal(frame.height,'44');
+ assert.equal(frame.attrs.loading,'eager');
+ assert.equal(frame.attrs.referrerpolicy,'strict-origin-when-cross-origin');
+ assert.match(frame.title,/Banx Network/);
+ assert.equal(attribution.href,PROVIDER_URL);
+ assert.equal(attribution.textContent,'BANX');
+ assert.equal(attribution.target,'_blank');
+ assert.equal(attribution.rel,'noopener noreferrer');
 });
-test('license + provider JSON: returns external only, filters unsafe links and deduplicates, etag & HEAD',async t=>{
- let calls=0;
- const ticker=createNewsTicker({feedUrl:'https://api.newsquawk.com/headlines.json',licensed:true,now:()=>1234567,fetchImpl:async(url,options)=>{
-  calls++;
-  assert.equal(url,'https://api.newsquawk.com/headlines.json');
-  assert.equal(options.redirect,'error');
-  return {status:200,headers:{get:(key)=>key==='content-type'?'application/json':null},text:async()=>JSON.stringify({headlines:[
-   {title:'Central bank prepares new announcement for traders',url:'https://newsquawk.com/story/one',date:'2026-11-11T12:30:00Z'},
-   {title:'Central bank prepares new announcement for traders',url:'https://newsquawk.com/story/one',date:'2026-11-11T12:30:00Z'},
-   {title:'Unsafe javascript link should not render',url:'javascript:alert(1)'},
-   {title:'Outside provider headline should not render',url:'https://marketmarney.com/berita/fake'},
-   {title:'Another international market development',url:'https://www.newsquawk.com/story/two',date:'2026-11-11T12:31:00Z'}
-  ]})};
- }});
- const srv=await launch(ticker);t.after(srv.close);
- let r=await fetch(srv.url+API_PATH);
- assert.equal(r.status,200);
- assert.equal(r.headers.get('x-squawk-connected'),'true');
- const etag=r.headers.get('etag'),j=await r.json();
- assert.equal(j.ok,true);assert.equal(j.source,'Newsquawk');
- assert.equal(j.headlines.length,2);
- assert.ok(j.headlines.every(x=>x.url.includes('newsquawk.com')));
- assert.equal(calls,1);
- r=await fetch(srv.url+API_PATH,{headers:{'If-None-Match':etag}});
- assert.equal(r.status,304);assert.equal(calls,1);
- r=await fetch(srv.url+API_PATH,{method:'HEAD'});
- assert.equal(r.status,200);assert.equal(await r.text(),'');
- assert.equal((await fetch(srv.url+'/api/content')).status,404);
+test('ticker does not load Marney stories, Newsquawk streams, or client-side API secrets',()=>{
+ const source=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
+ const bootstrap=fs.readFileSync(require.resolve('./bootstrap.cjs'),'utf8');
+ assert.doesNotMatch(source,/api\/content|api\/marketmarney\/headlines|marketmarney\.sqlite|createNewsTicker|speechSynthesis|FinancialJuice|newsquawk\.com|financialjuice\.com/i);
+ assert.doesNotMatch(bootstrap,/newsTicker\.owns|newsTicker\.handle|const newsTicker=createNewsTicker/);
+ assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(html\)\)/);
+ assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(raw\)\)/);
+ assert.doesNotMatch(source,/localStorage|MM_SQUAWK|MM_NEWSQUAWK|autoplay/i);
 });
-test('RSS is parsed safely; FinancialJuice and other domains are rejected',()=>{
- const rss='<?xml version="1.0"?><rss><channel><item><title><![CDATA[Fed &amp; global markets remain in focus]]></title><link>https://newsquawk.com/alpha</link><pubDate>Wed, 11 Nov 2026 10:00:00 GMT</pubDate></item></channel></rss>';
- assert.equal(parseFeed(rss,'application/rss+xml').length,1);
- assert.match(parseFeed(rss,'application/rss+xml')[0].title,/Fed & global/);
- assert.equal(providerFor('api.newsquawk.com'),'Newsquawk');
- assert.equal(providerFor('live.financialjuice.com'),null);
- assert.equal(providerFor('newsquawk.com.evil.example'),null);
- assert.throws(()=>checkedUrl('http://api.newsquawk.com/feed'));
- assert.throws(()=>checkedUrl('https://notnewsquawk.com/feed'));
- assert.throws(()=>checkedUrl('https://www.financialjuice.com/news'));
- assert.throws(()=>checkedUrl('https://newsquawk.com.evil.example/rss'));
- assert.equal(providerFor('other.squawk.com'),null);
- assert.throws(()=>checkedUrl('https://localhost/feed'));
- assert.throws(()=>checkedUrl('https://newsquawk.com:8080/feed'));
-});
-test('unavailable provider fails closed, never fallback to MarketMarney',async t=>{
- const ticker=createNewsTicker({licensed:true,feedUrl:'https://api.newsquawk.com/feed',fetchImpl:async()=>({status:403})});
- const srv=await launch(ticker);t.after(srv.close);
- const saved=console.error;console.error=()=>{};
- try{
-  const r=await fetch(srv.url+API_PATH);assert.equal(r.status,503);
-  assert.deepEqual(await r.json(),{ok:false,status:'unavailable',source:'Newsquawk',headlines:[]});
- }finally{console.error=saved}
+test('widget requires no site-side API key, tracking script or content redistribution',()=>{
+ const html=injectTickerHtml(original());
+ assert.equal((html.match(/<iframe/g)||[]).length,0,'iframe is created once on client after DOM is loaded');
+ assert.match(html,/document\.body\.prepend\(bar\)/);
+ assert.doesNotMatch(html,/<script[^>]+src=["']https?:/i,'no third-party script injected directly in website');
+ assert.doesNotMatch(html,/Bearer |apiKey|x-api-key/i);
+ assert.ok(EMBED_URL.startsWith('https://www.banxnetwork.com/'));
 });
