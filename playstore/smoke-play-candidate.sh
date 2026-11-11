@@ -44,6 +44,10 @@ test -s "$OUT/play-home-after-7s.png"
 python3 playstore/check_visible_content.py "$OUT/play-home-after-7s.png"
 grep -F 'ready tab=0' "$OUT/play-content-home.txt" || { echo 'FAIL: Home did not display real web content'; exit 1; }
 
+# Retain Home diagnostic evidence before starting XAUWar: its fresh-start check
+# clears logcat, and otherwise only XAUWar diagnostics survive a passing run.
+adb logcat -d -v brief -s MMPLAY_DIAG:V MMPLAY_PAGE:V chromium:E > "$OUT/play-home-readiness.txt" || true
+
 # Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
 sleep 1
