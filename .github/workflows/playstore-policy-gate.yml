@@ -1,0 +1,33 @@
+name: MarketMarney Google Play Policy Gate (read-only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy-url-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check published policy and account-deletion pages
+        env:
+          MM_PRIVACY_URL: ${{ vars.MM_PRIVACY_URL }}
+          MM_ACCOUNT_DELETION_URL: ${{ vars.MM_ACCOUNT_DELETION_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 compliance/check_playstore_urls.py | tee policy-preflight.json
+      - name: Document remaining MANUAL blockers
+        if: always()
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## MarketMarney Google Play: Policy preflight
+          HTTPS page checks alone **do not prove compliance**.
+          The app is **NOT cleared for publication** until the owner has verified:
+          1. Web account deletion request leads to actual account + associated data deletion.
+          2. In-app deletion option and account verification are implemented.
+          3. Report, block-user, UGC terms, moderation actions are tested end to end.
+          4. Data safety answers reflect real backend, SDK and third-party data use.
+          5. Dedicated Play upload signing, Play Android OAuth and real-device smoke tests pass.
+          EOF
