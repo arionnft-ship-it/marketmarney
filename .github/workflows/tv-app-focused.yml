@@ -1,8 +1,8 @@
-name: MarketMarney TV Focused Android 16 QA
+name: MarketMarney 4.40 Beta Home and TV Android 16 QA
 on:
   push:
-    branches: [feature/android-marketmarney-tv-20261111]
-    paths: ['tv-app/**', '.github/workflows/tv-app-focused.yml']
+    branches: [feature/android-light-home-beta440-20261111]
+    paths: ['tv-app/**', 'home-app/**', 'playstore/**', '.github/workflows/tv-app-focused.yml']
   workflow_dispatch:
 permissions: {contents: read}
 concurrency:
@@ -19,8 +19,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile playstore/*.py compliance/*.py tv-app/*.py
+          python3 -m py_compile playstore/*.py compliance/*.py tv-app/*.py home-app/*.py
           bash -n tv-app/smoke_tv.sh
+          bash -n home-app/smoke_beta.sh
           bash -n playstore/smoke-play-candidate.sh
           node --check playstore/only_light_ui.js
           python3 tv-app/check_inline_js.py tv-app/marketmarney-tv.html
@@ -117,6 +118,9 @@ jobs:
           python3 tv-app/prepare_native_catalogue.py android439
           python3 tv-app/build_public_snapshot.py android439/app/src/main/assets/marketmarney-tv-catalogue.json
           python3 tv-app/verify_tv.py android439
+          python3 home-app/prepare_home.py android439
+          test -s android439/app/src/main/assets/marketmarney-home.html
+          grep -F 'ready tab=0 lightweight-home' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           cp android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java qa/debug-MainActivity.java
           cp android439/app/src/main/java/com/marketmarney/mobile/StartupOverlay.java qa/debug-StartupOverlay.java
           node --check android439/app/src/main/assets/only_light_ui.js
@@ -143,6 +147,7 @@ jobs:
           unzip -Z1 "$AAB" | grep -F 'base/assets/only_light_ui.js'
           unzip -Z1 "$AAB" | grep -F 'base/assets/marketmarney-tv-catalogue.json'
           unzip -Z1 "$AAB" | grep -F 'base/assets/marketmarney-tv.html'
+          unzip -Z1 "$AAB" | grep -F 'base/assets/marketmarney-home.html'
           cp "$AAB" play_artifact/MarketMarney-Play-Review.aab
           cp android439/play_candidate_metadata.json play_artifact/
           cp android439/app/src/main/assets/marketmarney-tv-catalogue.json play_artifact/tv-published-snapshot.json
@@ -186,6 +191,31 @@ jobs:
             echo 'Unexpected restricted Android permission; production candidate rejected'
             exit 1
           fi
+      - name: Assemble separately installable beta 4.40 for user testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 home-app/prepare_beta.py android439 android440beta
+          gradle --no-daemon --project-dir android440beta :app:assembleDebug
+          mkdir -p play_artifact
+          cp android440beta/app/build/outputs/apk/debug/app-debug.apk play_artifact/MarketMarney-4.40-Beta.apk
+          test -s play_artifact/MarketMarney-4.40-Beta.apk
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          "$BT/apksigner" verify play_artifact/MarketMarney-4.40-Beta.apk
+          "$BT/aapt" dump badging play_artifact/MarketMarney-4.40-Beta.apk > qa/beta440-badging.txt
+          grep -F "name='com.marketmarney.mobile.beta440'" qa/beta440-badging.txt
+          grep -F "versionCode='45'" qa/beta440-badging.txt
+          grep -F "versionName='4.40.0-beta'" qa/beta440-badging.txt
+          (cd play_artifact && sha256sum MarketMarney-4.40-Beta.apk > BETA-SHA256.txt)
+          cat > play_artifact/BETA-README.txt <<'EOF'
+          MARKETMARNEY 4.40 BETA - ANDROID TEST ONLY
+          - Installable side by side; package com.marketmarney.mobile.beta440.
+          - Signed with an ephemeral debug key: NOT a Play Store release or production update.
+          - A future beta from CI may require uninstall/reinstall; backup anything local first.
+          - Android Google OAuth may require production signing; use supported email/password sign-in.
+          - Do not upload the unsigned MarketMarney-Play-Review.aab to Google Play.
+          - Automatic tests are not a substitute for manual real-device and policy review.
+          EOF
       - name: Smoke test Play-package build on Android 16
         shell: bash
         run: |
@@ -200,12 +230,12 @@ jobs:
           heap-size: 512M
           emulator-boot-timeout: 480
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
-          script: bash tv-app/smoke_tv.sh
+          script: bash tv-app/smoke_tv.sh && bash home-app/smoke_beta.sh
       - name: Save QA and AAB candidate as private workflow artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MarketMarney-TV-Focused-Android16-QA
+          name: MarketMarney-4.40-Beta-Android16-QA
           path: |
             play_artifact/
             qa/emulator-regression.txt
@@ -215,4 +245,7 @@ jobs:
             qa/play-*.png
             qa/play-*.xml
             qa/debug-*.java
+            qa/beta440-*.txt
+            qa/beta440-*.xml
+            qa/beta440-*.png
           if-no-files-found: warn
