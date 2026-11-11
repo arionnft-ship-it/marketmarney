@@ -22,7 +22,7 @@ def apply(root:Path) -> None:
         'XAU content probe fields')
 
     mark='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";'
-    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;\n        if(tab==XAUWAR)showXauLoading();else clearXauLoading();'
+    updated='    private void beginPageWait(WebView target){\n        cancelPageWait();firstPaint=false;mainFailed=false;failureCode="";failureNote="";\n        xauContentToken++;xauContentPolls=0;xauContentProbeStarted=false;\n        if(tab==XAUWAR||tab==HOME||tab==MARKET)showXauLoading();else clearXauLoading();'
     s=exactly(s,mark,updated,'page wait initialization')
     s=exactly(s,'        cancelPageWait();navigationStarted=SystemClock.uptimeMillis();',
         '        cancelPageWait();clearXauLoading();navigationStarted=SystemClock.uptimeMillis();',
@@ -41,20 +41,20 @@ def apply(root:Path) -> None:
         if(xauLoading!=null){frame.removeView(xauLoading);xauLoading=null;}
     }
     private void showXauLoading(){
-        if(destroyed||frame==null||tab!=XAUWAR)return;
+        if(destroyed||frame==null||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET))return;
         clearXauLoading();
         LinearLayout box=column();box.setGravity(Gravity.CENTER);
         box.setPadding(dp(28),dp(24),dp(28),dp(24));
-        box.setBackground(DepthStyle423.screen(this,true));
+        box.setBackground(DepthStyle423.screen(this,true));box.setElevation(dp(8));
         ImageView brand=new ImageView(this);brand.setImageResource(R.drawable.mm_brand_logo);
         brand.setScaleType(ImageView.ScaleType.FIT_CENTER);
         brand.setContentDescription("MarketMarney");
         box.addView(brand,new LinearLayout.LayoutParams(dp(72),dp(72)));
-        TextView title=text("Menyiapkan XAUWar",19,TEXT);
+        TextView title=text(tab==XAUWAR?"Menyiapkan XAUWar":tab==MARKET?"Memuat Market Live":"Memuat Beranda",19,TEXT);
         title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titlePos=new LinearLayout.LayoutParams(-1,-2);
         titlePos.topMargin=dp(14);box.addView(title,titlePos);
-        TextView description=text("Menghubungkan arena dan data pasar. Anda tetap bisa berpindah menu.",13,MUTED);
+        TextView description=text(tab==XAUWAR?"Menghubungkan arena dan data pasar. Anda tetap bisa berpindah menu.":"Menyiapkan informasi pasar. Gunakan menu lain bila perlu.",13,MUTED);
         description.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams notePos=new LinearLayout.LayoutParams(-1,-2);
         notePos.topMargin=dp(9);notePos.bottomMargin=dp(20);
@@ -68,7 +68,7 @@ def apply(root:Path) -> None:
         LinearLayout.LayoutParams homePos=new LinearLayout.LayoutParams(-1,dp(46));
         homePos.topMargin=dp(24);box.addView(home,homePos);
         xauLoading=box;
-        frame.addView(xauLoading,new FrameLayout.LayoutParams(-1,-1));
+        frame.addView(xauLoading,new FrameLayout.LayoutParams(-1,-1));xauLoading.bringToFront();
     }
     private void completePageReady(WebView target,String url){
         if(target!=web||!own(url)||mainFailed||destroyed)return;
@@ -77,19 +77,29 @@ def apply(root:Path) -> None:
         if(tab!=SOCIAL&&!socialAssetsReady)frame.postDelayed(this::preloadSocialAssets,650);
     }
     private void probeXauVisible(WebView target,String url,long token){
-        if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed||token!=xauContentToken
+        if(destroyed||target!=web||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET)||firstPaint||mainFailed||token!=xauContentToken
             ||!Recovery414.sameDocument(url,lastUrl))return;
-        // Check *visible* text instead of interpreting onPageCommitVisible as finished.
-        // The XAUWar HTML contains these labels before live market data arrives.
-        String js="(function(){var b=document.body;if(!b||document.readyState==='loading')return false;"
-            +"var t=(b.innerText||'').replace(/\\\\s+/g,' ').trim();"
-            +"return t.length>40&&b.scrollHeight>160&&/warxau|market assault|base buy|arena/i.test(t);})()";
+        // Require an actual completed document and visible page content, not
+        // an early onPageCommitVisible or a body with hidden/off-screen text.
+        String js;
+        if(tab==XAUWAR){
+            js="(function(){var b=document.body;if(!b||document.readyState!=='complete')return false;"
+                +"var h=document.querySelector('h1');var r=h&&h.getBoundingClientRect();"
+                +"var t=(b.innerText||'').replace(/\\\\s+/g,' ').trim();"
+                +"return t.length>40&&b.scrollHeight>160&&r&&r.width>70&&r.height>10"
+                +"&&r.top>=0&&r.top<innerHeight&&/warxau|market assault|base buy|arena/i.test(t);})()";
+        }else{
+            js="(function(){var app=document.querySelector('#app');"
+                +"if(!app||document.readyState!=='complete')return false;"
+                +"var r=app.getBoundingClientRect();var t=(app.innerText||'').replace(/\\\\s+/g,' ').trim();"
+                +"return t.length>95&&r.height>180&&r.width>200;})()";
+        }
         target.evaluateJavascript(js,result->{
-            if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed
+            if(destroyed||target!=web||(tab!=XAUWAR&&tab!=HOME&&tab!=MARKET)||firstPaint||mainFailed
                 ||token!=xauContentToken||!Recovery414.sameDocument(url,lastUrl))return;
             if("true".equals(result)){completePageReady(target,url);return;}
             if(++xauContentPolls>=68){
-                showFailure("EMPTY","Konten XAUWar belum dapat ditampilkan. Periksa koneksi lalu coba lagi.");
+                showFailure("EMPTY","Konten "+labels[tab]+" belum dapat ditampilkan. Periksa koneksi lalu coba lagi.");
                 return;
             }
             frame.postDelayed(()->probeXauVisible(target,url,token),250);
@@ -97,7 +107,7 @@ def apply(root:Path) -> None:
     }
     private void pageReady(WebView target,String url){
         if(target!=web||!own(url)||mainFailed)return;
-        if(tab==XAUWAR&&XAUWAR_PAGE.equals(Uri.parse(url).getPath())){
+        if((tab==XAUWAR&&XAUWAR_PAGE.equals(Uri.parse(url).getPath()))||((tab==HOME||tab==MARKET)&&("/index.html".equals(Uri.parse(url).getPath())||"/".equals(Uri.parse(url).getPath())))){
             if(!xauContentProbeStarted){
                 xauContentProbeStarted=true;
                 probeXauVisible(target,url,xauContentToken);
