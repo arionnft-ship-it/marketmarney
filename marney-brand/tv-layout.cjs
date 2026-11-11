@@ -1,6 +1,6 @@
 'use strict';
 // Purely visual stylesheet for MarketMarney TV listings and player; no video or site-data mutation.
-const VERSION='mm-tv-layout-20261111-v1';
+const VERSION='mm-tv-layout-20261111-v2';
 const ASSET='/assets/mm-tv-layout-v1.css';
 const CSS=String.raw`
 /* MarketMarney TV - light responsive editorial layout. This only styles TV-specific nodes. */
@@ -122,6 +122,9 @@ body:has(#tvMount) #tvBack + h2{
  .mm-tv-filters button,.mm-tv-grid .mm-tv-card{transition:none!important}
  .mm-tv-grid .mm-tv-card:hover{transform:none!important}
 }
+
+/* Remove the MarketMarney TV category row only; all videos remain available. */
+.mm-tv-filters{display:none!important}
 `;
 function injectHtml(html,pathname){
  if(pathname!=="/"&&pathname!=="/index.html")return html;
