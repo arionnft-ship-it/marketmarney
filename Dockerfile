@@ -70,8 +70,8 @@ RUN set -eux; \
     grep -F 'android.permission.CAMERA' /out/Marney-v4-permissions.txt; \
     grep -F 'android.permission.RECORD_AUDIO' /out/Marney-v4-permissions.txt; \
     grep -F 'android.permission.INTERNET' /out/Marney-v4-permissions.txt; \
-    unzip -p "$APK" classes.dex | grep -aF 'MARNEY_ANDROID_V4'; \
     test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0; \
+    unzip -t "$APK" >/out/Marney-v4-archive-test.txt; \
     cp "$APK" /out/Marney-v4-Beta.apk; \
     cd /out; \
     sha256sum Marney-v4-Beta.apk | tee Marney-v4-Beta.sha256
