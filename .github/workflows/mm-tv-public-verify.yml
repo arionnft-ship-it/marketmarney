@@ -1,4 +1,4 @@
-name: Verify published MarketMarney TV tutorial (read-only)
+name: Verify new MarketMarney Academy Trading Deep lesson
 on:
   push:
     branches: [work/marketmarney-tv-upload-20261111]
@@ -13,10 +13,11 @@ jobs:
           python3 - <<'PY'
           import urllib.request,urllib.error,json
           base='https://marketmarney.com'
-          vid='11a9a03b-26bd-4db6-b1d5-c813973fc63d'
+          vid='b0f53a59-4bcb-4423-96ee-a857efdd5371'
           with urllib.request.urlopen(base+'/api/content',timeout=20) as r:d=json.load(r)
           matching=[v for v in d.get('videos',[]) if v.get('id')==vid]
           print('METADATA',len(matching),'all',len(d.get('videos',[])),flush=True)
+          assert len(d.get('videos',[]))>=6 and len(matching)==1 and matching[0].get('status')=='published',('video_catalog_invalid',len(d.get('videos',[])),matching)
           entries=[
             ('oldvideo','/media/09af70e5-14a3-4b7b-89d8-64a8c97e09f9.mp4'),
             ('newvideo','/media/'+vid+'.mp4'),
