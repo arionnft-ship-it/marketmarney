@@ -24,14 +24,14 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-lato >/dev/null
-          python -m pip install --disable-pip-version-check --quiet "edge-tts>=7.0,<8.0" "numpy>=1.26,<3" "pillow>=11,<13" "pydub>=0.25,<1"
+          python -m pip install --disable-pip-version-check --quiet "gTTS>=2.5,<3" "numpy>=1.26,<3" "pillow>=11,<13" "pydub>=0.25,<1"
       - name: Retrieve checked MarketMarney storyboard
         run: |
           set -euo pipefail
           curl --fail --location --show-error --retry 3 --retry-delay 3 --max-time 90 \
-            "https://resource2.heygen.ai/document/6ce802183455464fa86b4a4a650bb7b0/original.zip" \
+            "https://resource2.heygen.ai/document/ee80b60ba18846b7941403c0d5435d63/original.zip" \
             -o storyboard.zip
-          echo "9ed5d2e2e3128f07033001a993d3edb76e2614c175411c8e2e7013b126999bdb  storyboard.zip" | sha256sum --check
+          echo "4d45e954c2cc7758bc301927635dd30c99cc68cbc25e4184ff690f2947618acc  storyboard.zip" | sha256sum --check
           mkdir -p neural-project
           unzip -q storyboard.zip -d neural-project
           python -m py_compile neural-project/render_neural.py
