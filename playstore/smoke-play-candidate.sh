@@ -25,19 +25,27 @@ test -s "$OUT/play-process.txt"
 adb exec-out screencap -p > "$OUT/play-first-launch.png"
 test -s "$OUT/play-first-launch.png"
 
-# Exercise native resume lifecycle, second launch, and a lower-screen tap without
-# asserting remote site success, which requires separate backend integration tests.
+# Test background/resume without triggering a new page.
 adb shell input keyevent KEYCODE_HOME
 sleep 1
 adb shell am start -W -n "$PKG/com.marketmarney.mobile.MainActivity" | tee "$OUT/play-resume.txt"
-sleep 2
-adb shell input tap 236 890
 sleep 1
+
+# Force a fresh Activity instance with a trusted UI-test-only initial tab.
+# A coordinate tap could land on the nav padding and leave the Home page visible,
+# yielding a false positive for the blank XAUWar regression.
+adb shell am force-stop "$PKG"
+adb logcat -c
+adb shell am start -W -n "$PKG/com.marketmarney.mobile.MainActivity" --ei startTab 2 | tee "$OUT/play-xauwar-start.txt"
+sleep 2
+adb logcat -d -v brief -s MM45_NAV:I > "$OUT/play-xauwar-route.txt"
+grep -F 'cold tab=2' "$OUT/play-xauwar-route.txt"
 adb shell pidof "$PKG" | tee "$OUT/play-after-navigation.txt"
 test -s "$OUT/play-after-navigation.txt"
 adb exec-out screencap -p > "$OUT/play-after-navigation.png"
 test -s "$OUT/play-after-navigation.png"
 python3 playstore/check_visible_content.py "$OUT/play-after-navigation.png"
+
 
 adb logcat -d -v time -s AndroidRuntime:E > "$OUT/play-crashes.txt"
 if grep -E 'FATAL EXCEPTION|Process: com\.marketmarney\.mobile|ANR in com\.marketmarney\.mobile' "$OUT/play-crashes.txt"; then
