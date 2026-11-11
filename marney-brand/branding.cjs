@@ -5,6 +5,7 @@ const SEO=require('./seo.cjs');
 const YOUTUBE=require('./youtube-referrer.cjs');
 const TV_LAYOUT=require('./tv-layout.cjs');
 const TV_LEARNING=require('./tv-learning.cjs');
+const TV_HEDRA=require('./tv-hedra-audio.cjs');
 const TV_HEYGEN_IMPORT=require('./tv-heygen-import.cjs');
 const ABOUT=require('./about-refresh.cjs');
 const ANALYSIS=require(fs.existsSync(path.join(__dirname,'analysis-upload.cjs'))?'./analysis-upload.cjs':'../warxau-fbs/analysis-upload.cjs');
@@ -66,6 +67,7 @@ function enhance(html){
 }
 function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  const performance=createPublicPerformance({appRoot});
+ void TV_HEDRA.prepare();
  const assets=new Map();for(const [url,file]of aliases)assets.set(url,[fs.readFileSync(path.join(assetRoot,file)),mime[path.extname(file)]]);
  assets.set('/assets/marney-brand.css',[Buffer.from(CSS),mime['.css']]);assets.set('/assets/marney-brand.js',[Buffer.from(CLIENT),mime['.js']]);
  for(const [url,a] of ANALYSIS.assets())assets.set(url,[a.body,a.mime]);
@@ -74,6 +76,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  for(const [url,a] of TV_LAYOUT.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of TV_LEARNING.assets())assets.set(url,[a.body,a.mime]);
  function handle(req,res){
+  if(TV_HEDRA.send(req,res))return true;
   const p=String(req.url||'').split('?')[0];
   if(p==='/robots.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendRobots(req,res);
   if(p==='/ads.txt'&&SEO.isPublicHost(req.headers.host))return SEO.sendAdsTxt(req,res);
