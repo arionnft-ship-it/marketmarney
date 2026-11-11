@@ -136,6 +136,7 @@ jobs:
           set -euo pipefail
           python3 playstore/prepare_play_candidate.py android439
           python3 tv-app/prepare_tv.py android439
+          python3 tv-app/prepare_local_tv.py android439
           python3 tv-app/verify_tv.py android439
           cp android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java qa/debug-MainActivity.java
           cp android439/app/src/main/java/com/marketmarney/mobile/StartupOverlay.java qa/debug-StartupOverlay.java
