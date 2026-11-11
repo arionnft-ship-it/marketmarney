@@ -53,14 +53,14 @@ public final class MainActivity extends Activity {
     private static final String BASE = "https://marketmarney.com";
     private static final int NAV_HOME = 0, NAV_MARKET = 1, NAV_NEWS = 2, NAV_SOCIAL = 3, NAV_ACCOUNT = 4;
     private static final int REQUEST_PICK_FILE = 40;
-    private static final int NAVY = Color.rgb(5, 17, 33);
-    private static final int CARD = Color.rgb(12, 31, 51);
-    private static final int CARD_ALT = Color.rgb(17, 40, 63);
-    private static final int GOLD = Color.rgb(255, 192, 59);
-    private static final int WHITE = Color.rgb(246, 248, 252);
-    private static final int MUTED = Color.rgb(161, 183, 207);
-    private static final int OUTLINE = Color.rgb(33, 63, 85);
-    private static final int GREEN = Color.rgb(90, 211, 171);
+    private static final int NAVY = Color.rgb(248, 250, 252);
+    private static final int CARD = Color.rgb(255, 255, 255);
+    private static final int CARD_ALT = Color.rgb(239, 243, 248);
+    private static final int GOLD = Color.rgb(198, 103, 23);
+    private static final int WHITE = Color.rgb(25, 39, 55);
+    private static final int MUTED = Color.rgb(92, 109, 127);
+    private static final int OUTLINE = Color.rgb(223, 230, 238);
+    private static final int GREEN = Color.rgb(17, 133, 105);
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private LinearLayout root;
@@ -127,7 +127,7 @@ public final class MainActivity extends Activity {
         Button b = new Button(this);
         b.setText(name);
         b.setTextSize(13);
-        b.setTextColor(main ? NAVY : WHITE);
+        b.setTextColor(main ? Color.WHITE : WHITE);
         b.setAllCaps(false);
         b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(main ? GOLD : CARD_ALT));
@@ -140,7 +140,7 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         getWindow().setStatusBarColor(NAVY);
         getWindow().setNavigationBarColor(NAVY);
-        getWindow().getDecorView().setSystemUiVisibility(0);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         root = vertical();
         root.setBackgroundColor(NAVY);
         root.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -153,7 +153,7 @@ public final class MainActivity extends Activity {
         content = new FrameLayout(this);
         root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
         bottomBar = horizontal();
-        bottomBar.setBackgroundColor(Color.rgb(8, 23, 39));
+        bottomBar.setBackgroundColor(Color.rgb(255, 255, 255));
         root.addView(bottomBar, lp(-1, 67));
         navigate(NAV_HOME);
     }
@@ -161,7 +161,7 @@ public final class MainActivity extends Activity {
     private void buildHeader() {
         LinearLayout top = horizontal();
         top.setPadding(dp(17), dp(8), dp(15), dp(8));
-        top.setBackgroundColor(Color.rgb(6, 21, 38));
+        top.setBackgroundColor(Color.rgb(255, 255, 255));
         root.addView(top, lp(-1, 69));
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.mipmap.ic_launcher);
@@ -224,12 +224,17 @@ public final class MainActivity extends Activity {
     private void navigate(int index) {
         tab = index;
         clearContent();
+        // Social uses the full viewport; restore native chrome for other tabs.
+        boolean immersiveSocial = index == NAV_SOCIAL;
+        root.getChildAt(0).setVisibility(immersiveSocial ? View.GONE : View.VISIBLE);
+        root.getChildAt(1).setVisibility(immersiveSocial ? View.GONE : View.VISIBLE);
+        bottomBar.setVisibility(immersiveSocial ? View.GONE : View.VISIBLE);
         drawBottomBar();
         switch (index) {
             case NAV_HOME: home(); break;
             case NAV_MARKET: markets(); break;
             case NAV_NEWS: headlines(); break;
-            case NAV_SOCIAL: social(); break;
+            case NAV_SOCIAL: showWeb("Social Marney", "/beranda-trader.html"); break;
             default: account(); break;
         }
     }
@@ -286,7 +291,7 @@ public final class MainActivity extends Activity {
         LinearLayout page = page("MARKETMARNEY MOBILE", "Jelajahi market.",
                 "Berita finansial, market, dan komunitas dalam satu aplikasi.");
         LinearLayout hero = card(page);
-        hero.setBackground(bg(Color.rgb(21, 48, 68), 17));
+        hero.setBackground(bg(Color.rgb(234, 241, 249), 17));
         addLabel(hero, "DASHBOARD ANDROID", 11, GREEN, true);
         space(hero, 9);
         addLabel(hero, "Satu aplikasi untuk mengikuti pasar.", 22, WHITE, true);
@@ -500,7 +505,7 @@ public final class MainActivity extends Activity {
         back.setGravity(Gravity.CENTER);
         toolbar.addView(back, lp(44, 42));
         back.setContentDescription("Kembali ke aplikasi");
-        back.setOnClickListener(v -> navigate(tab));
+        back.setOnClickListener(v -> navigate(tab == NAV_SOCIAL ? NAV_HOME : tab));
         TextView titleView = text(title, 16, WHITE, true);
         toolbar.addView(titleView, new LinearLayout.LayoutParams(0, -2, 1));
         TextView reload = text("⟳", 25, GOLD, true);
@@ -520,6 +525,8 @@ public final class MainActivity extends Activity {
         WebSettings setting = browser.getSettings();
         setting.setJavaScriptEnabled(true);
         setting.setDomStorageEnabled(true);
+        setting.setCacheMode(WebSettings.LOAD_DEFAULT);
+        setting.setMediaPlaybackRequiresUserGesture(false);
         setting.setLoadsImagesAutomatically(true);
         setting.setAllowFileAccess(false);
         setting.setAllowContentAccess(false);
@@ -600,7 +607,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onBackPressed() {
         if (webMode && browser != null && browser.canGoBack()) browser.goBack();
-        else if (webMode || tab != NAV_HOME) navigate(NAV_HOME);
+        else if (webMode || tab != NAV_HOME) navigate(tab == NAV_SOCIAL ? NAV_HOME : tab);
         else super.onBackPressed();
     }
 
