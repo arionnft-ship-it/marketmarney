@@ -128,6 +128,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 playstore/prepare_play_candidate.py android439
+          node --check android439/app/src/main/assets/only_light_ui.js
+          grep -F 'asset("only_light_ui.js")' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           COUNT=0
           for item in "$MM_UPLOAD_KEYSTORE_B64" "$MM_PLAY_STORE_PASSWORD" "$MM_PLAY_KEY_ALIAS" "$MM_PLAY_KEY_PASSWORD"; do
             if [ -n "$item" ]; then COUNT=$((COUNT+1)); fi
@@ -145,6 +147,7 @@ jobs:
           AAB=android439/app/build/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           unzip -t "$AAB" | tail -n 2
+          unzip -Z1 "$AAB" | grep -F 'base/assets/only_light_ui.js'
           cp "$AAB" play_artifact/MarketMarney-Play-Review.aab
           cp android439/play_candidate_metadata.json play_artifact/
           if [ "$COUNT" -eq 4 ]; then
