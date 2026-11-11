@@ -94,6 +94,10 @@ apply_xau_readiness(root)
 from prepare_early_theme import apply as apply_early_theme
 apply_early_theme(root)
 
+# Collect privacy-safe diagnostics when meaningful Home/XAU content is delayed.
+from diagnose_ready import apply as apply_ready_diagnostics
+apply_ready_diagnostics(root)
+
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
     'applicationId': 'com.marketmarney.mobile',
