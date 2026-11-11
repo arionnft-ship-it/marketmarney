@@ -21,6 +21,7 @@ function fixture({streams=live,hash='#mm44-reels',opened=false,fail=false}={}){
     runScripts:'outside-only',pretendToBeVisual:true
   });
   const {window}=dom;
+  window.HTMLMediaElement.prototype.pause=function(){};
   let requests=[];
   window.fetch=async(url,options={})=>{
     requests.push({url,method:options.method||'GET',credentials:options.credentials});
@@ -29,7 +30,7 @@ function fixture({streams=live,hash='#mm44-reels',opened=false,fail=false}={}){
   };
   window.eval(source);
   window.document.dispatchEvent(new window.Event('DOMContentLoaded',{bubbles:true}));
-  return {dom,window,document:window.document,requests};
+  return {dom,window,document:window.document,requests,destroy(){window.dispatchEvent(new window.Event('pagehide'));window.close();}};
 }
 test('Reels shows only genuine live sessions and opens/closes WebRTC viewer iframe',async()=>{
   const env=fixture();
@@ -54,7 +55,7 @@ test('Reels shows only genuine live sessions and opens/closes WebRTC viewer ifra
     env.document.querySelector('.mm-reels-live-close').click();
     await pause(30);
     assert.equal(env.document.querySelector('.mm-reels-live-dialog'),null);
-  }finally{env.dom.window.close();}
+  }finally{env.destroy();}
 });
 test('no active stream never shows a fake LIVE badge or viewer',async()=>{
   const env=fixture({streams:[],hash:'',opened:true});
@@ -64,7 +65,7 @@ test('no active stream never shows a fake LIVE badge or viewer',async()=>{
     assert.match(env.document.getElementById('mmReelsLiveStatus').textContent,/Belum ada streamer/);
     const fab=env.document.getElementById('mmReelsLiveFab');
     assert.ok(!fab||fab.hidden);
-  }finally{env.dom.window.close();}
+  }finally{env.destroy();}
 });
 test('network failure shows a transparent error without stale streamer buttons',async()=>{
   const env=fixture({fail:true});
@@ -72,7 +73,7 @@ test('network failure shows a transparent error without stale streamer buttons',
     await pause(120);
     assert.equal(env.document.querySelectorAll('.mm-reels-live-card').length,0);
     assert.match(env.document.getElementById('mmReelsLiveStatus').textContent,/Siaran belum bisa diperiksa/);
-  }finally{env.dom.window.close();}
+  }finally{env.destroy();}
 });
 test('fullscreen Reels has a LIVE pill that lists streamers in place',async()=>{
   const env=fixture({opened:false});
@@ -89,12 +90,12 @@ test('fullscreen Reels has a LIVE pill that lists streamers in place',async()=>{
     env.document.dispatchEvent(new env.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     await pause(20);
     assert.equal(env.document.querySelector('.mm-reels-live-dialog'),null);
-  }finally{env.dom.window.close();}
+  }finally{env.destroy();}
 });
 test('closed Reels panel does not poll live sessions in background',async()=>{
   const env=fixture({hash:'',opened:false});
   try{
     await pause(100);
     assert.equal(env.requests.length,0);
-  }finally{env.dom.window.close();}
+  }finally{env.destroy();}
 });
