@@ -28,6 +28,9 @@ jobs:
       - name: Apply Marney Android v4 improvements
         run: python3 android-app/apply-marney-v4.py
 
+      - name: Finalize generated Marney v4 source
+        run: python3 android-app/finalize-marney-v4.py
+
       - name: Configure Android SDK
         shell: bash
         run: |
