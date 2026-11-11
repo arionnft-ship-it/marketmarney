@@ -2,7 +2,7 @@
 
 const http = require('node:http');
 
-const VERSION = 'marketmarney-runtime-20261111-v8';
+const VERSION = 'marketmarney-runtime-20261111-v9';
 const HELPER = '/assets/mm-social-upload-100mb.js?v=20261109-100mb-v3';
 const HELPERS = Object.freeze([
   HELPER,
@@ -10,7 +10,7 @@ const HELPERS = Object.freeze([
   '/assets/mm-social-experience.css?v=20261111-social-experience-v1',
   '/assets/mm-social-refinement.js?v=20261111-social-refinement-v1',
   '/assets/mm-social-refinement.css?v=20261111-social-refinement-v1',
-  '/assets/mm-social-routing.js?v=20261111-social-routing-v1',
+  '/assets/mm-social-routing.js?v=20261111-social-routing-v2',
   '/assets/mm-automatic-pivot.js?v=20261109-auto-pivot-v1',
   '/assets/warxau-live-stream.js?v=20261109-xau-sse-v1'
 ]);
@@ -33,11 +33,11 @@ function patchServiceWorker(source) {
     replacements++;
     return 'const CORE=[' + list + missing.map(helper=>','+JSON.stringify(helper)).join('') + ']';
   });
-  if (!text.includes('MM_RUNTIME_SW_V8')) {
+  if (!text.includes('MM_RUNTIME_SW_V9')) {
     replacements++;
-    text += "\n/* MM_RUNTIME_SW_V8 */\n" +
+    text += "\n/* MM_RUNTIME_SW_V9 */\n" +
       "self.addEventListener('install',()=>{self.skipWaiting();});\n" +
-      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload|runtime|auto-pivot)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));for(const key of await caches.keys()){const cache=await caches.open(key);for(const request of await cache.keys()){const url=new URL(request.url);if(url.pathname==='/assets/xau-war-3d.html'||url.pathname==='/assets/warxau-live-stream.js')await cache.delete(request);}}await self.clients.claim();})());});\n";
+      "self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>/^marketmarney-(?:offline|social-upload|runtime|auto-pivot)-/i.test(key)&&key!==" + JSON.stringify(VERSION) + ").map(key=>caches.delete(key)));const navigationPaths=new Set(['/reels.html','/live.html','/start-stream','/beranda-trader.html']);for(const key of await caches.keys()){const cache=await caches.open(key);for(const request of await cache.keys()){const url=new URL(request.url);if(url.pathname==='/assets/xau-war-3d.html'||url.pathname==='/assets/warxau-live-stream.js'||navigationPaths.has(url.pathname))await cache.delete(request);}}await self.clients.claim();})());});\n";
   }
   return { output: text, replacements };
 }
