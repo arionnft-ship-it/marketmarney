@@ -1,0 +1,44 @@
+name: MarketMarney External Squawk Only
+
+on:
+  push:
+    branches: [fix/squawk-only-headline-source-20261111]
+    paths:
+      - 'warxau-fbs/news-ticker.cjs'
+      - 'warxau-fbs/squawk-feed.cjs'
+      - 'warxau-fbs/news-ticker.test.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/marketmarney-squawk-feed.yml'
+  pull_request:
+    branches: [fix/site-performance-audit-20261108]
+    paths:
+      - 'warxau-fbs/news-ticker.cjs'
+      - 'warxau-fbs/squawk-feed.cjs'
+      - 'warxau-fbs/news-ticker.test.cjs'
+      - 'warxau-fbs/Dockerfile.ihsg'
+      - '.github/workflows/marketmarney-squawk-feed.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  adapter-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and guardrails
+        run: |
+          node --check warxau-fbs/squawk-feed.cjs
+          node --check warxau-fbs/news-ticker.cjs
+          node --test warxau-fbs/news-ticker.test.cjs
+  production-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual Railway web image
+        run: docker build -f warxau-fbs/Dockerfile.ihsg -t marketmarney-squawk-feed-test .
