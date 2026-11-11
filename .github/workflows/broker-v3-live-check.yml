@@ -1,0 +1,37 @@
+name: Verify broker v3 Indonesian audio live
+on:
+  push:
+    branches: [fix/broker-arbo-voice-20261111]
+    paths: [.github/workflows/broker-v3-live-check.yml]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Verify live catalog and byte-range version
+        run: |
+          set -euo pipefail
+          curl -sS -f -L --retry 2 --max-time 25 \
+            'https://marketmarney.com/api/content' -o content.json
+          curl -sS -f -L --retry 2 --max-time 30 \
+            -H 'Range: bytes=0-1023' \
+            'https://marketmarney.com/media/85440075-e5d4-4637-b034-6f8b3051b287.mp4?v=indonesia-v3' \
+            -D headers.txt -o first.bin
+          python3 - <<'PY'
+          import json,re,pathlib
+          j=json.loads(pathlib.Path("content.json").read_text("utf8"))
+          vids=[v for v in j.get("videos",[]) if v.get("id")=="85440075-e5d4-4637-b034-6f8b3051b287"]
+          assert len(vids)==1, ("missing or duplicate",len(vids))
+          v=vids[0]
+          assert v.get("status")=="published" and v.get("cat")=="Edukasi"
+          assert v.get("url","").endswith(".mp4?v=indonesia-v3"),v.get("url")
+          h=pathlib.Path("headers.txt").read_text("utf8").lower()
+          assert "206" in h, h[:250]
+          assert "content-range: bytes 0-1023/3517134" in h,h[:500]
+          assert "content-type: video/mp4" in h,h[:500]
+          b=pathlib.Path("first.bin").read_bytes()
+          assert len(b)==1024 and b[4:8]==b"ftyp",(len(b),b[:16])
+          print("BROKER_V3_LIVE_VERIFIED",{"id":v["id"],"title":v["title"],"bytes":3517134,"range":206,"cache_bust":"indonesia-v3"})
+          PY
