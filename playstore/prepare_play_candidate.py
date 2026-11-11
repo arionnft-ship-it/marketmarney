@@ -98,6 +98,10 @@ apply_early_theme(root)
 from diagnose_ready import apply as apply_ready_diagnostics
 apply_ready_diagnostics(root)
 
+# Ensure the native loading card cannot stay attached over ready content.
+from repair_native_loader import apply as repair_native_loader
+repair_native_loader(root)
+
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
     'applicationId': 'com.marketmarney.mobile',
