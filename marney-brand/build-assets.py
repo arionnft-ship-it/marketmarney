@@ -9,17 +9,17 @@ root = Path(__file__).resolve().parent
 out = root / 'dist'
 out.mkdir(exist_ok=True)
 
-# The exact transparent M / orange rising-arrow symbol selected by the owner.
-source = base64.b64decode((root / 'user-logo-20261109.b64').read_text().strip(), validate=True)
-expected = '5266db8f7a8e4cdfdd129a87a628b2442d3d7d905ba1b7649709418936b014d6'
+# Owner-selected clean M / orange rising-arrow symbol, prepared from the latest HD upload.
+source = base64.b64decode((root / 'user-logo-20261111.b64').read_text().strip(), validate=True)
+expected = 'f3d18bcafb6ba5ad2368491a4ce94896105f04992d94244c2e51a1a0c2151bee'
 assert hashlib.sha256(source).hexdigest() == expected, 'owner_logo_checksum_mismatch'
 symbol = Image.open(io.BytesIO(source)).convert('RGBA')
-assert symbol.size == (768, 768), 'owner_logo_dimensions_mismatch'
+assert symbol.size == (512, 512), 'owner_logo_dimensions_mismatch'
 bbox = symbol.getchannel('A').getbbox()
-assert bbox and bbox[2] > 600 and bbox[3] > 600, 'owner_logo_alpha_missing'
+assert bbox and bbox[2] > 400 and bbox[3] > 400, 'owner_logo_alpha_missing'
 symbol = symbol.crop(bbox)
 
-# Keep the original MarketMarney lettering but replace its former symbol.
+# Keep the original MarketMarney lettering but replace its former symbol everywhere.
 old_text_source = base64.b64decode((root / 'wordmark-text-source.b64').read_text().strip(), validate=True)
 assert hashlib.sha256(old_text_source).hexdigest() == 'cdcbf063dc103921615abc2eeb38f966f9149e3417437c1b7780d46e5d8231c4', 'original_wordmark_checksum_mismatch'
 old_wordmark = Image.open(io.BytesIO(old_text_source)).convert('RGBA')
@@ -102,8 +102,8 @@ for size in (192,512):
     icon(size,0.19,background=tile).save(out / f'icon-maskable-{size}.png', optimize=True)
 
 report={
- 'artwork':'Selected MarketMarney black M + orange rising arrow',
- 'version':'marney-m-arrow-20261110-v1',
+ 'artwork':'Owner-selected clean MarketMarney M with orange rising arrow',
+ 'version':'marney-m-arrow-20261111-v2',
  'sourceSha256':hashlib.sha256(source).hexdigest(),
  'assets':{
   asset.name:{'bytes':asset.stat().st_size,'sha256':hashlib.sha256(asset.read_bytes()).hexdigest()}
