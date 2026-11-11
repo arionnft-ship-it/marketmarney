@@ -1,0 +1,67 @@
+name: Assemble Hedra Rizky Indonesian Broker Voice into MarketMarney TV
+on:
+  push:
+    branches: [fix/broker-hedra-voice-20261112]
+    paths: [.github/workflows/broker-hedra-audio-render.yml]
+permissions:
+  contents: write
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install FFmpeg and obtain original sources
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          curl -fLsS --retry 4 --retry-delay 12 --max-time 90 \
+            'https://marketmarney.com/media/mm-hedra-broker-source-324cbc93.mp3' -o hedra-broker.mp3
+          curl -fLsS --retry 3 --max-time 90 \
+            'https://marketmarney.com/media/85440075-e5d4-4637-b034-6f8b3051b287.mp4?v=indonesia-v3' -o source.mp4
+          ffprobe -v error -show_entries format=duration:stream=codec_name,codec_type -of json hedra-broker.mp3
+          ffprobe -v error -show_entries format=duration:stream=codec_name,codec_type -of json source.mp4
+          test "$(stat -c %s hedra-broker.mp3)" -gt 300000
+          test "$(stat -c %s source.mp4)" -gt 1500000
+      - name: Align existing graphics to new natural-speed narration
+        run: |
+          set -euo pipefail
+          mkdir -p assets/broker-audio
+          ratio="$(python3 - <<'PY'
+          import subprocess,json,sys
+          def duration(fn):
+            d=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_format','-of','json',fn]))
+            return float(d['format']['duration'])
+          a,v=duration('hedra-broker.mp3'),duration('source.mp4')
+          assert 125<a<160 and 105<v<130,(a,v)
+          print(f'{a/v:.9f}')
+          print('HEDRA',a,'SOURCE',v,file=sys.stderr)
+          PY
+          )"
+          ffmpeg -hide_banner -nostdin -loglevel error -y -i source.mp4 -i hedra-broker.mp3 \
+            -filter_complex "[0:v]setpts=PTS*${ratio},fps=20,tpad=stop_mode=clone:stop_duration=1[v];[1:a]aresample=48000,loudnorm=I=-16:LRA=8:TP=-1.5[a]" \
+            -map '[v]' -map '[a]' -shortest -c:v libx264 -preset veryfast -crf 21 \
+            -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart \
+            assets/broker-audio/marketmarney-broker-hedra-rizky-v4.mp4
+          cp hedra-broker.mp3 assets/broker-audio/marketmarney-broker-hedra-rizky-v4.mp3
+          python3 - <<'PY'
+          import subprocess,json,pathlib,hashlib
+          p=pathlib.Path('assets/broker-audio/marketmarney-broker-hedra-rizky-v4.mp4')
+          d=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_format','-show_streams','-of','json',str(p)]))
+          duration=float(d['format']['duration'])
+          assert 138<duration<142,duration
+          assert {'h264','aac'}.issubset({s['codec_name'] for s in d['streams']})
+          assert p.stat().st_size>1000000
+          print('HEDRA_BROKER_VIDEO_READY',json.dumps({'seconds':duration,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}))
+          PY
+      - name: Commit successful video and original narration
+        run: |
+          set -euo pipefail
+          git config user.name "marketmarney-video-bot"
+          git config user.email "marketmarney-video-bot@users.noreply.github.com"
+          git add assets/broker-audio/marketmarney-broker-hedra-rizky-v4.*
+          git commit -m "media(tv): Hedra Rizky voice for broker education"
+          git push origin HEAD:fix/broker-hedra-voice-20261112
