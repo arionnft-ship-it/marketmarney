@@ -102,6 +102,10 @@ apply_ready_diagnostics(root)
 from repair_native_loader import apply as repair_native_loader
 repair_native_loader(root)
 
+# Eliminate fullscreen native loading card; only nonblocking progress remains.
+from remove_blocking_loading_card import apply as remove_blocking_loading_card
+remove_blocking_loading_card(root)
+
 out = root / 'play_candidate_metadata.json'
 out.write_text(json.dumps({
     'applicationId': 'com.marketmarney.mobile',
