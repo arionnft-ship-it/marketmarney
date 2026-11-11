@@ -53,10 +53,42 @@ const CLIENT='('+client.toString()+')();';
 function assets(){return new Map([
  ['/assets/mm-about-logo-only-v1.js',{body:Buffer.from(CLIENT,'utf8'),mime:'text/javascript; charset=utf-8'}]
 ]);}
+
+/**
+ * Remove the entire rendered 04 / TIM block from About HTML before it reaches
+ * the browser. Match balanced section/div tags and require all three member
+ * names; never remove sections containing community or risk information.
+ * Client-side removal above remains a fallback for dynamically rendered HTML.
+ */
+function stripTeamHtml(html){
+ if(typeof html!=='string'||!html.includes('Di balik MarketMarney'))return html;
+ const masked=html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,match=>' '.repeat(match.length));
+ const pattern=/<\/?(section|article|div)\b[^>]*>/gi,stack=[],matches=[];
+ let m;
+ while((m=pattern.exec(masked))){
+  const tag=m[1].toLowerCase();
+  if(m[0][1]!=='/'){stack.push({tag,start:m.index});continue;}
+  let index=stack.length-1;
+  while(index>=0&&stack[index].tag!==tag)index--;
+  if(index<0)continue;
+  const node=stack[index];stack.length=index;
+  const end=pattern.lastIndex,block=masked.slice(node.start,end);
+  if(!/Di balik MarketMarney/i.test(block))continue;
+  if(!['XXXTRIAN','BEMBENG','NYOK'].every(name=>block.includes(name)))continue;
+  if(/05\s*\/\s*INFORMASI|Informasi\s*(?:&|&amp;)\s*Risiko|03\s*\/\s*KOMUNITAS|Tentang Social Marney/i.test(block))continue;
+  matches.push({tag,start:node.start,end});
+ }
+ if(!matches.length)return html;
+ const rank={section:0,article:1,div:2};
+ matches.sort((a,b)=>rank[a.tag]-rank[b.tag]||a.end-a.start-(b.end-b.start));
+ const block=matches[0];
+ return html.slice(0,block.start)+html.slice(block.end);
+}
 function injectHtml(html,pathname){
  if(pathname!=='/about.html'||typeof html!=='string'||!/<\/head\s*>/i.test(html)||!/<html\b/i.test(html))return html;
- if(html.includes('data-mm-about-logo-only="'+VERSION+'"'))return html;
+ const clean=stripTeamHtml(html);
+ if(clean.includes('data-mm-about-logo-only="'+VERSION+'"'))return clean;
  const tag='<script defer src="/assets/mm-about-logo-only-v1.js?v='+VERSION+'" data-mm-about-logo-only="'+VERSION+'"></script>';
- return html.replace(/<\/head\s*>/i,tag+'</head>');
+ return clean.replace(/<\/head\s*>/i,tag+'</head>');
 }
-module.exports={VERSION,SOURCE,CLIENT,assets,injectHtml};
+module.exports={VERSION,SOURCE,CLIENT,assets,stripTeamHtml,injectHtml};
