@@ -43,6 +43,27 @@ test('Client changes only About hero logo URL without changing layout classes',(
  assert.equal(img.alt,'Logo MarketMarney');
  assert.equal(img.style.backgroundColor,'transparent');
 });
+test('About page removes only 04 / TIM and preserves the next information section',()=>{
+ let removed=false,untouched=true;
+ const body={},root={};
+ const section={
+  textContent:'04 / TIM Tim MarketMarney Di balik MarketMarney XXXTRIAN BEMBENG NYOK',
+  parentElement:body,
+  remove(){removed=true;}
+ };
+ const title={textContent:'Tim MarketMarney',parentElement:{textContent:'Tim MarketMarney',parentElement:section}};
+ const doc={
+  body,documentElement:root,readyState:'complete',
+  querySelectorAll(selector){
+   if(selector==='h1,h2,h3,h4,h5,h6,span,p,strong,small')return [title];
+   return [];
+  }
+ };
+ const MutationObserver=class{observe(){untouched=true}};
+ vm.runInNewContext(CLIENT,{document:doc,location:{pathname:'/about.html'},MutationObserver},{timeout:300});
+ assert.equal(removed,true,'team section must be removed');
+ assert.equal(untouched,true,'other sections are not touched');
+});
 test('Transparent about asset is built separately from all existing logos',()=>{
  const fs=require('node:fs'),path=require('node:path');
  // Build script is checked in the repository, but runtime tests do not change stored user assets.
