@@ -141,7 +141,7 @@ jobs:
             chmod 600 "$RUNNER_TEMP/marketmarney-upload.jks"
             export MM_PLAY_KEYSTORE_PATH="$RUNNER_TEMP/marketmarney-upload.jks"
           fi
-          gradle --no-daemon --project-dir android439 :app:bundleRelease
+          gradle --no-daemon --project-dir android439 :app:bundleRelease :app:assembleRelease
           AAB=android439/app/build/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           unzip -t "$AAB" | tail -n 2
@@ -155,6 +155,53 @@ jobs:
             echo 'UNSIGNED REVIEW BUILD: do not upload this AAB to Google Play.' > play_artifact/STATUS.txt
           fi
           (cd play_artifact && sha256sum MarketMarney-Play-Review.aab > SHA256.txt)
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          if [ "$COUNT" -eq 4 ]; then
+            RELEASE_APK=android439/app/build/outputs/apk/release/app-release.apk
+            test -s "$RELEASE_APK"
+            cp "$RELEASE_APK" qa/play-candidate-smoke.apk
+          else
+            RELEASE_APK=android439/app/build/outputs/apk/release/app-release-unsigned.apk
+            test -s "$RELEASE_APK"
+            # A disposable QA-only key enables device testing of the release
+            # package ID; this APK is NEVER uploaded or distributed.
+            keytool -genkeypair -noprompt -alias mm-qa -keyalg RSA -keysize 2048 \
+              -validity 1 -dname 'CN=Local CI Smoke,OU=QA,O=MarketMarney' \
+              -keystore "$RUNNER_TEMP/mm-qa-only.jks" \
+              -storepass 'EphemeralOnlyUseForLocalSmoke123' \
+              -keypass 'EphemeralOnlyUseForLocalSmoke123'
+            "$BT/zipalign" -f -p 4 "$RELEASE_APK" "$RUNNER_TEMP/mm-qa-aligned.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/mm-qa-only.jks" \
+              --ks-key-alias mm-qa --ks-pass pass:EphemeralOnlyUseForLocalSmoke123 \
+              --key-pass pass:EphemeralOnlyUseForLocalSmoke123 \
+              --out qa/play-candidate-smoke.apk "$RUNNER_TEMP/mm-qa-aligned.apk"
+          fi
+          "$BT/apksigner" verify --print-certs qa/play-candidate-smoke.apk > qa/play-release-certificate.txt
+          "$BT/aapt" dump badging qa/play-candidate-smoke.apk > qa/play-release-badging.txt
+          "$BT/aapt" dump permissions qa/play-candidate-smoke.apk > qa/play-release-permissions.txt
+          grep -F "name='com.marketmarney.mobile'" qa/play-release-badging.txt
+          grep -F "versionCode='44'" qa/play-release-badging.txt
+          grep -F "versionName='4.39.0'" qa/play-release-badging.txt
+          grep -F "targetSdkVersion:'36'" qa/play-release-badging.txt
+          if grep -E 'READ_SMS|QUERY_ALL_PACKAGES|MANAGE_EXTERNAL_STORAGE|REQUEST_INSTALL_PACKAGES' qa/play-release-permissions.txt; then
+            echo 'Unexpected restricted Android permission; production candidate rejected'
+            exit 1
+          fi
+      - name: Smoke test Play-package build on Android 16
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash playstore/smoke-play-candidate.sh
       - name: Save QA and AAB candidate as private workflow artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -164,4 +211,6 @@ jobs:
             play_artifact/
             qa/emulator-regression.txt
             qa/emulator-runtime-errors.txt
+            qa/play-*.txt
+            qa/play-*.png
           if-no-files-found: warn
