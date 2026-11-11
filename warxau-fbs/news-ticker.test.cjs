@@ -66,7 +66,7 @@ test('official free Banx iframe carries dark theme and visible attribution',()=>
  assert.equal(toggle.attrs['aria-pressed'],'false');
  assert.equal(root.attrs['class:mm-banx-reading'],'false');
 });
-test('removes Berita 24/7 and preserves provider's cross-origin content and attribution',()=>{
+test('removes Berita 24/7 and preserves provider-owned cross-origin content and attribution',()=>{
  const source=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
  const html=injectTickerHtml(original());
  assert.ok(!html.includes('BERITA 24/7'));
