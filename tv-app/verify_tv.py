@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that the Android TV tab opens the public MarketMarney TV SPA, not XAUWar."""
+"""Verify that the Android TV tab opens a local shell backed by public video data."""
 from pathlib import Path
 import sys
 
@@ -23,7 +23,7 @@ for t in required:
 assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not in s
 assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in s
 assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in s
-assert 'showFailure("EMPTY","MarketMarney TV belum bisa dimuat.' in s
+assert 'showFailure("EMPTY","Halaman MarketMarney TV tidak dapat ditampilkan.' in s
 assert (root/'app/src/main/assets/marketmarney-tv.html').is_file()
 tv=(root/'app/src/main/assets/marketmarney-tv.html').read_text(encoding='utf-8')
 assert "fetch('/api/content'" in tv
@@ -31,4 +31,4 @@ assert 'id="mm-tv-root"' in tv
 assert 'id="grid"' in tv
 assert 'video.controls=true' in tv
 assert "www.youtube-nocookie.com/embed/" in tv
-print('PASS: Android bottom TV label, two-line layout, play icon, actual SPA navigation, readiness and failure handling')
+print('PASS: TV bottom label, icon, local same-origin page, published video API, playback and retry UI')
