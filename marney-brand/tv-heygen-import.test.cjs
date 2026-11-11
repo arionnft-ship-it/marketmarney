@@ -35,7 +35,7 @@ test('HTTP catalog response includes published video without leaking stale ETag 
  const server=http.createServer((req,res)=>{
   if(handleMedia(req,res))return;
   const captured=wrapCatalog(req,res);
-  res.writeHead(200,{'content-type':'application/json','etag':'"old-etag"','content-length':'999'});
+  res.writeHead(200,captured?{'content-type':'application/json','etag':'"old-etag"','content-length':'999'}:{'content-type':'application/json'});
   const body=JSON.stringify({videos:[],articles:[{id:'original'}]});
   assert.equal(captured,req.url==='/api/content');
   res.end(body);
