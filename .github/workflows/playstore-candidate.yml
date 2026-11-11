@@ -135,6 +135,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 playstore/prepare_play_candidate.py android439
+          cp android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java qa/debug-MainActivity.java
+          cp android439/app/src/main/java/com/marketmarney/mobile/StartupOverlay.java qa/debug-StartupOverlay.java
           node --check android439/app/src/main/assets/only_light_ui.js
           grep -F 'asset("only_light_ui.js")' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
           grep -F 'showXauLoading' android439/app/src/main/java/com/marketmarney/mobile/MainActivity.java
@@ -226,4 +228,5 @@ jobs:
             qa/play-*.txt
             qa/play-*.png
             qa/play-*.xml
+            qa/debug-*.java
           if-no-files-found: warn
