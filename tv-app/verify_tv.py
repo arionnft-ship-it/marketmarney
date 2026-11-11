@@ -24,7 +24,7 @@ for t in required:
 assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not in s
 assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in s
 assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in s
-assert 'showFailure("EMPTY","Halaman MarketMarney TV tidak dapat ditampilkan.' in s
+assert 'showFailure("EMPTY","Daftar video MarketMarney TV belum dapat ditampilkan.' in s
 assert (root/'app/src/main/assets/marketmarney-tv.html').is_file()
 tv=(root/'app/src/main/assets/marketmarney-tv.html').read_text(encoding='utf-8')
 assert "fetch('/api/content'" in tv
