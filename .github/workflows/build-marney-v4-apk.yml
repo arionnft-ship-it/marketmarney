@@ -1,4 +1,4 @@
-name: Build Marney Android UI-Preserved Beta
+name: Build Marney Android Stable UI-Preserved Beta
 
 on:
   push:
@@ -26,20 +26,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Apply functional improvements without changing UI
+      - name: Apply UI-preserved Marney v4 base
         run: python3 android-app/apply-marney-v4.py
 
-      - name: Verify original Marney interface is preserved
+      - name: Verify original Marney interface
         run: python3 android-app/finalize-marney-v4.py
 
-      - name: Snapshot generated Android source
+      - name: Apply v4.1 stability improvements without changing UI
+        run: python3 android-app/apply-marney-v4-1.py
+
+      - name: Verify v4.1 features and locked visual fingerprint
+        run: python3 android-app/finalize-marney-v4-1.py
+
+      - name: Snapshot generated Android sources
         shell: bash
         run: |
           set -euo pipefail
           cp android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java \
-             Marney-v4.0.1-generated-MainActivity.java
-          sha256sum Marney-v4.0.1-generated-MainActivity.java \
-            | tee Marney-v4.0.1-generated-MainActivity.sha256
+             Marney-v4.1.0-generated-MainActivity.java
+          cp android-app/app/src/main/AndroidManifest.xml \
+             Marney-v4.1.0-generated-AndroidManifest.xml
+          cp android-app/app/build.gradle \
+             Marney-v4.1.0-generated-build.gradle
+          sha256sum Marney-v4.1.0-generated-MainActivity.java \
+            | tee Marney-v4.1.0-generated-MainActivity.sha256
 
       - name: Configure Android SDK
         shell: bash
@@ -68,55 +78,63 @@ jobs:
           file "$ICON"
           test -s "$ICON"
 
-      - name: Compile Marney UI-preserved debug APK
+      - name: Compile Marney v4.1 UI-preserved debug APK
         working-directory: android-app
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Validate identity, permissions and preserved interface
+      - name: Validate identity, permissions, stability and preserved interface
         shell: bash
         run: |
           set -euo pipefail
           APK=android-app/app/build/outputs/apk/debug/app-debug.apk
-          OUT=Marney-v4.0.1-UI-Preserved-Beta.apk
+          OUT=Marney-v4.1.0-Stable-UI-Preserved-Beta.apk
           test -s "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -print -quit)"
           test -n "$AAPT"
 
-          "$AAPT" dump badging "$APK" | tee Marney-v4.0.1-badging.txt
-          "$AAPT" dump permissions "$APK" | tee Marney-v4.0.1-permissions.txt
-          grep -F "package: name='com.marketmarney.mobile'" Marney-v4.0.1-badging.txt
-          grep -F "versionCode='6'" Marney-v4.0.1-badging.txt
-          grep -F "versionName='4.0.1-beta'" Marney-v4.0.1-badging.txt
-          grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4.0.1-badging.txt
-          grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4.0.1-badging.txt
-          grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4.0.1-badging.txt
-          grep -F 'android.permission.CAMERA' Marney-v4.0.1-permissions.txt
-          grep -F 'android.permission.RECORD_AUDIO' Marney-v4.0.1-permissions.txt
-          grep -F 'android.permission.INTERNET' Marney-v4.0.1-permissions.txt
+          "$AAPT" dump badging "$APK" | tee Marney-v4.1.0-badging.txt
+          "$AAPT" dump permissions "$APK" | tee Marney-v4.1.0-permissions.txt
+          grep -F "package: name='com.marketmarney.mobile'" Marney-v4.1.0-badging.txt
+          grep -F "versionCode='7'" Marney-v4.1.0-badging.txt
+          grep -F "versionName='4.1.0-beta'" Marney-v4.1.0-badging.txt
+          grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4.1.0-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4.1.0-badging.txt
+          grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4.1.0-badging.txt
+          grep -F 'android.permission.CAMERA' Marney-v4.1.0-permissions.txt
+          grep -F 'android.permission.RECORD_AUDIO' Marney-v4.1.0-permissions.txt
+          grep -F 'android.permission.INTERNET' Marney-v4.1.0-permissions.txt
 
-          grep -F 'private static final int NAVY = Color.rgb(5, 17, 33);' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
-          grep -F 'top.setBackgroundColor(Color.rgb(6, 21, 38));' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
-          grep -F 'String[] labels = {"Beranda", "Pasar", "Berita", "Social", "Akun"};' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
-          ! grep -F 'lightModeScript' android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
-          ! grep -F "localStorage.setItem('mm_theme'" android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          SOURCE=android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+          grep -F 'private static final int NAVY = Color.rgb(5, 17, 33);' "$SOURCE"
+          grep -F 'top.setBackgroundColor(Color.rgb(6, 21, 38));' "$SOURCE"
+          grep -F 'String[] labels = {"Beranda", "Pasar", "Berita", "Social", "Akun"};' "$SOURCE"
+          grep -F 'MARNEY_ANDROID_V4_1_STABLE_UI_PRESERVED' "$SOURCE"
+          grep -F 'onSaveInstanceState(Bundle outState)' "$SOURCE"
+          grep -F 'onRenderProcessGone' "$SOURCE"
+          grep -F 'takePersistableUriPermission' "$SOURCE"
+          grep -F 'FLAG_KEEP_SCREEN_ON' "$SOURCE"
+          ! grep -F 'lightModeScript' "$SOURCE"
+          ! grep -F "localStorage.setItem('mm_theme'" "$SOURCE"
 
           test "$(unzip -Z1 "$APK" | grep -c '^classes.*\.dex$')" -gt 0
-          unzip -t "$APK" | tee Marney-v4.0.1-archive-test.txt
+          unzip -t "$APK" | tee Marney-v4.1.0-archive-test.txt
 
           cp "$APK" "$OUT"
-          sha256sum "$OUT" | tee Marney-v4.0.1-UI-Preserved-Beta.sha256
+          sha256sum "$OUT" | tee Marney-v4.1.0-Stable-UI-Preserved-Beta.sha256
           ls -lh "$OUT"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Marney-v4.0.1-UI-Preserved-Beta
+          name: Marney-v4.1.0-Stable-UI-Preserved-Beta
           path: |
-            Marney-v4.0.1-UI-Preserved-Beta.apk
-            Marney-v4.0.1-UI-Preserved-Beta.sha256
-            Marney-v4.0.1-badging.txt
-            Marney-v4.0.1-permissions.txt
-            Marney-v4.0.1-archive-test.txt
-            Marney-v4.0.1-generated-MainActivity.java
-            Marney-v4.0.1-generated-MainActivity.sha256
+            Marney-v4.1.0-Stable-UI-Preserved-Beta.apk
+            Marney-v4.1.0-Stable-UI-Preserved-Beta.sha256
+            Marney-v4.1.0-badging.txt
+            Marney-v4.1.0-permissions.txt
+            Marney-v4.1.0-archive-test.txt
+            Marney-v4.1.0-generated-MainActivity.java
+            Marney-v4.1.0-generated-MainActivity.sha256
+            Marney-v4.1.0-generated-AndroidManifest.xml
+            Marney-v4.1.0-generated-build.gradle
           if-no-files-found: error
           retention-days: 30
