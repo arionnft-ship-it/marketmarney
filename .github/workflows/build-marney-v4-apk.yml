@@ -5,6 +5,7 @@ on:
     branches:
       - fix/marney-preserve-original-ui-20261112
       - fix/site-performance-audit-20261108
+      - feat/marney-stability-v4-1-20261112
     paths:
       - 'android-app/**'
       - '.github/workflows/build-marney-v4-apk.yml'
@@ -30,6 +31,15 @@ jobs:
 
       - name: Verify original Marney interface is preserved
         run: python3 android-app/finalize-marney-v4.py
+
+      - name: Snapshot generated Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp android-app/app/src/main/java/com/marketmarney/mobile/MainActivity.java \
+             Marney-v4.0.1-generated-MainActivity.java
+          sha256sum Marney-v4.0.1-generated-MainActivity.java \
+            | tee Marney-v4.0.1-generated-MainActivity.sha256
 
       - name: Configure Android SDK
         shell: bash
@@ -106,5 +116,7 @@ jobs:
             Marney-v4.0.1-badging.txt
             Marney-v4.0.1-permissions.txt
             Marney-v4.0.1-archive-test.txt
+            Marney-v4.0.1-generated-MainActivity.java
+            Marney-v4.0.1-generated-MainActivity.sha256
           if-no-files-found: error
           retention-days: 30
