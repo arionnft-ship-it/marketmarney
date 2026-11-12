@@ -75,6 +75,13 @@ checks = {
     "state save": "onSaveInstanceState(Bundle outState)" in source and "browser.saveState" in source,
     "renderer recovery": "onRenderProcessGone" in source and "RENDERER_RECOVERY_WINDOW_MS" in source,
     "renderer priority": "setRendererPriorityPolicy" in source,
+    "api26 isolation marker": "MARNEY_ANDROID_V4_1_API26_ISOLATED" in source,
+    "android7 base client": "class MarketMarneyWebViewClient extends WebViewClient" in source,
+    "android8 renderer client": "class RendererAwareWebViewClient extends MarketMarneyWebViewClient" in source,
+    "api26 runtime gate": "Build.VERSION.SDK_INT >= Build.VERSION_CODES.O" in source,
+    "client factory installed": "browser.setWebViewClient(createWebViewClient(progress, title));" in source,
+    "no direct anonymous client": "browser.setWebViewClient(new WebViewClient()" not in source,
+    "single renderer callback": source.count("onRenderProcessGone(") == 1,
     "live screen awake": "FLAG_KEEP_SCREEN_ON" in source,
     "lifecycle pause": "protected void onPause()" in source and "browser.onPause()" in source,
     "lifecycle resume": "protected void onResume()" in source and "browser.onResume()" in source,
@@ -101,6 +108,7 @@ if failed:
 print({
     "marneyAndroidV41Finalized": True,
     "uiPreserved": True,
+    "android7CompatibleClientPath": True,
     "uiSha256": ui_sha256,
     "checks": checks,
 })
