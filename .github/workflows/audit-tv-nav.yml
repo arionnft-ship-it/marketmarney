@@ -1,0 +1,44 @@
+name: Inspect public MarketMarney TV route (read-only)
+on:
+  push:
+    branches: [feature/android-marketmarney-tv-20261111]
+    paths: ['tv-app/**', '.github/workflows/audit-tv-nav.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check live homepage navigation contract
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,re
+          url='https://marketmarney.com/index.html'
+          req=urllib.request.Request(url,headers={'User-Agent':'MarketMarney-App-TV-Route-Audit/1.0'})
+          with urllib.request.urlopen(req,timeout=25) as r:
+              html=r.read(400000).decode('utf-8','replace')
+              print('HTTP',r.status,'HTML_BYTES',len(html),'URL',r.url)
+              assert r.status==200
+          probes=[
+            r"navs=\[",
+            r"\['MarketMarney TV','▶'\]",
+            r"data-page",
+            r"page==='MarketMarney TV'",
+            r"page===\"MarketMarney TV\"",
+            r"page==='Market TV'",
+            r"MarketMarney TV",
+            r"page='MarketMarney TV'",
+            r"page=[\"']MarketMarney TV",
+            r"render",
+            r"videoCard",
+          ]
+          for p in probes:
+              found=list(re.finditer(p,html,re.I))
+              print('PATTERN',p,'COUNT',len(found))
+              for m in found[:5]:
+                  print('CONTEXT',repr(html[max(0,m.start()-420):m.end()+700]))
+          print('CONFIRMED_HOME_NAV', "['MarketMarney TV','▶']" in html)
+          assert "['MarketMarney TV','▶']" in html
+          PY

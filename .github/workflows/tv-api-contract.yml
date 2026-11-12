@@ -1,0 +1,56 @@
+name: MarketMarney TV public API contract (read-only)
+on:
+  push:
+    branches: [feature/android-marketmarney-tv-20261111]
+    paths: ['tv-app/**', '.github/workflows/tv-api-contract.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  verify-public-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Read only published TV catalogue schema and media HTTP statuses
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error, time, urllib.parse
+          base="https://marketmarney.com"
+          req=urllib.request.Request(base+"/api/content", headers={
+            "User-Agent":"MarketMarney-TV-Android-Contract-Audit/1.0",
+            "Accept":"application/json",
+            "Accept-Encoding":"identity"
+          })
+          for attempt in range(3):
+            try:
+              with urllib.request.urlopen(req,timeout=18) as r:
+                raw=r.read(12_000_001)
+                print("CATALOGUE", "HTTP",r.status,"length",len(raw),"type",r.headers.get("Content-Type"),"cache",r.headers.get("Cache-Control"))
+                assert r.status==200
+                assert len(raw)<=12_000_000
+                j=json.loads(raw.decode('utf-8'))
+              break
+            except Exception as e:
+              print("ATTEMPT",attempt+1,"ERROR",type(e).__name__,str(e)[:140],flush=True)
+              if attempt==2:raise
+              time.sleep(2)
+          print("TOP_LEVEL_KEYS",sorted(j.keys())[:35])
+          videos=j.get("videos")
+          print("VIDEOS_TYPE",type(videos).__name__)
+          assert isinstance(videos,list),"No videos array in public API"
+          print("VIDEO_COUNT",len(videos))
+          from collections import Counter
+          print("VIDEO_STATUSES",dict(Counter(str(v.get("status")) for v in videos if isinstance(v,dict))))
+          print("VIDEO_TYPES",dict(Counter(str(v.get("type")) for v in videos if isinstance(v,dict))))
+          if videos:
+            assert isinstance(videos[0],dict)
+            print("PUBLIC_VIDEO_KEYS",sorted(videos[0].keys()))
+            for v in videos[:3]:
+              print("SAMPLE_FIELD_TYPES", {k:type(v.get(k)).__name__ for k in ('title','url','thumb','cat','type','status','id','video_url','thumbnail_url')})
+              for key in ("url","thumb"):
+                value=v.get(key)
+                if isinstance(value,str):
+                  u=urllib.parse.urlparse(urllib.parse.urljoin(base,value))
+                  print("FIELD",key,"path_format",u.path.split(".")[-1] if "." in u.path else "none","scheme",u.scheme,"host",u.hostname)
+          print("CONTRACT_PASS",len(videos)>0)
+          PY

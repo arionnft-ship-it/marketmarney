@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>MarketMarney TV</title>
+  <style>
+    :root{color-scheme:light;--ink:#192633;--muted:#637388;--line:#e2e7ef;--accent:#a96920;--bg:#f7f9fc}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    header{display:flex;align-items:center;gap:10px;padding:17px 17px 12px;background:#fff;border-bottom:1px solid var(--line)}
+    .monogram{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;color:#fff;background:#b87527;font-weight:850;font-size:21px}
+    .brand{font-size:16px;letter-spacing:-.4px;font-weight:750}.brand b{color:var(--accent)}
+    main{padding:18px 15px 34px;max-width:760px;margin:auto}
+    .overline{font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:750}
+    h1{font-size:24px;line-height:1.2;letter-spacing:-.7px;margin:9px 0 7px}
+    .subtitle{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 18px}
+    .filters{display:flex;gap:8px;overflow:auto;padding:4px 0 15px;scrollbar-width:none}
+    .filters button{background:#fff;border:1px solid var(--line);padding:8px 13px;white-space:nowrap;border-radius:100px;color:#596c80;font-size:12px}
+    .filters button.active{background:#202f3e;color:white;border-color:#202f3e}
+    .status{padding:15px 14px;margin-bottom:13px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:12px;color:var(--muted);line-height:1.6}
+    .status[hidden],.filters[hidden],.player[hidden]{display:none!important}
+    .retry{display:block;margin-top:10px;border:1px solid var(--line);background:#fff;color:#855619;border-radius:9px;padding:9px 14px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:13px}
+    .card{display:block;text-align:left;width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 3px 14px rgba(24,43,69,.045);padding:0}
+    .thumb{aspect-ratio:16/9;background:linear-gradient(130deg,#344454,#202e3c);position:relative;display:grid;place-items:center}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .play{position:absolute;display:grid;place-items:center;left:calc(50% - 20px);top:calc(50% - 20px);width:40px;height:40px;border-radius:50%;color:white;background:rgba(10,19,30,.75);font-size:18px;pointer-events:none}
+    .meta{padding:12px}.cat{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);font-weight:700}
+    .card h2{font-size:13px;line-height:1.4;margin:6px 0;color:var(--ink)}
+    .desc{font-size:11px;color:var(--muted);line-height:1.55;margin:4px 0 0}
+    .player{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:16px}
+    .player h2{margin:8px 0 12px;font-size:17px}.media{position:relative;aspect-ratio:16/9;background:#101923;border-radius:10px;overflow:hidden}
+    video,iframe{display:block;width:100%;height:100%;border:0;object-fit:contain;background:#101923}
+    .back{background:transparent;border:0;color:var(--accent);padding:5px 0;font-size:12px;font-weight:700}
+  </style>
+</head>
+<body>
+  <header><div class="monogram" aria-hidden="true">M</div><div class="brand">MarketMarney <b>TV</b></div></header>
+  <main id="mm-tv-root">
+    <span class="overline">VIDEO DESK / MARKETMARNEY</span>
+    <h1>MarketMarney TV</h1>
+    <p class="subtitle">Berita video, analisa market, dan edukasi finansial dalam satu tempat.</p>
+    <section class="player" id="player" hidden aria-label="Pemutar video"><button class="back" id="back" type="button">← Kembali ke daftar video</button><h2 id="playTitle"></h2><div class="media" id="media"></div></section>
+    <div class="filters" id="filters" aria-label="Filter kategori video" hidden></div>
+    <p class="status" id="state" role="status" aria-live="polite">Mengambil daftar video MarketMarney…</p>
+    <div class="grid" id="grid" aria-label="Daftar video MarketMarney"></div>
+    <p id="catalogSource" class="subtitle" aria-live="polite"></p>
+  </main>
+  <script>
+  (function(){
+    'use strict';
+    const root=document.documentElement, filters=document.getElementById('filters'), grid=document.getElementById('grid');
+    const state=document.getElementById('state'), player=document.getElementById('player'), media=document.getElementById('media');
+    const back=document.getElementById('back'), title=document.getElementById('playTitle');
+    const catalogSource=document.getElementById('catalogSource');
+    let entries=[],active='Semua',controller=null,request=0;
+    root.dataset.mmTvStatus='loading';
+    function str(v){return v==null?'':String(v).trim()}
+    function safeUrl(raw,localOnly){
+      try {
+        const u=new URL(str(raw),location.origin);
+        if(u.protocol!=='https:')return '';
+        if(localOnly && u.origin!==location.origin)return '';
+        return u.href;
+      }catch{return ''}
+    }
+    function caption(message, retry){
+      state.textContent=message;
+      state.hidden=false;
+      if(retry){
+        const button=document.createElement('button');button.type='button';button.className='retry';
+        button.textContent='Coba lagi';button.addEventListener('click',()=>location.reload());
+        state.appendChild(button);
+      }
+    }
+    function categories(){
+      const found=[...new Set(entries.map(v=>v.cat).filter(Boolean))];
+      return ['Semua',...found];
+    }
+    function drawFilters(){
+      filters.replaceChildren();
+      categories().forEach(cat=>{
+        const b=document.createElement('button');b.type='button';b.textContent=cat;
+        b.className=cat===active?'active':'';b.setAttribute('aria-pressed',cat===active?'true':'false');
+        b.addEventListener('click',()=>{active=cat;drawFilters();drawCards()});
+        filters.appendChild(b);
+      });
+      filters.hidden=false;
+    }
+    function drawCards(){
+      grid.replaceChildren();
+      const visible=entries.filter(v=>active==='Semua'||v.cat===active);
+      if(!visible.length){caption(entries.length?'Belum ada video di kategori ini.':'Belum ada video yang dipublikasikan.',false);return}
+      state.hidden=true;
+      visible.forEach(v=>{
+        const card=document.createElement('button');card.className='card';card.type='button';
+        card.setAttribute('aria-label','Tonton '+v.title);
+        const thumb=document.createElement('div');thumb.className='thumb';
+        const src=safeUrl(v.thumb,false);
+        if(src){
+          const img=document.createElement('img');img.src=src;img.alt='';img.loading='lazy';img.decoding='async';
+          thumb.appendChild(img);
+        }
+        const play=document.createElement('span');play.className='play';play.setAttribute('aria-hidden','true');play.textContent='▶';thumb.appendChild(play);
+        const meta=document.createElement('div');meta.className='meta';
+        const chip=document.createElement('div');chip.className='cat';chip.textContent=v.cat+(v.type==='youtube'?' · YouTube':' · Video');
+        const h=document.createElement('h2');h.textContent=v.title;
+        const desc=document.createElement('p');desc.className='desc';desc.textContent=v.desc.slice(0,160);
+        meta.append(chip,h,desc);card.append(thumb,meta);card.addEventListener('click',()=>openVideo(v));
+        grid.appendChild(card);
+      });
+    }
+    function youtubeId(url){
+      try {
+        const u=new URL(url);
+        if(u.hostname==='youtu.be')return u.pathname.slice(1).split('/')[0];
+        if(u.hostname.endsWith('youtube.com')||u.hostname.endsWith('youtube-nocookie.com')){
+          return u.searchParams.get('v')||u.pathname.match(/\/(?:embed|shorts)\/([^/]+)/)?.[1]||'';
+        }
+      }catch{}
+      return '';
+    }
+    function openVideo(v){
+      media.replaceChildren();title.textContent=v.title;player.hidden=false;
+      window.scrollTo({top:0,behavior:'smooth'});
+      if(v.type==='youtube'){
+        const id=youtubeId(v.url);
+        if(!/^[A-Za-z0-9_-]{11}$/.test(id)){media.textContent='Tautan YouTube tidak tersedia.';return}
+        const frame=document.createElement('iframe');
+        frame.title=v.title;frame.allowFullscreen=true;
+        frame.allow='encrypted-media; picture-in-picture; fullscreen';
+        frame.referrerPolicy='strict-origin-when-cross-origin';
+        frame.src='https://www.youtube-nocookie.com/embed/'+id+'?rel=0';
+        media.appendChild(frame);
+      }else{
+        const source=safeUrl(v.url,true);
+        if(!source){media.textContent='Video belum tersedia.';return}
+        const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';
+        video.src=source;const poster=safeUrl(v.thumb,false);if(poster)video.poster=poster;
+        media.appendChild(video);
+      }
+    }
+    back.addEventListener('click',()=>{player.hidden=true;media.replaceChildren()});
+    function renderCatalogue(data,source){
+      if(!data||!Array.isArray(data.videos))throw Error('invalid public catalogue');
+      const published=data.videos.filter(v=>v&&typeof v==='object'&&v.status==='published');
+      entries=published.slice(0,200).map(v=>({
+        title:str(v.title)||'Video MarketMarney',cat:str(v.cat||v.category)||'Video',
+        desc:str(v.desc||v.description),thumb:str(v.thumb||v.thumbnail_url||v.thumbnail),
+        url:str(v.url||v.video_url),type:str(v.type).toLowerCase()==='youtube'?'youtube':'mp4',
+        date:str(v.date)
+      })).filter(v=>v.url);
+      if(!entries.length)throw Error('no public videos');
+      active='Semua';drawFilters();drawCards();
+      root.dataset.mmTvStatus='ready';
+      root.dataset.mmTvSource=source;
+      catalogSource.textContent=source==='bundled-snapshot'
+        ?'Menampilkan katalog terakhir yang tersimpan. Video memerlukan koneksi internet.'
+        :'Daftar video diperbarui dari MarketMarney.';
+    }
+    // Called only by the Android Activity's bounded read-only HTTPS client.
+    // No JavaScriptInterface or user credential/data exchange is required.
+    window.MMNativeTvReceive=function(jsonText,source){
+      try {
+        const data=JSON.parse(jsonText);
+        renderCatalogue(data,source==='native-live'?'native-live':'bundled-snapshot');
+      }catch(error){
+        root.dataset.mmTvStatus='error';
+        caption('Katalog video tidak dapat dibaca. Coba lagi.',true);
+      }
+    };
+    async function load(){
+      const mine=++request;
+      if(controller)controller.abort();
+      controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),12000);
+      caption('Mengambil daftar video MarketMarney…',false);
+      catalogSource.textContent='';
+      root.dataset.mmTvStatus='loading';
+      try{
+        const res=await fetch('/api/content',{method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal});
+        if(!res.ok)throw Error('HTTP '+res.status);
+        const data=await res.json();
+        if(mine!==request)return;
+        renderCatalogue(data,'webview-live');
+      }catch(err){
+        if(mine!==request||root.dataset.mmTvStatus==='ready')return;
+        // Native Android read may still be pending; do not flash an error card.
+        caption('Menyambungkan katalog video…',false);
+        setTimeout(()=>{
+          if(root.dataset.mmTvStatus!=='ready'){
+            root.dataset.mmTvStatus='error';
+            caption('Daftar video belum dapat dimuat. Periksa koneksi dan coba lagi.',true);
+          }
+        },12000);
+      }finally{clearTimeout(timer)}
+    }
+    load();
+  })();
+  </script>
+</body>
+</html>
