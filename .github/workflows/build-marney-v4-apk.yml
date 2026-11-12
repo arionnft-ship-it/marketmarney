@@ -35,7 +35,10 @@ jobs:
       - name: Apply v4.1 stability improvements without changing UI
         run: python3 android-app/apply-marney-v4-1.py
 
-      - name: Verify v4.1 features and locked visual fingerprint
+      - name: Isolate Android 8 WebView recovery from Android 7 path
+        run: python3 android-app/refactor-marney-v4-1-compat.py
+
+      - name: Verify v4.1 features, Android 7 path, and locked visual fingerprint
         run: python3 android-app/finalize-marney-v4-1.py
 
       - name: Snapshot generated Android sources
@@ -82,7 +85,7 @@ jobs:
         working-directory: android-app
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Validate identity, permissions, stability and preserved interface
+      - name: Validate identity, permissions, compatibility, stability and preserved interface
         shell: bash
         run: |
           set -euo pipefail
@@ -97,6 +100,7 @@ jobs:
           grep -F "package: name='com.marketmarney.mobile'" Marney-v4.1.0-badging.txt
           grep -F "versionCode='7'" Marney-v4.1.0-badging.txt
           grep -F "versionName='4.1.0-beta'" Marney-v4.1.0-badging.txt
+          grep -F "sdkVersion:'24'" Marney-v4.1.0-badging.txt
           grep -F 'com.marketmarney.mobile.MainActivity' Marney-v4.1.0-badging.txt
           grep -F "uses-feature-not-required: name='android.hardware.camera'" Marney-v4.1.0-badging.txt
           grep -F "uses-feature-not-required: name='android.hardware.microphone'" Marney-v4.1.0-badging.txt
@@ -109,6 +113,11 @@ jobs:
           grep -F 'top.setBackgroundColor(Color.rgb(6, 21, 38));' "$SOURCE"
           grep -F 'String[] labels = {"Beranda", "Pasar", "Berita", "Social", "Akun"};' "$SOURCE"
           grep -F 'MARNEY_ANDROID_V4_1_STABLE_UI_PRESERVED' "$SOURCE"
+          grep -F 'MARNEY_ANDROID_V4_1_API26_ISOLATED' "$SOURCE"
+          grep -F 'class MarketMarneyWebViewClient extends WebViewClient' "$SOURCE"
+          grep -F 'class RendererAwareWebViewClient extends MarketMarneyWebViewClient' "$SOURCE"
+          grep -F 'browser.setWebViewClient(createWebViewClient(progress, title));' "$SOURCE"
+          ! grep -F 'browser.setWebViewClient(new WebViewClient()' "$SOURCE"
           grep -F 'onSaveInstanceState(Bundle outState)' "$SOURCE"
           grep -F 'onRenderProcessGone' "$SOURCE"
           grep -F 'takePersistableUriPermission' "$SOURCE"
