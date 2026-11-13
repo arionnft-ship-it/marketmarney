@@ -1,118 +1,119 @@
 'use strict';
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const vm=require('node:vm');
-const fs=require('node:fs');
-const {STYLE_ID,CLIENT_ID,ROOT_ID,WIDGET_SCRIPT,PROVIDER_URL,CONFIG,CLIENT,CSS,injectTickerHtml}=require('./news-ticker.cjs');
-function original(){return '<!doctype html><html lang="id"><head><meta charset="utf-8"></head><body><main id="app"><h1>MarketMarney</h1></main></body></html>';}
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+const {STYLE_ID,CLIENT_ID,ROOT_ID,API_PATH,PROVIDER_URL,PROVIDERS,CLIENT,CSS,decodeXml,allowedUrl,parseRss,createMarketTicker,injectTickerHtml}=require('./news-ticker.cjs');
+const XML='<?xml version="1.0"?><rss version="2.0"><channel><title>News</title>'+
+ '<item><title><![CDATA[Gold &amp; Silver Markets Rise After CPI]]></title><link>https://www.actionforex.com/live-comments/gold-test/</link><pubDate>Fri, 13 Nov 2026 02:00:00 GMT</pubDate></item>'+
+ '<item><title><![CDATA[News about private data leak]]></title><link>https://127.0.0.1/private</link><pubDate>Fri, 13 Nov 2026 02:00:00 GMT</pubDate></item>'+
+ '<item><title>Foreign link should not display</title><link>https://evil.example.org/news</link><pubDate>Fri, 13 Nov 2026 02:00:00 GMT</pubDate></item>'+
+ '<item><title>Outdated market story will not count as latest</title><link>https://www.actionforex.com/old/</link><pubDate>Mon, 1 Jan 2024 02:00:00 GMT</pubDate></item></channel></rss>';
+const NOW=Date.parse('2026-11-13T09:00:00Z');
+
+test('RSS titles are real attributed headlines, cleaned, limited and valid HTTPS provider links only',()=>{
+ const action=PROVIDERS[0];
+ const rows=parseRss(XML,action,NOW);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].title,'Gold & Silver Markets Rise After CPI');
+ assert.equal(rows[0].source,'ActionForex');
+ assert.equal(rows[0].url,'https://www.actionforex.com/live-comments/gold-test/');
+ assert.equal(rows[0].published,'2026-11-13T02:00:00.000Z');
+ assert.equal(allowedUrl('https://actionforex.com/story',action.domain),'https://actionforex.com/story');
+ assert.equal(allowedUrl('https://actionforex.com.evil.org/story',action.domain),null);
+ assert.equal(allowedUrl('http://actionforex.com/story',action.domain),null);
+ assert.equal(allowedUrl('https://127.0.0.1/secret',action.domain),null);
+ assert.equal(decodeXml('&lt;news&gt; &amp; &quot;gold&quot;'),'<news> & "gold"');
+ assert.throws(()=>parseRss('invalid data',action,NOW),/unsupported/);
+});
+test('Public RSS backend refreshes, caches, deduplicates and serves no invented news on outage',async()=>{
+ let requests=0;
+ const provider=PROVIDERS[0];
+ const ticker=createMarketTicker({providers:[provider],now:()=>NOW,cacheMs:300000,
+  fetchImpl:async(uri)=>{requests++;assert.equal(uri,provider.url);return {ok:true,status:200,headers:{get:()=>null},text:async()=>XML}}});
+ const first=await ticker.snapshot(),second=await ticker.snapshot();
+ assert.equal(first.body,second.body);
+ assert.equal(requests,1);
+ const payload=JSON.parse(first.body);
+ assert.equal(payload.ok,true);
+ assert.equal(payload.status,'connected');
+ assert.equal(payload.headlines.length,1);
+ assert.equal(payload.headlines[0].source,'ActionForex');
+ assert.equal(payload.headlines[0].title,'Gold & Silver Markets Rise After CPI');
+ const empty=createMarketTicker({providers:[provider],now:()=>NOW,fetchImpl:async()=>{throw Error('offline')}});
+ const noNews=JSON.parse((await empty.snapshot()).body);
+ assert.equal(noNews.ok,false);
+ assert.deepEqual(noNews.headlines,[]);
+});
+test('Endpoint is GET/HEAD only, scoped to news ticker and respects ETag',async()=>{
+ const provider=PROVIDERS[0];
+ const ticker=createMarketTicker({providers:[provider],now:()=>NOW,fetchImpl:async()=>({ok:true,headers:{get:()=>null},text:async()=>XML})});
+ assert.equal(ticker.owns({method:'POST',url:API_PATH}),false);
+ assert.equal(ticker.owns({method:'GET',url:'/api/admin'}),false);
+ assert.equal(ticker.owns({method:'GET',url:API_PATH+'?v=1'}),true);
+ const response=()=>{
+  const r={status:0,headers:null,body:null,writeHead(code,headers){this.status=code;this.headers=headers},
+  end(body){this.body=body}};return r;
+ };
+ const first=response();
+ await ticker.handle({method:'GET',url:API_PATH,headers:{}},first);
+ assert.equal(first.status,200);
+ assert.equal(first.headers['X-Content-Type-Options'],'nosniff');
+ assert.equal(JSON.parse(first.body).headlines.length,1);
+ const second=response();
+ await ticker.handle({method:'GET',url:API_PATH,headers:{'if-none-match':first.headers.ETag}},second);
+ assert.equal(second.status,304);
+ const head=response();await ticker.handle({method:'HEAD',url:API_PATH,headers:{}},head);
+ assert.equal(head.status,200);assert.equal(head.body,'');
+});
 class FakeNode{
- constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.textContent='';this.className='';this.handlers={};this.hidden=false;this.src='';this.href='';this.onload=null;this.onerror=null;}
- setAttribute(k,v){this.attrs[k]=String(v);}
- append(...items){this.children.push(...items);}
- appendChild(child){this.children.push(child);}
- prepend(child){this.children.unshift(child);}
- addEventListener(name,callback){this.handlers[name]=callback;}
+ constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.textContent='';this.className='';this.hidden=false;this.handlers={};this.style={setProperty:(k,v)=>{this.property={k,v}}};this.classList={add:(name)=>{this.selected=name},remove:(name)=>{if(this.selected===name)this.selected=''}};}
+ get firstChild(){return this.children[0]??null;}
+ setAttribute(k,v){this.attributes[k]=String(v)}
+ append(...children){this.children.push(...children)}
+ prepend(...children){this.children.unshift(...children)}
+ removeChild(child){this.children.splice(this.children.indexOf(child),1)}
+ addEventListener(name,cb){this.handlers[name]=cb}
 }
-test('TradingView replaces FinancialJuice and Banx without changing homepage content',()=>{
- const page=original(),html=injectTickerHtml(page);
- assert.match(html,new RegExp('id="'+STYLE_ID+'"'));
- assert.match(html,new RegExp('id="'+CLIENT_ID+'"'));
- assert.ok(html.includes('MarketMarney</h1>'));
- assert.equal(injectTickerHtml(html),html);
- assert.equal(page,original());
- assert.equal(injectTickerHtml('<html><body>Invalid</body></html>'),'<html><body>Invalid</body></html>');
- assert.doesNotMatch(html,/feed\.financialjuice\.com|twitter-timeline|banxnetwork\.com|BERITA 24\/7/);
- assert.match(html,/MARKET NEWS/);
-});
-function scenario(pathname){
- const body=new FakeNode('body');
- const doc={body,getElementById(){return null;},createElement(tag){return new FakeNode(tag);}};
- let observer=null;
- class MockObserver{
-  constructor(cb,options){this.cb=cb;this.options=options;observer=this;}
-  observe(node){this.target=node;}
-  disconnect(){this.disconnected=true;}
- }
- vm.runInNewContext(CLIENT,{document:doc,JSON,location:{pathname},IntersectionObserver:MockObserver},{timeout:600});
- return {body,observer};
-}
-test('Homepage shows headlines panel by default, loads widget when near viewport and never duplicates it',()=>{
- const {body,observer}=scenario('/');
+test('Client renders one ticker strip, never a panel, with two seamless ticker segments',async()=>{
+ const body=new FakeNode('body'),timers=[],docHandlers={},doc={body,hidden:false,
+  getElementById(){return null},
+  createElement(tag){return new FakeNode(tag)},
+  addEventListener(name,cb){docHandlers[name]=cb}};
+ const result={headlines:[{id:'a1',title:'Gold moves sharply after central bank release',source:'ActionForex',url:'https://www.actionforex.com/live-comments/gold-test/'}]};
+ const context={document:doc,URL,fetch:async()=>({ok:true,json:async()=>result}),
+   setInterval:(fn,ms)=>{timers.push({fn,ms})}};
+ vm.runInNewContext(CLIENT,context,{timeout:1000});
+ await new Promise(resolve=>setImmediate(resolve));
  assert.equal(body.children.length,1);
- const root=body.children[0];assert.equal(root.id,ROOT_ID);
- assert.equal(root.attrs.role,'region');
- const [strip,panel]=root.children;
- const [,info,button,link]=strip.children;
- assert.match(info.children[0].textContent,/TRADINGVIEW/);
- assert.equal(button.textContent,'Tutup berita');
- assert.equal(button.attrs['aria-expanded'],'true');
- assert.equal(panel.hidden,false);
- assert.equal(link.href,PROVIDER_URL);
- assert.equal(link.rel,'noopener noreferrer');
- const [intro,host,footer]=panel.children;
- assert.match(intro.children[1].textContent,/mungkin tidak selalu bahasa Indonesia/);
- assert.equal(host.children.length,0,'defer the third-party script until the widget is visible');
- assert.equal(footer.children[1].href,PROVIDER_URL);
- assert.equal(observer.target,panel);
- assert.equal(observer.options.rootMargin,'160px 0px');
- observer.cb([{isIntersecting:false}]);
- assert.equal(host.children.length,0);
- observer.cb([{isIntersecting:true}]);
- assert.equal(observer.disconnected,true);
- assert.equal(host.children.length,2);
- const [status,container]=host.children;
- assert.match(status.textContent,/Memuat berita/);
- assert.equal(container.children[0].className,'tradingview-widget-container__widget');
- const script=container.children[1];
- assert.equal(script.src,WIDGET_SCRIPT);
- assert.equal(script.async,true);
- assert.deepEqual(JSON.parse(script.textContent),CONFIG);
- script.onload();
- assert.equal(status.textContent,'Sumber: TradingView');
- button.handlers.click();
- assert.equal(panel.hidden,true);
- assert.equal(button.textContent,'Lihat berita');
- assert.equal(button.attrs['aria-expanded'],'false');
- button.handlers.click();
- assert.equal(panel.hidden,false);
- assert.equal(button.textContent,'Tutup berita');
- assert.equal(host.children.length,2,'never create duplicate widgets');
+ const root=body.children[0];
+ assert.equal(root.id,ROOT_ID);
+ assert.equal(root.children.length,3,'label, ticker viewport, and source — no expandable news panel');
+ const viewport=root.children[1],track=viewport.children[0],placeholder=viewport.children[1];
+ assert.equal(placeholder.hidden,true);
+ assert.equal(track.children.length,2);
+ const group=track.children[0],repeated=track.children[1];
+ assert.equal(repeated.attributes['aria-hidden'],'true');
+ assert.equal(group.children.length,1);
+ assert.equal(group.children[0].href,result.headlines[0].url);
+ assert.equal(group.children[0].target,'_blank');
+ assert.equal(repeated.children[0].tabIndex,-1);
+ assert.equal(track.classList.selected,'mm-tv-news-playing');
+ assert.equal(timers[0].ms,300000);
+ assert.ok(!root.children.some(x=>x.className.includes('panel')));
 });
-test('News stays collapsed on Social Marney and loads when requested',()=>{
- const {body,observer}=scenario('/grup-trader.html');
- const [strip,panel]=body.children[0].children;
- const button=strip.children[2];
- const host=panel.children[1];
- assert.equal(panel.hidden,true);
- assert.equal(button.textContent,'Lihat berita');
- assert.equal(button.attrs['aria-expanded'],'false');
- assert.equal(observer,null,'no eager observer on non-home pages');
- assert.equal(host.children.length,0);
- button.handlers.click();
- assert.equal(panel.hidden,false);
- assert.equal(button.textContent,'Tutup berita');
- assert.equal(host.children.length,2);
- host.children[1].children[1].onerror();
- assert.match(host.children[0].textContent,/Gunakan tautan sumber/);
-});
-test('Official TradingView widget code is attributed, not scraped or falsely translated',()=>{
- const source=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
- assert.equal(WIDGET_SCRIPT,'https://s3.tradingview.com/external-embedding/embed-widget-timeline.js');
- assert.equal(PROVIDER_URL,'https://id.tradingview.com/news/');
- assert.equal(CONFIG.feedMode,'all_symbols');
- assert.equal(CONFIG.displayMode,'regular');
- assert.equal(CONFIG.locale,'id');
- assert.match(CSS,/mm-tv-news-panel\[hidden\]/);
- assert.match(CSS,/@media\(max-width:650px\)/);
- assert.doesNotMatch(source,/news\.financialjuice\.com|feed\.financialjuice|banxnetwork|twitter-timeline|api\/content|api\/admin|Bearer |apiKey|XMLHttpRequest|fetch\(/);
-});
-test('Ticker remains scoped to page injection, no third-party script globally loaded',()=>{
- const bootstrap=fs.readFileSync(require.resolve('./bootstrap.cjs'),'utf8');
- assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(html\)\)/);
- assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(raw\)\)/);
- const html=injectTickerHtml(original());
- assert.equal((html.match(/<script id=/g)||[]).length,1);
- assert.equal((html.match(/<style id=/g)||[]).length,1);
+test('Ticker injection is homepage compatible, standalone, no inline third-party scripts',()=>{
+ const before='<!doctype html><html lang="id"><head></head><body><main id="app">MARNEY</main></body></html>';
+ const html=injectTickerHtml(before);
+ assert.ok(html.includes('id="'+STYLE_ID+'"'));
+ assert.ok(html.includes('id="'+CLIENT_ID+'"'));
+ assert.equal(injectTickerHtml(html),html,'no duplicate');
+ assert.ok(html.includes('MARNEY'));
+ assert.equal(injectTickerHtml('<html><body>missing head</body></html>'),'<html><body>missing head</body></html>');
  assert.doesNotMatch(html,/<script[^>]+src=["']https?:/i);
- assert.doesNotMatch(html,/BERITA 24\/7/);
+ assert.ok(CSS.includes('@keyframes mm-market-news-scroll'));
+ assert.ok(CSS.includes('prefers-reduced-motion'));
+ assert.ok(CSS.includes('animation-play-state:paused'));
+ assert.equal(API_PATH,'/api/marketmarney/news-ticker');
+ assert.equal(PROVIDER_URL,'https://www.actionforex.com/');
+ const bootstrap=fs.readFileSync(require.resolve('./bootstrap.cjs'),'utf8');
+ assert.match(bootstrap,/marketTicker\.owns\(args\[0\]\)/);
+ assert.match(bootstrap,/injectTickerHtml\(injectReadingWidthStyle\(html\)\)/);
 });
