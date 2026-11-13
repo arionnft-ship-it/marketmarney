@@ -30,3 +30,5 @@ Versi ini melanjutkan 4.38 dengan fokus pada pemutaran Reel aktif, penggunaan ba
 - Package: com.marketmarney.mobile.beta439
 
 Build ini adalah APK beta pengujian dan belum memakai kunci produksi Google Play Store.
+
+Rebuild instalasi diverifikasi kembali pada 13 November 2026 tanpa mengubah antarmuka aplikasi.
