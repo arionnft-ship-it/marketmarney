@@ -19,6 +19,8 @@ jobs:
           node-version: '22'
       - run: node --check warxau-fbs/admin-portal.cjs
       - run: node --check warxau-fbs/marney-token-creator.cjs
+      - run: node --check warxau-fbs/marney-whitepaper.cjs
+      - run: node --test warxau-fbs/marney-whitepaper.test.cjs
       - run: node --check warxau-fbs/marney-token-creator-client.js
       - run: node --check warxau-fbs/token-creator-nav.cjs
       - run: node --test warxau-fbs/marney-token-creator.test.cjs warxau-fbs/token-creator-nav.test.cjs
