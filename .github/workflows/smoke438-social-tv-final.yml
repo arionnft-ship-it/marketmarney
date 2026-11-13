@@ -1,0 +1,85 @@
+name: Marney 4.38 Social TV Final Smoke
+on:
+  push:
+    branches: [fix/marney438-social-timeline-tv-20261113]
+    paths: ['.github/workflows/smoke438-social-tv-final.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '14024628098'
+          path: artifact
+          github-token: ${{ github.token }}
+          repository: arionnft-ship-it/marketmarney
+      - name: Verify final APK package
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=artifact/Marney438-SocialTimeline-MarketMarneyTV/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+          test -s "$APK"
+          echo '9aca14f03b19e2fec117e21ef526f807219edb4bd1f79643f349bdd31cef1041  '"$APK" | sha256sum -c -
+          unzip -t "$APK" | tail -n 2
+      - name: Prepare stable device smoke
+        shell: bash
+        run: |
+          cat > smoke438socialtv.sh <<'SH'
+          set -euo pipefail
+          mkdir -p smoke438socialtv
+          APK=artifact/Marney438-SocialTimeline-MarketMarneyTV/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+          PKG=com.marketmarney.mobile.beta438tv2
+          ACT=com.marketmarney.mobile.MainActivity
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r "$APK" | tee smoke438socialtv/install.txt
+
+          adb shell am force-stop "$PKG"
+          adb logcat -c
+          adb shell am start -W -n "$PKG/$ACT" --ei startTab 4 | tee smoke438socialtv/social-start.txt
+          sleep 6
+          adb shell pidof "$PKG" | tee smoke438socialtv/social-pid.txt
+          adb shell dumpsys activity activities > smoke438socialtv/social-activity.txt
+          grep -F "$PKG/$ACT" smoke438socialtv/social-activity.txt
+          adb logcat -d -s AndroidRuntime:E > smoke438socialtv/social-runtime-errors.txt
+          test ! -s smoke438socialtv/social-runtime-errors.txt
+
+          adb shell am force-stop "$PKG"
+          adb logcat -c
+          adb shell am start -W -n "$PKG/$ACT" --ei startTab 2 | tee smoke438socialtv/tv-start.txt
+          sleep 8
+          adb shell pidof "$PKG" | tee smoke438socialtv/tv-pid.txt
+          adb shell dumpsys activity activities > smoke438socialtv/tv-activity.txt
+          grep -F "$PKG/$ACT" smoke438socialtv/tv-activity.txt
+          adb shell dumpsys package "$PKG" > smoke438socialtv/package.txt
+          grep -F 'versionName=4.38.2-social-tv' smoke438socialtv/package.txt
+          adb logcat -d -s AndroidRuntime:E > smoke438socialtv/tv-runtime-errors.txt
+          test ! -s smoke438socialtv/tv-runtime-errors.txt
+          adb logcat -d -s MMAPP_TV:I '*:S' > smoke438socialtv/tv-route-log.txt || true
+          echo 'PASS: APK installs, Social opens, TV opens, no AndroidRuntime crash' | tee smoke438socialtv/RESULT.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash smoke438socialtv.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney438-SocialTV-Final-Smoke
+          path: smoke438socialtv/
+          if-no-files-found: error
+          retention-days: 30
