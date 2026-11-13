@@ -24,31 +24,42 @@ test('TradingView replaces FinancialJuice and Banx without changing homepage con
  assert.doesNotMatch(html,/feed\.financialjuice\.com|twitter-timeline|banxnetwork\.com|BERITA 24\/7/);
  assert.match(html,/MARKET NEWS/);
 });
-test('News panel is accessible, and TradingView loads only on explicit interaction',()=>{
+function scenario(pathname){
  const body=new FakeNode('body');
  const doc={body,getElementById(){return null;},createElement(tag){return new FakeNode(tag);}};
- vm.runInNewContext(CLIENT,{document:doc,JSON},{timeout:500});
+ let observer=null;
+ class MockObserver{
+  constructor(cb,options){this.cb=cb;this.options=options;observer=this;}
+  observe(node){this.target=node;}
+  disconnect(){this.disconnected=true;}
+ }
+ vm.runInNewContext(CLIENT,{document:doc,JSON,location:{pathname},IntersectionObserver:MockObserver},{timeout:600});
+ return {body,observer};
+}
+test('Homepage shows headlines panel by default, loads widget when near viewport and never duplicates it',()=>{
+ const {body,observer}=scenario('/');
  assert.equal(body.children.length,1);
- const root=body.children[0];
- assert.equal(root.id,ROOT_ID);
+ const root=body.children[0];assert.equal(root.id,ROOT_ID);
  assert.equal(root.attrs.role,'region');
  const [strip,panel]=root.children;
- assert.equal(strip.children.length,4);
  const [,info,button,link]=strip.children;
  assert.match(info.children[0].textContent,/TRADINGVIEW/);
- assert.equal(button.textContent,'Lihat berita');
- assert.equal(button.attrs['aria-expanded'],'false');
- assert.equal(link.href,PROVIDER_URL);
- assert.equal(link.rel,'noopener noreferrer');
- assert.equal(panel.hidden,true);
- const [intro,host,footer]=panel.children;
- assert.match(intro.children[1].textContent,/mungkin tidak selalu bahasa Indonesia/);
- assert.equal(host.children.length,0);
- assert.equal(footer.children[1].href,PROVIDER_URL);
- button.handlers.click();
- assert.equal(panel.hidden,false);
  assert.equal(button.textContent,'Tutup berita');
  assert.equal(button.attrs['aria-expanded'],'true');
+ assert.equal(panel.hidden,false);
+ assert.equal(link.href,PROVIDER_URL);
+ assert.equal(link.rel,'noopener noreferrer');
+ const [intro,host,footer]=panel.children;
+ assert.match(intro.children[1].textContent,/mungkin tidak selalu bahasa Indonesia/);
+ assert.equal(host.children.length,0,'defer the third-party script until the widget is visible');
+ assert.equal(footer.children[1].href,PROVIDER_URL);
+ assert.equal(observer.target,panel);
+ assert.equal(observer.options.rootMargin,'160px 0px');
+ observer.cb([{isIntersecting:false}]);
+ assert.equal(host.children.length,0);
+ observer.cb([{isIntersecting:true}]);
+ assert.equal(observer.disconnected,true);
+ assert.equal(host.children.length,2);
  const [status,container]=host.children;
  assert.match(status.textContent,/Memuat berita/);
  assert.equal(container.children[0].className,'tradingview-widget-container__widget');
@@ -56,12 +67,33 @@ test('News panel is accessible, and TradingView loads only on explicit interacti
  assert.equal(script.src,WIDGET_SCRIPT);
  assert.equal(script.async,true);
  assert.deepEqual(JSON.parse(script.textContent),CONFIG);
- script.onerror();
- assert.match(status.textContent,/Gunakan tautan sumber/);
+ script.onload();
+ assert.equal(status.textContent,'Sumber: TradingView');
  button.handlers.click();
  assert.equal(panel.hidden,true);
+ assert.equal(button.textContent,'Lihat berita');
+ assert.equal(button.attrs['aria-expanded'],'false');
  button.handlers.click();
- assert.equal(host.children.length,2,'no duplicate widget loading');
+ assert.equal(panel.hidden,false);
+ assert.equal(button.textContent,'Tutup berita');
+ assert.equal(host.children.length,2,'never create duplicate widgets');
+});
+test('News stays collapsed on Social Marney and loads when requested',()=>{
+ const {body,observer}=scenario('/grup-trader.html');
+ const [strip,panel]=body.children[0].children;
+ const button=strip.children[2];
+ const host=panel.children[1];
+ assert.equal(panel.hidden,true);
+ assert.equal(button.textContent,'Lihat berita');
+ assert.equal(button.attrs['aria-expanded'],'false');
+ assert.equal(observer,null,'no eager observer on non-home pages');
+ assert.equal(host.children.length,0);
+ button.handlers.click();
+ assert.equal(panel.hidden,false);
+ assert.equal(button.textContent,'Tutup berita');
+ assert.equal(host.children.length,2);
+ host.children[1].children[1].onerror();
+ assert.match(host.children[0].textContent,/Gunakan tautan sumber/);
 });
 test('Official TradingView widget code is attributed, not scraped or falsely translated',()=>{
  const source=fs.readFileSync(require.resolve('./news-ticker.cjs'),'utf8');
