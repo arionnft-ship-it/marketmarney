@@ -139,6 +139,7 @@ function boot(){
  fs.writeFileSync(file,gateway,{mode:0o600});require(file);
  // One-time owner-approved TV import. No-op unless signed Hedra source is configured.
  void require('./tv-fundamental-once.cjs').run();
+ void require('./tv-psychology-subtitle-once.cjs').run();
  console.log('MM_FBS_PRIVATE_RECEIVER_READY '+JSON.stringify({version:'1.0',scope:'private',publicPageUnchanged:true}));
 }
 if(require.main===module){try{boot();}catch(e){console.error('MM_FBS_BOOT_FAILED '+String(e.message).slice(0,160));process.exit(1);}}
