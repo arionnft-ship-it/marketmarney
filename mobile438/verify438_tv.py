@@ -40,8 +40,6 @@ required = [
     'MMAPP_TV',
     'ready tab=2 catalogue=MarketMarney TV',
     'if("mm-app-tv".equals(h)&&tab!=XAUWAR)',
-    'tab==XAUWAR?"MarketMarney TV":tab==MARKET?',
-    'tab==XAUWAR?"Menyiapkan daftar video. Anda tetap bisa berpindah menu."',
     'asset("fluid438.css")',
     'setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,lowRamDevice)',
     'int retainLimit=lowRamDevice||nativePowerSave?1:2',
