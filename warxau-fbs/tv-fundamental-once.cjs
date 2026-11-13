@@ -88,7 +88,8 @@ async function downloadVideo(source,destination){
  const length=Number(res.headers.get('content-length')||0);
  if(length>MAX_BYTES)throw Error('video_source_too_large');
  const mime=String(res.headers.get('content-type')||'');
- if(mime&&!/video\/mp4|application\/octet-stream/i.test(mime))throw Error('source_mime_invalid');
+ console.log('MM_TV_FUNDAMENTAL_SOURCE_HEADERS '+JSON.stringify({status:res.status,mime:mime.slice(0,80),length}));
+ // Verify actual MP4 signature and ffprobe streams instead of CDN mime header.
  let n=0;
  const hash=crypto.createHash('sha256');
  const limiter=new Transform({transform(chunk,encoding,cb){n+=chunk.length;if(n>MAX_BYTES)return cb(Error('video_too_large'));hash.update(chunk);cb(null,chunk)}});
