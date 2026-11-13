@@ -1,0 +1,50 @@
+name: MarketMarney Live News Marquee Tests
+on:
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+    paths:
+      - .github/workflows/marketmarney-live-news-marquee.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify public ticker syntax, regression, security and injection
+        run: |
+          set -euo pipefail
+          cd warxau-fbs
+          node --check news-ticker.cjs
+          node --check bootstrap.cjs
+          node --test news-ticker.test.cjs
+      - name: Verify live RSS headline providers can be reached
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, xml.etree.ElementTree as ET
+          sources=[
+            ('ActionForex','https://www.actionforex.com/feed/'),
+            ('MarketPulse','https://www.marketpulse.com/feed/'),
+            ('Federal Reserve','https://www.federalreserve.gov/feeds/press_all.xml'),
+          ]
+          working=0
+          for name,url in sources:
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'MarketMarney-RSSReader/1.0'})
+                  with urllib.request.urlopen(req,timeout=12) as r:
+                      data=r.read(250000)
+                  root=ET.fromstring(data)
+                  n=len(root.findall('.//item'))
+                  print('RSS_PROVIDER',name,'items',n)
+                  if n>0: working+=1
+              except Exception as e:
+                  print('RSS_PROVIDER_UNAVAILABLE',name,str(e)[:170])
+          assert working>=1, 'No usable RSS provider for live ticker'
+          PY
