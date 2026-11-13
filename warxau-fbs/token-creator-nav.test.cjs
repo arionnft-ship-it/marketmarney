@@ -1,0 +1,3 @@
+'use strict';const test=require('node:test'),assert=require('node:assert/strict');const vm=require('node:vm');const {injectTokenCreatorNav,SCRIPT}=require('./token-creator-nav.cjs');
+test('homepage link appears once, only a local token creator link',()=>{const html='<html><head></head><body><main id="app"></main></body></html>';const output=injectTokenCreatorNav(html);assert.match(output,/mm-token-creator-menu-script/);assert.match(output,/\/token-creator/);assert.equal(injectTokenCreatorNav(output),output)});
+test('client navigation script parses',()=>{new vm.Script(SCRIPT.replace(/^<script[^>]*>/,'').replace(/<\/script>$/,''))});
