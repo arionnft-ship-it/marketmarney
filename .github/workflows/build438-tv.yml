@@ -1,4 +1,4 @@
-name: Marney 4.38 Social Timeline + TV Fix
+name: Marney 4.38.3 Social Timeline + Stable TV
 on:
   push:
     branches: [fix/marney438-social-feed-tv-20261113]
@@ -27,7 +27,7 @@ jobs:
           "$S" "platforms;android-36" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with: {gradle-version: '8.13'}
-      - name: Reconstruct reviewed Marney 4.38 and apply focused fixes
+      - name: Reconstruct Marney 4.38 and apply focused fixes
         shell: bash
         run: |
           set -euo pipefail
@@ -72,6 +72,16 @@ jobs:
           mv android436 android437; python3 mobile437/prepare437.py
           mv android437 android438; python3 mobile438/prepare438.py
           python3 mobile438/prepare438_tv.py android438
+          python3 mobile438/prepare438_local_tv.py android438
+          python3 mobile438/build_tv_snapshot.py android438/app/src/main/assets/marketmarney-tv-catalogue.json
+          python3 -m py_compile mobile438/prepare438_tv.py mobile438/prepare438_local_tv.py mobile438/build_tv_snapshot.py mobile438/verify438_tv.py
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('android438/app/src/main/assets/marketmarney-tv.html').read_text(encoding='utf-8')
+          assert html.count('<script>')==1 and html.count('</script>')==1
+          Path('/tmp/marketmarney-tv-inline.js').write_text(html.split('<script>',1)[1].split('</script>',1)[0],encoding='utf-8')
+          PY
+          node --check /tmp/marketmarney-tv-inline.js
           node --check android438/app/src/main/assets/social411/5eab9da17fe2c659.js
           node --check android438/app/src/main/assets/social411/bundle427.js
           node --check android438/app/src/main/assets/group48/4e221ebb961158b1.js
@@ -82,7 +92,7 @@ jobs:
           node --check android438/app/src/main/assets/reels433.js
           node --check android438/app/src/main/assets/lifecycle435.js
           node --check android438/app/src/main/assets/runtime436.js
-      - name: Build verified APK
+      - name: Build and statically verify APK
         shell: bash
         run: |
           set -euo pipefail
@@ -99,8 +109,8 @@ jobs:
           s=p.read_text(encoding='utf-8')
           replacements={
               "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438tv'",
-              'versionCode 42':'versionCode 44',
-              "versionName '4.38.0-beta'":"versionName '4.38.2-tv'",
+              'versionCode 42':'versionCode 45',
+              "versionName '4.38.0-beta'":"versionName '4.38.3-tv'",
           }
           for old,new in replacements.items():
               assert s.count(old)==1,(old,s.count(old))
@@ -109,36 +119,39 @@ jobs:
           PY
           gradle --no-daemon --project-dir android438-install :app:assembleDebug
           INSTALL_APK=android438-install/app/build/outputs/apk/debug/app-debug.apk
-          cp "$INSTALL_APK" deliver/Marney438-Social-TV-Fixed.apk
+          cp "$INSTALL_APK" deliver/Marney438-Social-TV-Stable.apk
 
           BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
           "$BT/apksigner" verify --print-certs "$BASE_APK" > deliver/Marney438-Social-TV-TestBase-Certificate.txt
-          "$BT/apksigner" verify --print-certs "$INSTALL_APK" > deliver/Marney438-Social-TV-Fixed-Certificate.txt
+          "$BT/apksigner" verify --print-certs "$INSTALL_APK" > deliver/Marney438-Social-TV-Stable-Certificate.txt
           "$BT/aapt" dump badging "$BASE_APK" > deliver/Marney438-Social-TV-TestBase-Package.txt
-          "$BT/aapt" dump badging "$INSTALL_APK" > deliver/Marney438-Social-TV-Fixed-Package.txt
+          "$BT/aapt" dump badging "$INSTALL_APK" > deliver/Marney438-Social-TV-Stable-Package.txt
           grep -F "name='com.marketmarney.mobile.beta438'" deliver/Marney438-Social-TV-TestBase-Package.txt
           grep -F "versionCode='42'" deliver/Marney438-Social-TV-TestBase-Package.txt
-          grep -F "name='com.marketmarney.mobile.beta438tv'" deliver/Marney438-Social-TV-Fixed-Package.txt
-          grep -F "versionCode='44'" deliver/Marney438-Social-TV-Fixed-Package.txt
-          grep -F "versionName='4.38.2-tv'" deliver/Marney438-Social-TV-Fixed-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta438tv'" deliver/Marney438-Social-TV-Stable-Package.txt
+          grep -F "versionCode='45'" deliver/Marney438-Social-TV-Stable-Package.txt
+          grep -F "versionName='4.38.3-tv'" deliver/Marney438-Social-TV-Stable-Package.txt
           python3 mobile438/verify438_tv.py android438 android438-install deliver
           cat > deliver/README-INSTALASI.txt <<'TXT'
-          Marney 4.38.2 — Social Linimasa + MarketMarney TV
+          Marney 4.38.3 — Social Linimasa + MarketMarney TV Stabil
 
           Dasar tampilan: Marney 4.38 Fluid, tidak diubah.
+
           Perbaikan:
           1. Setelah login Social Marney berhasil, aplikasi langsung membuka Linimasa.
-          2. Tab Social Marney selalu mulai dari Linimasa.
-          3. MarketMarney TV menunggu katalog video terbaru benar-benar tampil.
-          4. Tombol TV dapat ditekan ulang untuk memulihkan katalog tanpa mengubah tab lain.
+          2. Tab Social Marney tetap memakai rute Linimasa #mm44-feed.
+          3. MarketMarney TV tidak lagi membuka homepage website yang berat.
+          4. TV memakai halaman lokal ringan dengan katalog publik terbaru.
+          5. Bila API TV sedang gagal, aplikasi memakai snapshot publik terakhir di APK.
+          6. Tombol TV dapat ditekan ulang untuk mencoba memuat katalog kembali.
 
           Package: com.marketmarney.mobile.beta438tv
-          Version: 4.38.2-tv (44)
+          Version: 4.38.3-tv (45)
 
           Jika pembaruan ditolak karena tanda tangan beta berbeda, hapus versi beta438tv lama lalu instal APK ini. Akun tetap tersimpan di server, tetapi mungkin perlu login kembali.
           TXT
-          ls -lh deliver/Marney438-Social-TV-Fixed.apk
-      - name: Prepare Android regression and install smoke
+          ls -lh deliver/Marney438-Social-TV-Stable.apk
+      - name: Prepare Android regression and focused TV smoke
         shell: bash
         run: |
           cat > check438tv.sh <<'SH'
@@ -167,22 +180,29 @@ jobs:
           adb logcat -d -s AndroidRuntime:E > quality438tv/android/base-runtime-errors.txt
           test ! -s quality438tv/android/base-runtime-errors.txt
 
-          adb install -r deliver/Marney438-Social-TV-Fixed.apk
+          adb install -r deliver/Marney438-Social-TV-Stable.apk
           adb shell am force-stop com.marketmarney.mobile.beta438tv
           adb logcat -c
           adb shell am start -W -n com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity | tee quality438tv/android/cold-start.txt
-          sleep 7
+          sleep 8
           adb shell dumpsys activity activities > quality438tv/android/home-activity.txt
           grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' quality438tv/android/home-activity.txt
           adb shell input tap 240 900
-          sleep 20
+          ready=0
+          for i in $(seq 1 15); do
+            sleep 2
+            adb logcat -d > quality438tv/android/full-logcat.txt || true
+            grep -F 'MMAPP_TV' quality438tv/android/full-logcat.txt > quality438tv/android/tv-route-log.txt || true
+            if grep -F 'ready catalogue=' quality438tv/android/tv-route-log.txt >/dev/null 2>&1; then ready=1; break; fi
+            if [ "$i" -eq 4 ]; then adb shell input tap 240 900; fi
+          done
           adb shell dumpsys activity activities > quality438tv/android/tv-activity.txt
           grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' quality438tv/android/tv-activity.txt
           adb shell dumpsys package com.marketmarney.mobile.beta438tv > quality438tv/android/package.txt
-          grep -F 'versionName=4.38.2-tv' quality438tv/android/package.txt
-          adb logcat -d -s AndroidRuntime:E > quality438tv/android/runtime-errors.txt
+          grep -F 'versionName=4.38.3-tv' quality438tv/android/package.txt
+          adb logcat -d -s AndroidRuntime:E > quality438tv/android/runtime-errors.txt || true
           test ! -s quality438tv/android/runtime-errors.txt
-          adb logcat -d -s MMAPP_TV:I > quality438tv/android/tv-route-log.txt || true
+          test "$ready" -eq 1
           grep -F 'ready catalogue=' quality438tv/android/tv-route-log.txt
           SH
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
@@ -201,7 +221,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Marney438-Social-TV-Fixed
+          name: Marney438-Social-TV-Stable
           path: |
             deliver/
             quality438tv/
