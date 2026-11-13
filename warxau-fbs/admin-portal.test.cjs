@@ -6,3 +6,5 @@ test('admin portal GET is available without exposing any privileged data',()=>{c
 test('admin portal HEAD contains no body',()=>{const r=call('HEAD','/admin/');assert.equal(r.status,200);assert.equal(r.body,'')});
 test('admin portal does not intercept public routes',()=>{assert.equal(call('GET','/').handled,false);assert.equal(call('GET','/api/admin/content').handled,false);assert.equal(call('GET','/berita').handled,false)});
 test('admin portal does not accept write requests',()=>{const r=call('POST','/admin');assert.equal(r.status,405);assert.equal(r.headers.Allow,'GET, HEAD')});
+
+test('newly published editorial entries are sorted newest first, not hidden after first 25',()=>{const r=call('GET','/admin');assert.match(r.body,/articles\.slice\(\)\.sort\(/);assert.match(r.body,/Date\.parse\(b\.date/);assert.match(r.body,/\.slice\(0,100\)/)});
