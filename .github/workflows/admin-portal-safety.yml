@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: '22'
       - run: node --check warxau-fbs/admin-portal.cjs
+      - run: node --check warxau-fbs/hash-article-fix.cjs
+      - run: node --test warxau-fbs/hash-article-fix.test.cjs
       - run: node --check warxau-fbs/start-ihsg.cjs
       - run: node --check warxau-fbs/editorial-article-clean.cjs
       - run: node --check warxau-fbs/bootstrap.cjs
