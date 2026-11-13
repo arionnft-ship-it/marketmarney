@@ -17,7 +17,7 @@ def sha(path: Path) -> str:
 
 
 # Every prepared 4.38 file remains byte-identical except MainActivity.java,
-# which contains the one requested menu/route replacement.
+# which contains the requested menu, icon, and route replacement.
 for rel, digest in manifest["preserved"].items():
     assert sha(root / rel) == digest, rel
 for entry in manifest["changed"]:
@@ -36,10 +36,13 @@ required = [
     'paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html#mm44-feed"}',
     '"MarketMarney\\nTV":labels[i]',
     'c.drawRoundRect(2,4,22,19,3,3,p)',
-    'probeMarketmarneyTv(target,url,xauContentToken)',
-    'MMAPP_TV',
-    'ready tab=2 catalogue=MarketMarney TV',
     'if("mm-app-tv".equals(h)&&tab!=XAUWAR)',
+    'window.__mmAppTvRoute',
+    'button[data-page=\\"MarketMarney TV\\"]',
+    "app.querySelector('.mm-tv-filters')",
+    "document.documentElement.dataset.mmAppTv='ready'",
+    "new CustomEvent('mmapp:tv-ready')",
+    'Log.i("MMAPP_TV","route injected tab=2 catalogue=MarketMarney TV")',
     'asset("fluid438.css")',
     'setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,lowRamDevice)',
     'int retainLimit=lowRamDevice||nativePowerSave?1:2',
@@ -51,6 +54,9 @@ for marker in required:
 assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not in main
 assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in main
 assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in main
+assert 'xauContentToken' not in main
+assert 'xauContentProbeStarted' not in main
+assert 'completePageReady(' not in main
 assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
