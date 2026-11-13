@@ -14,7 +14,7 @@ def apply(root: Path) -> None:
     path = root / "app/src/main/java/com/marketmarney/mobile/MainActivity.java"
     src = path.read_text(encoding="utf-8")
 
-    # Retain the existing tab index and every other Marney 4.38 UI component.
+    # Preserve the original 4.38 tab index, layout, styling, and all other tabs.
     src = once(
         src,
         'private final String[] labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"};',
@@ -42,7 +42,7 @@ def apply(root: Path) -> None:
     new_icon = 'else if(kind==XAUWAR){c.drawRoundRect(2,4,22,19,3,3,p);q.moveTo(10,8);q.lineTo(16,11.5f);q.lineTo(10,15);q.close();c.drawPath(q,p);c.drawLine(9,22,15,22,p);}'
     src = once(src, old_icon, new_icon, "TV play icon")
 
-    # Legacy XAUWar links remain ordinary trusted links and do not hijack TV.
+    # Legacy XAUWar links remain ordinary trusted links and no longer claim tab 2.
     old_deeplink = '''                    if(XAUWAR_PAGE.equals(p)){
                         String latest=latestXauWarUrl(u);
                         if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH).equals(latest))open(latest);return true;}
@@ -52,53 +52,6 @@ def apply(root: Path) -> None:
                     if(XAUWAR_PAGE.equals(p))return false;'''
     src = once(src, old_deeplink, new_deeplink, "legacy XAUWar routing")
 
-    # 4.38 has a slightly different readiness condition from 4.39, so inject
-    # the TV route immediately after its stable pageReady guard.
-    old_anchor = '''    private void pageReady(WebView target,String url){
-        if(target!=web||!own(url)||mainFailed)return;
-'''
-    new_anchor = r'''    private int tvRoutePolls=0;
-    private void probeMarketmarneyTv(WebView target,String url,long token){
-        if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed||token!=xauContentToken
-            ||!Recovery414.sameDocument(url,lastUrl))return;
-        String js="(function(){"
-            +"var nav=document.getElementById('nav');"
-            +"var b=nav&&nav.querySelector('button[data-page=\"MarketMarney TV\"]');"
-            +"var app=document.getElementById('app');"
-            +"if(!b||!app)return 'wait';"
-            +"if(!b.classList.contains('active')){"
-            +"if(window.__mmAppTvLastClick&&Date.now()-window.__mmAppTvLastClick<850)return 'wait';"
-            +"window.__mmAppTvLastClick=Date.now();b.click();return 'clicked';}"
-            +"var v=app.querySelector('.mm-tv-filters');var rect=app.getBoundingClientRect();"
-            +"return v&&rect.width>180&&rect.height>100"
-            +"&&(app.innerText||'').indexOf('MarketMarney TV')>=0?'ready':'wait';"
-            +"})()";
-        target.evaluateJavascript(js,value->{
-            if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed||token!=xauContentToken
-                ||!Recovery414.sameDocument(url,lastUrl))return;
-            if("\"ready\"".equals(value)){
-                Log.i("MMAPP_TV","ready tab=2 catalogue=MarketMarney TV");
-                completePageReady(target,url);return;
-            }
-            if(++tvRoutePolls>=72){
-                showFailure("EMPTY","MarketMarney TV belum bisa dimuat. Periksa koneksi dan coba lagi.");
-                return;
-            }
-            frame.postDelayed(()->probeMarketmarneyTv(target,url,token),250);
-        });
-    }
-    private void pageReady(WebView target,String url){
-        if(target!=web||!own(url)||mainFailed)return;
-        if(tab==XAUWAR&&("/index.html".equals(Uri.parse(url).getPath())||"/".equals(Uri.parse(url).getPath()))){
-            if(!xauContentProbeStarted){
-                xauContentProbeStarted=true;tvRoutePolls=0;
-                probeMarketmarneyTv(target,url,xauContentToken);
-            }
-            return;
-        }
-'''
-    src = once(src, old_anchor, new_anchor, "TV ready hook")
-
     src = once(
         src,
         'if("marketlive".equals(h)&&tab!=MARKET){navigate(MARKET);return true;}',
@@ -106,8 +59,37 @@ def apply(root: Path) -> None:
         "TV hash interception",
     )
 
-    # Marney 4.38 does not use the later 4.39 native loading-copy block.
-    # Keep its original loading flow untouched rather than importing newer UI.
+    # Select the existing website MarketMarney TV page through the native 4.38
+    # adaptation pipeline. A token prevents stale retries after changing tabs.
+    old_adapt = '''        String socialStyle="var ss=document.getElementById('mm43-social-style');if(!ss){ss=document.createElement('style');ss.id='mm43-social-style';document.head.appendChild(ss)}if(ss.dataset.revision!=='438'){ss.textContent="+socialCssQuoted+";ss.dataset.revision='438';}";
+        String install="(function(){if(!("+ready+"))return 'retry';"+common+"\\n"+homeCards+"\\n"+brandingScript+"\\n"+
+            depthScript+"\\nif(window.MMDepth423)window.MMDepth423.install("+depthCssQuoted+");\\n"+
+            chromeScript+"\\nif(window.MMChrome424)window.MMChrome424.install();\\n"+
+            lightScript+"\\nif(window.MMLight425)window.MMLight425.install();var l=document.getElementById('mm425-light');if(!l){l=document.createElement('style');l.id='mm425-light';document.head.appendChild(l)}if(l.dataset.revision!=='438'){l.textContent="+lightCssQuoted+";l.dataset.revision='438';}document.head.appendChild(l);return window.__mm411BundledReady?'bundled':'fallback';})()";'''
+    new_adapt = '''        String socialStyle="var ss=document.getElementById('mm43-social-style');if(!ss){ss=document.createElement('style');ss.id='mm43-social-style';document.head.appendChild(ss)}if(ss.dataset.revision!=='438'){ss.textContent="+socialCssQuoted+";ss.dataset.revision='438';}";
+        String tvRoute="";
+        if(tab==XAUWAR&&("/".equals(path)||"/index.html".equals(path))){
+            tvRoute="(function(){window.__mmAppTvRoute=window.__mmAppTvRoute||{seq:0};"
+                +"var token=++window.__mmAppTvRoute.seq,tries=0;"
+                +"function route(){if(!window.__mmAppTvRoute||window.__mmAppTvRoute.seq!==token)return;"
+                +"var nav=document.getElementById('nav'),app=document.getElementById('app');"
+                +"var b=nav&&nav.querySelector('button[data-page=\\\"MarketMarney TV\\\"]');"
+                +"if(!b||!app){if(++tries<72)setTimeout(route,250);return;}"
+                +"if(!b.classList.contains('active'))b.click();"
+                +"var filters=app.querySelector('.mm-tv-filters');"
+                +"if(filters&&(app.innerText||'').indexOf('MarketMarney TV')>=0){"
+                +"document.documentElement.dataset.mmAppTv='ready';"
+                +"try{window.dispatchEvent(new CustomEvent('mmapp:tv-ready'));}catch(e){}return;}"
+                +"if(++tries<72)setTimeout(route,250);"
+                +"}route();})();";
+            Log.i("MMAPP_TV","route injected tab=2 catalogue=MarketMarney TV");
+        }
+        String install="(function(){if(!("+ready+"))return 'retry';"+common+"\\n"+homeCards+"\\n"+brandingScript+"\\n"+
+            depthScript+"\\nif(window.MMDepth423)window.MMDepth423.install("+depthCssQuoted+");\\n"+
+            chromeScript+"\\nif(window.MMChrome424)window.MMChrome424.install();\\n"+
+            lightScript+"\\nif(window.MMLight425)window.MMLight425.install();var l=document.getElementById('mm425-light');if(!l){l=document.createElement('style');l.id='mm425-light';document.head.appendChild(l)}if(l.dataset.revision!=='438'){l.textContent="+lightCssQuoted+";l.dataset.revision='438';}document.head.appendChild(l);"+tvRoute+"return window.__mm411BundledReady?'bundled':'fallback';})()";'''
+    src = once(src, old_adapt, new_adapt, "native 4.38 TV adaptation")
+
     path.write_text(src, encoding="utf-8")
     print("Marney 4.38 retained; XAUWar tab replaced with MarketMarney TV")
 
