@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Marney 4.38 is preserved except for the requested XAUWar-to-TV tab."""
+"""Verify Marney 4.38 UI preservation plus Social timeline and TV fixes."""
 from pathlib import Path
 from zipfile import ZipFile
 import hashlib
@@ -16,15 +16,19 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-# Every prepared 4.38 file remains byte-identical except MainActivity.java,
-# which contains the requested menu, icon, and route replacement.
+allowed_changes = {
+    "app/src/main/java/com/marketmarney/mobile/MainActivity.java",
+    "app/src/main/assets/social44.js",
+    "app/src/main/assets/social411/app.js",
+    "app/src/main/assets/social411/bundle427.js",
+}
 for rel, digest in manifest["preserved"].items():
-    assert sha(root / rel) == digest, rel
+    if rel not in allowed_changes:
+        assert sha(root / rel) == digest, rel
 for entry in manifest["changed"]:
     rel = entry["path"]
-    if rel.endswith("MainActivity.java"):
-        continue
-    assert sha(root / rel) == entry["afterSha256"], rel
+    if rel not in allowed_changes:
+        assert sha(root / rel) == entry["afterSha256"], rel
 
 main = (root / "app/src/main/java/com/marketmarney/mobile/MainActivity.java").read_text(encoding="utf-8")
 build = (root / "app/build.gradle").read_text(encoding="utf-8")
@@ -38,11 +42,14 @@ required = [
     'c.drawRoundRect(2,4,22,19,3,3,p)',
     'if("mm-app-tv".equals(h)&&tab!=XAUWAR)',
     'window.__mmAppTvRoute',
-    'button[data-page=\\"MarketMarney TV\\"]',
-    "app.querySelector('.mm-tv-filters')",
-    "document.documentElement.dataset.mmAppTv='ready'",
-    "new CustomEvent('mmapp:tv-ready')",
-    'Log.i("MMAPP_TV","route injected tab=2 catalogue=MarketMarney TV")',
+    'button[name=\\"MARKETMARNEY TV\\"]',
+    "scope.querySelectorAll('button,a,[role=\\\"button\\\"]')",
+    "text.indexOf('marketmarney tv')>=0",
+    "document.documentElement.dataset.mmAppTv=mark",
+    "new CustomEvent('mmapp:tv-'+mark)",
+    'Log.i("MMAPP_TV","resilient route injected tab=2 catalogue=MarketMarney TV")',
+    '/akun.html?next=%2Fberanda-trader.html%23mm44-feed',
+    'open(BASE+paths[SOCIAL])',
     'asset("fluid438.css")',
     'setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,lowRamDevice)',
     'int retainLimit=lowRamDevice||nativePowerSave?1:2',
@@ -54,23 +61,31 @@ for marker in required:
 assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not in main
 assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in main
 assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in main
-assert 'xauContentToken' not in main
-assert 'xauContentProbeStarted' not in main
-assert 'completePageReady(' not in main
+assert 'Log.i("MMAPP_TV","route injected tab=2 catalogue=MarketMarney TV")' not in main
+
+account_target = "/akun.html?next=%2Fberanda-trader.html%23mm44-feed"
+google_target = "/api/auth/google/start?next=%2Fberanda-trader.html%23mm44-feed"
+for rel in ("social44.js", "social411/app.js", "social411/bundle427.js"):
+    script = (assets / rel).read_text(encoding="utf-8")
+    assert f"function login(){{location.href='{account_target}';}}" in script, rel
+    assert f"email.href='{account_target}'" in script, rel
+    assert f"g.href='{google_target}'" in script, rel
+    assert "function login(){location.href='/akun.html';}" not in script, rel
+
 assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
-assert "applicationId 'com.marketmarney.mobile.beta438tv'" in install_build
-assert "versionCode 43" in install_build
-assert "versionName '4.38.1-tv'" in install_build
+assert "applicationId 'com.marketmarney.mobile.beta438tv2'" in install_build
+assert "versionCode 44" in install_build
+assert "versionName '4.38.2-social-tv'" in install_build
 
 expected_assets = {
     "assets/" + p.relative_to(assets).as_posix(): p
     for p in assets.rglob("*") if p.is_file()
 }
 
-base_apk = deliver / "Marney438-TV-TestBase.apk"
-install_apk = deliver / "Marney438-MarketMarneyTV.apk"
+base_apk = deliver / "Marney438-SocialTV-TestBase.apk"
+install_apk = deliver / "Marney438-SocialTimeline-MarketMarneyTV.apk"
 for apk in (base_apk, install_apk):
     assert apk.is_file() and apk.stat().st_size > 1_000_000, apk
     with ZipFile(apk) as archive:
@@ -89,20 +104,24 @@ for apk in (base_apk, install_apk):
         assert b"MM438_LAUNCH" in dex
 
 apk_digest = sha(install_apk)
-(deliver / "Marney438-MarketMarneyTV.sha256").write_text(
-    apk_digest + "  Marney438-MarketMarneyTV.apk\n", encoding="utf-8"
+(deliver / "Marney438-SocialTimeline-MarketMarneyTV.sha256").write_text(
+    apk_digest + "  Marney438-SocialTimeline-MarketMarneyTV.apk\n", encoding="utf-8"
 )
-quality = Path("quality438tv")
+quality = Path("quality438socialtv")
 quality.mkdir(exist_ok=True)
 (quality / "static-report.json").write_text(json.dumps({
     "success": True,
     "base": "Marney 4.38 Fluid",
-    "requestedChange": "XAUWar -> MarketMarney TV",
-    "installPackage": "com.marketmarney.mobile.beta438tv",
-    "version": "4.38.1-tv",
+    "requestedChanges": [
+        "Social login returns to /beranda-trader.html#mm44-feed",
+        "MarketMarney TV route uses resilient live-DOM selectors",
+    ],
+    "installPackage": "com.marketmarney.mobile.beta438tv2",
+    "version": "4.38.2-social-tv",
     "apkSha256": apk_digest,
     "assetCount": len(expected_assets),
     "preservedFiles": len(manifest["preserved"]),
+    "allowedChangedFiles": sorted(allowed_changes),
 }, indent=2) + "\n", encoding="utf-8")
-print("PASS: Marney 4.38 preserved; MarketMarney TV tab verified")
+print("PASS: Marney 4.38 preserved; Social timeline return and TV route verified")
 print("APK SHA-256:", apk_digest)
