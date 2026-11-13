@@ -1,0 +1,225 @@
+name: Marney 4.38 Social Timeline and TV
+on:
+  push:
+    branches: [fix/marney438-social-timeline-tv-20261113]
+    paths:
+      - 'mobile438/**'
+      - '.github/workflows/build438-social-tv.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+concurrency:
+  group: marney438-social-tv-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}" -type f -name sdkmanager -print -quit)"
+          test -n "$S"
+          yes | "$S" --licenses >/dev/null || true
+          "$S" "platforms;android-36" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Reconstruct and patch reviewed Marney 4.38
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat mobile428/source.part1 mobile428/source.part2 mobile428/source.part3 mobile428/source.part4 mobile428/source.part5 | base64 -d > /tmp/mobile428-source.tar.gz
+          echo '02d81f1767bada09a687d2ae5d08f0d07ec7b85f149943ddbfa40dffa3a479bf  /tmp/mobile428-source.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/mobile428-source.tar.gz -C mobile428
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib,stat
+          z=Path('mobile419/base418-source.zip')
+          assert hashlib.sha256(z.read_bytes()).hexdigest()=='701601854939d00ec33097c4c483e20c3d3f576d8921d73f273d263c344dadfc'
+          with ZipFile(z) as archive:
+              assert archive.testzip() is None
+              for entry in archive.infolist():
+                  path=Path(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and not stat.S_ISLNK(entry.external_attr>>16)
+                  if path.parts and path.parts[0]=='android417': archive.extract(entry,'.')
+          Path('android417').rename('android419')
+          PY
+          python3 mobile419/prepare419.py
+          mv android419 android420; python3 mobile420/prepare420.py
+          mv android420 android421; python3 mobile421/prepare421.py
+          mv android421 android422; python3 mobile422/prepare422.py
+          mv android422 android423; python3 mobile423/prepare423.py
+          mv android423 android424; python3 mobile424/prepare424.py
+          mv android424 android425; python3 mobile425/prepare425.py
+          python3 final425/finalize425.py
+          mv android425 android426; python3 mobile426/prepare426.py
+          mv android426 android427; python3 mobile427/prepare427.py
+          mv android427 android428; python3 mobile428/prepare428.py
+          mv android428 android429; python3 mobile429/prepare429.py
+          mv android429 android430; python3 mobile430/prepare430.py
+          mv android430 android431; python3 mobile431/prepare431.py
+          mv android431 android432; python3 mobile432/prepare432.py
+          mv android432 android433; python3 mobile433/prepare433.py
+          mv android433 android434; python3 mobile434/prepare434.py
+          mv android434 android435; python3 mobile435/prepare435.py
+          mv android435 android436; python3 mobile436/prepare436.py
+          python3 mobile436/align_legacy_tests436.py
+          mv android436 android437; python3 mobile437/prepare437.py
+          mv android437 android438; python3 mobile438/prepare438.py
+          python3 mobile438/prepare438_tv.py android438
+          python3 -m py_compile mobile438/prepare438_tv.py mobile438/verify438_tv.py
+          node --check android438/app/src/main/assets/social44.js
+          node --check android438/app/src/main/assets/social411/app.js
+          node --check android438/app/src/main/assets/social411/5eab9da17fe2c659.js
+          node --check android438/app/src/main/assets/social411/bundle427.js
+          node --check android438/app/src/main/assets/group48/4e221ebb961158b1.js
+          node --check android438/app/src/main/assets/group48/bundle427.js
+          node --check android438/app/src/main/assets/social429.js
+          node --check android438/app/src/main/assets/home430.js
+          node --check android438/app/src/main/assets/reels46.js
+          node --check android438/app/src/main/assets/reels433.js
+          node --check android438/app/src/main/assets/lifecycle435.js
+          node --check android438/app/src/main/assets/runtime436.js
+      - name: Build and statically verify installable APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --project-dir android438 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver testapk quality438socialtv
+          BASE_APK=android438/app/build/outputs/apk/debug/app-debug.apk
+          cp "$BASE_APK" deliver/Marney438-SocialTV-TestBase.apk
+          cp android438/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk testapk/Marney438-SocialTV-Tests.apk
+
+          cp -a android438 android438-install
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android438-install/app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          replacements={
+              "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438tv2'",
+              'versionCode 42':'versionCode 44',
+              "versionName '4.38.0-beta'":"versionName '4.38.2-social-tv'",
+          }
+          for old,new in replacements.items():
+              assert s.count(old)==1,(old,s.count(old))
+              s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          gradle --no-daemon --project-dir android438-install :app:assembleDebug
+          INSTALL_APK=android438-install/app/build/outputs/apk/debug/app-debug.apk
+          cp "$INSTALL_APK" deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$BASE_APK" > deliver/Marney438-SocialTV-TestBase-Certificate.txt
+          "$BT/apksigner" verify --print-certs "$INSTALL_APK" > deliver/Marney438-SocialTimeline-MarketMarneyTV-Certificate.txt
+          "$BT/aapt" dump badging "$BASE_APK" > deliver/Marney438-SocialTV-TestBase-Package.txt
+          "$BT/aapt" dump badging "$INSTALL_APK" > deliver/Marney438-SocialTimeline-MarketMarneyTV-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta438'" deliver/Marney438-SocialTV-TestBase-Package.txt
+          grep -F "versionCode='42'" deliver/Marney438-SocialTV-TestBase-Package.txt
+          grep -F "versionName='4.38.0-beta'" deliver/Marney438-SocialTV-TestBase-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta438tv2'" deliver/Marney438-SocialTimeline-MarketMarneyTV-Package.txt
+          grep -F "versionCode='44'" deliver/Marney438-SocialTimeline-MarketMarneyTV-Package.txt
+          grep -F "versionName='4.38.2-social-tv'" deliver/Marney438-SocialTimeline-MarketMarneyTV-Package.txt
+          unzip -p "$INSTALL_APK" assets/social44.js | grep -F '/akun.html?next=%2Fberanda-trader.html%23mm44-feed'
+          unzip -p "$INSTALL_APK" assets/social411/bundle427.js | grep -F '/api/auth/google/start?next=%2Fberanda-trader.html%23mm44-feed'
+          python3 mobile438/verify438_tv.py android438 android438-install deliver
+          cp mobile438/Marney438-Panduan.md deliver/Marney438-Asli-Panduan.md
+          cat > deliver/README-MARNEY-438-SOCIAL-TV.txt <<'TXT'
+          Marney 4.38 — Social Timeline + MarketMarney TV
+
+          Tampilan dan fitur dasar tetap Marney 4.38 Fluid.
+          Perbaikan:
+          1. Login dari Social Marney kembali langsung ke linimasa.
+          2. MarketMarney TV memakai pencarian tombol dan pemuatan katalog yang lebih tahan perubahan DOM.
+
+          Package: com.marketmarney.mobile.beta438tv2
+          Versi: 4.38.2-social-tv
+
+          Package dibuat terpisah agar dapat dipasang tanpa konflik tanda tangan beta lama.
+          Login mungkin perlu dilakukan kembali. Website dan database tidak diubah.
+          TXT
+          ls -lh deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+      - name: Prepare emulator regression and route smoke
+        shell: bash
+        run: |
+          cat > check438socialtv.sh <<'SH'
+          set -euo pipefail
+          mkdir -p quality438socialtv/android
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r deliver/Marney438-SocialTV-TestBase.apk
+          adb install -r testapk/Marney438-SocialTV-Tests.apk
+          adb logcat -c
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438socialtv/android/opening.txt
+          grep -F 'OK (1 test)' quality438socialtv/android/opening.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438socialtv/android/branding.txt
+          grep -F 'OK (1 test)' quality438socialtv/android/branding.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels433LayoutTest com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438socialtv/android/reels-layout.txt
+          grep -F 'OK (2 tests)' quality438socialtv/android/reels-layout.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          adb shell am instrument -w -r -e class com.marketmarney.mobile.Reels434PerformanceTest,com.marketmarney.mobile.Performance435Test,com.marketmarney.mobile.Performance436Test,com.marketmarney.mobile.Performance437Test,com.marketmarney.mobile.Performance438Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438socialtv/android/performance.txt
+          grep -F 'OK (14 tests)' quality438socialtv/android/performance.txt
+          adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+          CLASSES='com.marketmarney.mobile.Social429FullscreenTest,com.marketmarney.mobile.Social428PerformanceTest,com.marketmarney.mobile.Performance427Test,com.marketmarney.mobile.LightOnly425Test,com.marketmarney.mobile.ChromeGallery424Test,com.marketmarney.mobile.Navigation413Test#fiveTargetsFitTheScreen,com.marketmarney.mobile.SharedHome420Test,com.marketmarney.mobile.AdaptGuardTest,com.marketmarney.mobile.Stability414Test#errorScreenKeepsFiveDestinationsAvailable'
+          adb shell am instrument -w -r -e class "$CLASSES" com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438socialtv/android/regression.txt
+          grep -F 'OK (31 tests)' quality438socialtv/android/regression.txt
+          adb logcat -d -s AndroidRuntime:E > quality438socialtv/android/base-runtime-errors.txt
+          test ! -s quality438socialtv/android/base-runtime-errors.txt
+
+          APK=deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+          PKG=com.marketmarney.mobile.beta438tv2
+          ACT=com.marketmarney.mobile.MainActivity
+          adb install -r "$APK" | tee quality438socialtv/android/install.txt
+          adb shell am force-stop "$PKG"
+          adb logcat -c
+          adb shell am start -W -n "$PKG/$ACT" --ei startTab 4 | tee quality438socialtv/android/social-start.txt
+          sleep 8
+          adb shell dumpsys activity activities > quality438socialtv/android/social-activity.txt
+          grep -F "$PKG/$ACT" quality438socialtv/android/social-activity.txt
+          adb logcat -d -s AndroidRuntime:E > quality438socialtv/android/social-runtime-errors.txt
+          test ! -s quality438socialtv/android/social-runtime-errors.txt
+
+          adb shell am force-stop "$PKG"
+          adb logcat -c
+          adb shell am start -W -n "$PKG/$ACT" --ei startTab 2 | tee quality438socialtv/android/tv-start.txt
+          sleep 10
+          adb shell dumpsys activity activities > quality438socialtv/android/tv-activity.txt
+          grep -F "$PKG/$ACT" quality438socialtv/android/tv-activity.txt
+          adb logcat -d -s MMAPP_TV:I '*:S' > quality438socialtv/android/tv-route-log.txt
+          grep -F 'resilient route injected tab=2 catalogue=MarketMarney TV' quality438socialtv/android/tv-route-log.txt
+          adb shell dumpsys package "$PKG" > quality438socialtv/android/package.txt
+          grep -F 'versionName=4.38.2-social-tv' quality438socialtv/android/package.txt
+          adb logcat -d -s AndroidRuntime:E > quality438socialtv/android/tv-runtime-errors.txt
+          test ! -s quality438socialtv/android/tv-runtime-errors.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash check438socialtv.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney438-SocialTimeline-MarketMarneyTV
+          path: |
+            deliver/
+            quality438socialtv/
+          if-no-files-found: error
+          retention-days: 30
