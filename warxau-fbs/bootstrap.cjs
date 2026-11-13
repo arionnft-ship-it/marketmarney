@@ -136,6 +136,8 @@ function boot(){
  const create=http.createServer;http.createServer=function(...args){return attachToServer(create.apply(this,args),relay,PORT);};
  const file='/tmp/marketmarney-public.cjs';try{if(fs.lstatSync(file).isSymbolicLink())throw Error('Gateway temp path is a symlink');}catch(e){if(e.code!=='ENOENT')throw e;}
  fs.writeFileSync(file,gateway,{mode:0o600});require(file);
+ // One-time owner-approved TV import. No-op unless signed Hedra source is configured.
+ void require('./tv-fundamental-once.cjs').run();
  console.log('MM_FBS_PRIVATE_RECEIVER_READY '+JSON.stringify({version:'1.0',scope:'private',publicPageUnchanged:true}));
 }
 if(require.main===module){try{boot();}catch(e){console.error('MM_FBS_BOOT_FAILED '+String(e.message).slice(0,160));process.exit(1);}}
