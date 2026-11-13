@@ -20,4 +20,4 @@ function injectReadingWidthStyle(html){
  if(html.includes('mm-editorial-fb17f057e34a2a830d91d723')&&!html.includes('mm-global-news-polish-v1')){const close=next.search(/<\/body\s*>/i);if(close>=0)next=next.slice(0,close)+ARTICLE_POLISH_SCRIPT+next.slice(close)}
  return next;
 }
-module.exports={STYLE_ID,ARTICLE_STYLE,isCanonicalArticlePath,injectReadingWidthStyle};
+module.exports={STYLE_ID,ARTICLE_STYLE,isCanonicalArticlePath,injectReadingWidthStyle,ARTICLE_POLISH_SCRIPT};
