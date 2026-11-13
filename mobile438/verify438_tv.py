@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Marney 4.38 is preserved except for the requested XAUWar-to-TV tab."""
+"""Verify the Marney 4.38 UI is preserved while Social return and TV routing are fixed."""
 from pathlib import Path
 from zipfile import ZipFile
 import hashlib
@@ -16,8 +16,7 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-# Every prepared 4.38 file remains byte-identical except MainActivity.java,
-# which contains the requested menu, icon, and route replacement.
+# All approved Marney 4.38 files stay byte-identical except MainActivity.java.
 for rel, digest in manifest["preserved"].items():
     assert sha(root / rel) == digest, rel
 for entry in manifest["changed"]:
@@ -33,16 +32,31 @@ assets = root / "app/src/main/assets"
 
 required = [
     'labels={"Beranda","Berita","MarketMarney TV","Market Live","Social Marney"}',
-    'paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html#mm44-feed"}',
+    'SOCIAL_FEED_PATH = "/beranda-trader.html#mm44-feed"',
+    'paths={"/index.html",NEWS_PATH,"/index.html#tv","/index.html#marketlive",SOCIAL_FEED_PATH}',
     '"MarketMarney\\nTV":labels[i]',
     'c.drawRoundRect(2,4,22,19,3,3,p)',
-    'if("mm-app-tv".equals(h)&&tab!=XAUWAR)',
-    'window.__mmAppTvRoute',
-    'button[data-page=\\"MarketMarney TV\\"]',
-    "app.querySelector('.mm-tv-filters')",
+    'private boolean socialLoginReturnPending=false',
+    'private String socialLoginUrl(Uri requested)',
+    'next.appendQueryParameter("next",SOCIAL_FEED_PATH)',
+    'private boolean profileSettings(Uri u)',
+    'private void returnToSocialFeed()',
+    'if(tab==SOCIAL||socialLoginReturnPending)returnToSocialFeed()',
+    'if("/akun.html".equals(p)&&tab==SOCIAL&&!profileSettings(u))',
+    'if(next==null||next.trim().isEmpty()){open(socialLoginUrl(u));return true;}',
+    'if(("tv".equals(h)||"mm-app-tv".equals(h))&&tab!=XAUWAR)',
+    'if(directFeed&&!"mm44-feed".equals(h))',
+    "document.addEventListener('mm80-account-session',go)",
+    "document.addEventListener('mm36-account-login'",
+    'setMediaPlaybackRequiresUserGesture(!(tab==XAUWAR||"/beranda-trader.html".equals(expected.getPath())))',
+    "location.hash!=='#tv'",
+    "button[data-page=\\\"MarketMarney TV\\\"]",
+    "a[href=\\\"#tv\\\"]",
+    "text.indexOf('album video')",
+    "text.indexOf('semua video')",
     "document.documentElement.dataset.mmAppTv='ready'",
-    "new CustomEvent('mmapp:tv-ready')",
-    'Log.i("MMAPP_TV","route injected tab=2 catalogue=MarketMarney TV")',
+    'Log.i("MMAPP_TV","canonical route injected hash=tv tab=2")',
+    'state.putBoolean("socialLoginReturnPending",socialLoginReturnPending)',
     'asset("fluid438.css")',
     'setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT,lowRamDevice)',
     'int retainLimit=lowRamDevice||nativePowerSave?1:2',
@@ -51,26 +65,31 @@ required = [
 ]
 for marker in required:
     assert marker in main, f"Missing required marker: {marker}"
-assert 'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}' not in main
-assert 'paths={"/index.html",NEWS_PATH,XAUWAR_PATH' not in main
-assert 'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)' not in main
-assert 'xauContentToken' not in main
-assert 'xauContentProbeStarted' not in main
-assert 'completePageReady(' not in main
+
+for forbidden in [
+    'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}',
+    'paths={"/index.html",NEWS_PATH,XAUWAR_PATH',
+    '"/index.html#mm-app-tv","/index.html#marketlive"',
+    'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)',
+    '.setPositiveButton("Masuk di aplikasi",(d,w)->open(BASE+"/akun.html"))',
+    '@Override public void onSignedIn(String username){dropRetained();if(!destroyed&&tab==SOCIAL&&web!=null)web.reload();}',
+]:
+    assert forbidden not in main, f"Obsolete behavior still present: {forbidden}"
+
 assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
-assert "applicationId 'com.marketmarney.mobile.beta438tv'" in install_build
-assert "versionCode 43" in install_build
-assert "versionName '4.38.1-tv'" in install_build
+assert "applicationId 'com.marketmarney.mobile.beta438tvfix'" in install_build
+assert "versionCode 44" in install_build
+assert "versionName '4.38.2-social-tv'" in install_build
 
 expected_assets = {
     "assets/" + p.relative_to(assets).as_posix(): p
     for p in assets.rglob("*") if p.is_file()
 }
 
-base_apk = deliver / "Marney438-TV-TestBase.apk"
-install_apk = deliver / "Marney438-MarketMarneyTV.apk"
+base_apk = deliver / "Marney438-Fix-TestBase.apk"
+install_apk = deliver / "Marney438-Social-TV-Fix.apk"
 for apk in (base_apk, install_apk):
     assert apk.is_file() and apk.stat().st_size > 1_000_000, apk
     with ZipFile(apk) as archive:
@@ -85,24 +104,30 @@ for apk in (base_apk, install_apk):
         dex = b"".join(archive.read(name) for name in archive.namelist() if name.endswith(".dex"))
         assert b"MarketMarneyAndroid/4.38 AppShell" in dex
         assert b"MarketMarney TV" in dex
+        assert b"/beranda-trader.html#mm44-feed" in dex
+        assert b"/index.html#tv" in dex
         assert b"MMAPP_TV" in dex
         assert b"MM438_LAUNCH" in dex
 
 apk_digest = sha(install_apk)
-(deliver / "Marney438-MarketMarneyTV.sha256").write_text(
-    apk_digest + "  Marney438-MarketMarneyTV.apk\n", encoding="utf-8"
+(deliver / "Marney438-Social-TV-Fix.sha256").write_text(
+    apk_digest + "  Marney438-Social-TV-Fix.apk\n", encoding="utf-8"
 )
-quality = Path("quality438tv")
+quality = Path("quality438fix")
 quality.mkdir(exist_ok=True)
 (quality / "static-report.json").write_text(json.dumps({
     "success": True,
     "base": "Marney 4.38 Fluid",
-    "requestedChange": "XAUWar -> MarketMarney TV",
-    "installPackage": "com.marketmarney.mobile.beta438tv",
-    "version": "4.38.1-tv",
+    "changes": [
+        "Social login returns to Linimasa",
+        "MarketMarney TV uses canonical #tv route",
+        "Approved visual assets preserved",
+    ],
+    "installPackage": "com.marketmarney.mobile.beta438tvfix",
+    "version": "4.38.2-social-tv",
     "apkSha256": apk_digest,
     "assetCount": len(expected_assets),
     "preservedFiles": len(manifest["preserved"]),
 }, indent=2) + "\n", encoding="utf-8")
-print("PASS: Marney 4.38 preserved; MarketMarney TV tab verified")
+print("PASS: Marney 4.38 UI preserved; Social feed return and TV route verified")
 print("APK SHA-256:", apk_digest)
