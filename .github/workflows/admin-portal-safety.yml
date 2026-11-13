@@ -1,0 +1,22 @@
+name: Admin portal safety
+on:
+  pull_request:
+    paths:
+      - 'warxau-fbs/admin-portal.cjs'
+      - 'warxau-fbs/admin-portal.test.cjs'
+      - 'warxau-fbs/start-ihsg.cjs'
+      - '.github/workflows/admin-portal-safety.yml'
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check warxau-fbs/admin-portal.cjs
+      - run: node --check warxau-fbs/start-ihsg.cjs
+      - run: node --test warxau-fbs/admin-portal.test.cjs
