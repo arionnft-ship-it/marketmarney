@@ -19,6 +19,9 @@ jobs:
           node-version: '22'
       - run: node --check warxau-fbs/admin-portal.cjs
       - run: node --check warxau-fbs/start-ihsg.cjs
+      - run: node --check warxau-fbs/editorial-article-clean.cjs
+      - run: node --check warxau-fbs/bootstrap.cjs
+      - run: node --test warxau-fbs/editorial-article-clean.test.cjs
       - run: node --test warxau-fbs/admin-portal.test.cjs
       - run: node --check warxau-fbs/article-reading-width.cjs
       - run: node -e "const a=require('./warxau-fbs/article-reading-width.cjs');const h='<html><head></head><body>mm-editorial-fb17f057e34a2a830d91d723</body></html>';const out=a.injectReadingWidthStyle(h);if(!out.includes('mm-global-news-polish-v1'))process.exit(1);require('node:vm').createScript(a.ARTICLE_POLISH_SCRIPT.replace(/^<script[^>]*>/,'').replace(/<\\/script>$/,''));"
