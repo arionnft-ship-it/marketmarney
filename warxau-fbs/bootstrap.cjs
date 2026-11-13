@@ -6,6 +6,7 @@ const {createRelay}=require('./relay.cjs');const {privatePage}=require('./page.c
 const {transformHomeHtml}=require('./performance-news.cjs');
 const {isCanonicalArticlePath,injectReadingWidthStyle}=require('./article-reading-width.cjs');
 const {injectHashArticleFix}=require('./hash-article-fix.cjs');
+const {injectTokenCreatorNav}=require('./token-creator-nav.cjs');
 const {injectTickerHtml,createMarketTicker}=require('./news-ticker.cjs');
 const marketTicker=createMarketTicker();
 const PORT=Number(process.env.PORT||8080);
@@ -113,7 +114,7 @@ function patchHomeCard(req, res) {
       html = transformHomeHtml(html);
       html = branding.optimizeHome(html);
     }
-    html=injectHashArticleFix(injectTickerHtml(injectReadingWidthStyle(html)));
+    html=injectTokenCreatorNav(injectHashArticleFix(injectTickerHtml(injectReadingWidthStyle(html))));
     if (html !== raw) {
       res.removeHeader('etag'); res.removeHeader('content-md5'); res.removeHeader('transfer-encoding');
       res.setHeader('content-length', Buffer.byteLength(html));
