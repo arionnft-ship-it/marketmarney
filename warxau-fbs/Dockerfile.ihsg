@@ -18,6 +18,7 @@ COPY warxau-fbs/live-stream.cjs.gz.b64.01a warxau-fbs/live-stream.cjs.gz.b64.01b
 RUN node install-live-stream.cjs
 COPY warxau-fbs/article-reading-width.cjs ./
 COPY warxau-fbs/hash-article-fix.cjs ./
+COPY warxau-fbs/token-creator-nav.cjs ./
 COPY warxau-fbs/editorial-article-clean.cjs ./
 COPY warxau-fbs/news-ticker.cjs warxau-fbs/squawk-feed.cjs warxau-fbs/news-ticker.test.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
