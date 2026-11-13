@@ -52,9 +52,11 @@ def apply(root: Path) -> None:
                     if(XAUWAR_PAGE.equals(p))return false;'''
     src = once(src, old_deeplink, new_deeplink, "legacy XAUWar routing")
 
+    # 4.38 has a slightly different readiness condition from 4.39, so inject
+    # the TV route immediately after its stable pageReady guard.
     old_anchor = '''    private void pageReady(WebView target,String url){
         if(target!=web||!own(url)||mainFailed)return;
-        if((tab==XAUWAR&&XAUWAR_PAGE.equals(Uri.parse(url).getPath()))||((tab==HOME||tab==MARKET)&&("/index.html".equals(Uri.parse(url).getPath())||"/".equals(Uri.parse(url).getPath())))){'''
+'''
     new_anchor = r'''    private int tvRoutePolls=0;
     private void probeMarketmarneyTv(WebView target,String url,long token){
         if(destroyed||target!=web||tab!=XAUWAR||firstPaint||mainFailed||token!=xauContentToken
@@ -94,8 +96,8 @@ def apply(root: Path) -> None:
             }
             return;
         }
-        if((tab==XAUWAR&&XAUWAR_PAGE.equals(Uri.parse(url).getPath()))||((tab==HOME||tab==MARKET)&&("/index.html".equals(Uri.parse(url).getPath())||"/".equals(Uri.parse(url).getPath())))){'''
-    src = once(src, old_anchor, new_anchor, "TV ready detection")
+'''
+    src = once(src, old_anchor, new_anchor, "TV ready hook")
 
     src = once(
         src,
