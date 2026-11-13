@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          artifact-ids: '14024628098'
+          name: Marney438-SocialTimeline-MarketMarneyTV
           path: artifact
           github-token: ${{ github.token }}
           repository: arionnft-ship-it/marketmarney
@@ -23,17 +23,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK=artifact/Marney438-SocialTimeline-MarketMarneyTV/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+          APK=artifact/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
           test -s "$APK"
-          echo '9aca14f03b19e2fec117e21ef526f807219edb4bd1f79643f349bdd31cef1041  '"$APK" | sha256sum -c -
+          sha256sum "$APK" | tee artifact/FINAL-APK-SHA256.txt
           unzip -t "$APK" | tail -n 2
+          unzip -p "$APK" assets/social44.js | grep -F '/akun.html?next=%2Fberanda-trader.html%23mm44-feed'
+          unzip -p "$APK" assets/social411/bundle427.js | grep -F '/api/auth/google/start?next=%2Fberanda-trader.html%23mm44-feed'
       - name: Prepare stable device smoke
         shell: bash
         run: |
           cat > smoke438socialtv.sh <<'SH'
           set -euo pipefail
           mkdir -p smoke438socialtv
-          APK=artifact/Marney438-SocialTimeline-MarketMarneyTV/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
+          APK=artifact/deliver/Marney438-SocialTimeline-MarketMarneyTV.apk
           PKG=com.marketmarney.mobile.beta438tv2
           ACT=com.marketmarney.mobile.MainActivity
           adb shell wm size 480x960
@@ -81,6 +83,8 @@ jobs:
         if: always()
         with:
           name: Marney438-SocialTV-Final-Smoke
-          path: smoke438socialtv/
+          path: |
+            smoke438socialtv/
+            artifact/FINAL-APK-SHA256.txt
           if-no-files-found: error
           retention-days: 30
