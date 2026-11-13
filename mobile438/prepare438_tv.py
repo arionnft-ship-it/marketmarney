@@ -105,19 +105,9 @@ def apply(root: Path) -> None:
         'if("marketlive".equals(h)&&tab!=MARKET){navigate(MARKET);return true;}\n                        if("mm-app-tv".equals(h)&&tab!=XAUWAR){navigate(XAUWAR);return true;}',
         "TV hash interception",
     )
-    src = once(
-        src,
-        'tab==XAUWAR?"Menyiapkan XAUWar":tab==MARKET?',
-        'tab==XAUWAR?"MarketMarney TV":tab==MARKET?',
-        "TV loading label",
-    )
-    src = once(
-        src,
-        'tab==XAUWAR?"Menghubungkan arena dan data pasar. Anda tetap bisa berpindah menu.":"Menyiapkan informasi pasar. Gunakan menu lain bila perlu."',
-        'tab==XAUWAR?"Menyiapkan daftar video. Anda tetap bisa berpindah menu.":"Menyiapkan informasi pasar. Gunakan menu lain bila perlu."',
-        "TV loading subtitle",
-    )
 
+    # Marney 4.38 does not use the later 4.39 native loading-copy block.
+    # Keep its original loading flow untouched rather than importing newer UI.
     path.write_text(src, encoding="utf-8")
     print("Marney 4.38 retained; XAUWar tab replaced with MarketMarney TV")
 
