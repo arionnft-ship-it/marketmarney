@@ -1,0 +1,90 @@
+name: Marney 4.38.2 Social + TV Final Smoke
+on:
+  push:
+    branches: [fix/marney438-social-feed-tv-20261113]
+    paths: ['.github/workflows/smoke438-social-tv-final.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Marney438-Social-TV-Fixed
+          path: artifact
+          github-token: ${{ github.token }}
+          run-id: 43391740612
+      - name: Verify packaged APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=artifact/deliver/Marney438-Social-TV-Fixed.apk
+          test -s "$APK"
+          sha256sum "$APK" | tee artifact/Marney438-Social-TV-Fixed-device.sha256
+          grep -F '4ff79354d43b2c16d38c005634170d8fe23b1132133fa5688023ac15a8e42615' artifact/Marney438-Social-TV-Fixed-device.sha256
+          unzip -t "$APK" >/dev/null
+      - name: Prepare focused device smoke
+        shell: bash
+        run: |
+          cat > smoke438socialtv.sh <<'SH'
+          set -euo pipefail
+          mkdir -p smoke438socialtv
+          APK=artifact/deliver/Marney438-Social-TV-Fixed.apk
+          adb shell wm size 480x960
+          adb shell wm density 240
+          adb install -r "$APK"
+          adb shell am force-stop com.marketmarney.mobile.beta438tv
+          adb logcat -c
+          adb shell am start -W -n com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity | tee smoke438socialtv/cold-start.txt
+          sleep 9
+          adb shell dumpsys activity activities > smoke438socialtv/activity-home.txt
+          grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' smoke438socialtv/activity-home.txt
+
+          # Third of five bottom tabs at 480px width: MarketMarney TV.
+          adb shell input tap 240 900
+          ready=0
+          for i in $(seq 1 18); do
+            sleep 2
+            adb logcat -d > smoke438socialtv/full-logcat.txt || true
+            grep -F 'MMAPP_TV' smoke438socialtv/full-logcat.txt > smoke438socialtv/tv-route-log.txt || true
+            if grep -F 'ready catalogue=' smoke438socialtv/tv-route-log.txt >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            # Retap once after the opening layer is certainly gone.
+            if [ "$i" -eq 4 ]; then adb shell input tap 240 900; fi
+          done
+
+          adb shell dumpsys activity activities > smoke438socialtv/activity-tv.txt
+          grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' smoke438socialtv/activity-tv.txt
+          adb shell dumpsys package com.marketmarney.mobile.beta438tv > smoke438socialtv/package.txt
+          grep -F 'versionName=4.38.2-tv' smoke438socialtv/package.txt
+          adb logcat -d -s AndroidRuntime:E > smoke438socialtv/runtime-errors.txt || true
+          test ! -s smoke438socialtv/runtime-errors.txt
+          test "$ready" -eq 1
+          grep -F 'ready catalogue=' smoke438socialtv/tv-route-log.txt
+          SH
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 480
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -dns-server 8.8.8.8,8.8.4.4
+          script: bash smoke438socialtv.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Marney438-Social-TV-Final-Smoke
+          path: smoke438socialtv/
+          if-no-files-found: error
+          retention-days: 30
