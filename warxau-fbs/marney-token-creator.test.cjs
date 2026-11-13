@@ -1,25 +1,23 @@
 'use strict';
-const {test}=require('node:test');
-const assert=require('node:assert/strict');
-const vm=require('node:vm');
-const {handle,PAGE,CLIENT}=require('./marney-token-creator.cjs');
-function request(method,url){const r={status:null,headers:null,body:null};r.handled=handle({method,url},{writeHead(status,headers){r.status=status;r.headers=headers},end(body){r.body=body}});return r}
-test('Devnet page only handles dedicated routes',()=>{
- const p=request('GET','/token-creator');assert.equal(p.handled,true);assert.equal(p.status,200);
- assert.match(p.body,/Solana Devnet/);assert.match(p.body,/Meta[data ]/i);
- assert.match(p.body,/Hubungkan Phantom/);assert.match(p.body,/belum menjadi metadata on-chain/);
- assert.match(p.headers['Content-Security-Policy'],/https:\/\/api\.devnet\.solana\.com/);
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {handle,PAGE}=require('./marney-token-creator.cjs');
+function request(method,url){const result={status:null,headers:null,body:null};result.handled=handle({method,url},{writeHead(code,headers){result.status=code;result.headers=headers},end(body){result.body=body}});return result;}
+test('MARNEY community information page replaces public creator',()=>{
+ const res=request('GET','/marney-coin');assert.equal(res.handled,true);assert.equal(res.status,200);
+ assert.match(res.body,/MARNEY/);assert.match(res.body,/Koin Komunitas MarketMarney/);
+ assert.match(res.body,/Solana Devnet/);assert.match(res.body,/Alamat mint/);
+ assert.match(res.body,/Belum diterbitkan/);assert.match(res.body,/Belum tersedia untuk perdagangan/);
+ assert.equal(request('GET','/token-creator').status,200);
  assert.equal(request('GET','/').handled,false);
  assert.equal(request('GET','/admin').handled,false);
- assert.equal(request('GET','/api/integrations/articles').handled,false);
 });
-test('asset served with correct MIME and no store',()=>{const r=request('GET','/assets/marney-token-creator-client.js');assert.equal(r.status,200);assert.match(r.headers['Content-Type'],/javascript/);assert.match(r.body,/signTransaction/);assert.match(r.body,/sendRawTransaction/);assert.match(r.body,/devnet\.solana\.com/);assert.equal(r.headers['Cache-Control'],'no-store')});
-test('no private key upload, wallet signs, only Devnet RPC',()=>{
- assert.doesNotMatch(CLIENT,/mainnet-beta|sendAndConfirmTransaction|wallet\.secretKey|localStorage|sessionStorage|seed phrase\W*[=:]/i);
- assert.match(CLIENT,/tx\.partialSign\(mint\)/);
- assert.match(CLIENT,/wallet\.signTransaction\(tx\)/);
- assert.match(CLIENT,/conn\.sendRawTransaction\(signed\.serialize\(\)/);
- assert.match(CLIENT,/createSetAuthorityInstruction/);
- assert.match(PAGE,/belum menjadi metadata on-chain/);
+test('no purchasing or token creation controls accessible on public page',()=>{
+ assert.doesNotMatch(PAGE,/signTransaction|sendRawTransaction|phantom\.solana|createMintToInstruction|Buat Token di Devnet/);
+ assert.match(PAGE,/bukan penawaran investasi/i);
+ assert.equal(request('GET','/assets/marney-token-creator-client.js').handled,false);
+ assert.match(request('GET','/marney-coin').headers['Content-Security-Policy'],/default-src 'none'/);
 });
-test('HEAD and method handling',()=>{assert.equal(request('HEAD','/token-creator').body,'');assert.equal(request('POST','/token-creator').status,405)});
+test('HEAD and method safety',()=>{
+ assert.equal(request('HEAD','/marney-coin').body,'');
+ assert.equal(request('POST','/marney-coin').status,405);
+});
