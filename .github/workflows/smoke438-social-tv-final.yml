@@ -18,6 +18,7 @@ jobs:
           path: artifact
           github-token: ${{ github.token }}
           repository: arionnft-ship-it/marketmarney
+          run-id: '43398549878'
       - name: Verify final APK package
         shell: bash
         run: |
