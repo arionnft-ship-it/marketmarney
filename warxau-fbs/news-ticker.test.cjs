@@ -64,7 +64,7 @@ test('Endpoint is GET/HEAD only, scoped to news ticker and respects ETag',async(
  assert.equal(head.status,200);assert.equal(head.body,'');
 });
 class FakeNode{
- constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.textContent='';this.className='';this.hidden=false;this.handlers={};this.style={setProperty:(k,v)=>{this.property={k,v}}};this.classList={add:(name)=>{this.selected=name},remove:(name)=>{if(this.selected===name)this.selected=''}};}
+ constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.textContent='';this.className='';this.hidden=false;this.handlers={};this.style={setProperty:(k,v)=>{this.property={k,v}}};this.classList={add(name){this.selected=name},remove(name){if(this.selected===name)this.selected=''}};}
  get firstChild(){return this.children[0]??null;}
  setAttribute(k,v){this.attributes[k]=String(v)}
  append(...children){this.children.push(...children)}
