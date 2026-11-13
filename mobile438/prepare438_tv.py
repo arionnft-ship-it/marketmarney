@@ -24,8 +24,8 @@ def apply(root: Path) -> None:
     src = once(
         src,
         'private final String[] paths={"/index.html",NEWS_PATH,XAUWAR_PATH,"/index.html#marketlive","/beranda-trader.html#mm44-feed"};',
-        'private final String[] paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html"};',
-        "TV and Social destinations",
+        'private final String[] paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html#mm44-feed"};',
+        "TV destination",
     )
 
     old_label = 'TextView title=text(labels[i],10,selected?(lightSocial()?Color.rgb(125,87,25):GOLD):(lightSocial()?Color.rgb(85,104,127):MUTED));title.setSingleLine(true);title.setGravity(Gravity.CENTER);'
@@ -177,7 +177,7 @@ def apply(root: Path) -> None:
                 +"var pending=false;try{pending=sessionStorage.getItem(key)==='1'}catch(e){}if(!pending||window.__mmAppTimelineCheck)return;"
                 +"window.__mmAppTimelineCheck=1;var tries=0;function done(){window.__mmAppTimelineCheck=0;}function check(){"
                 +"fetch('/api/community/status',{credentials:'same-origin',cache:'no-store'}).then(function(r){if(!r.ok)throw Error('status');return r.json();}).then(function(d){"
-                +"if(d&&d.user&&d.user.username){try{sessionStorage.removeItem(key)}catch(e){}location.replace('/beranda-trader.html');return;}"
+                +"if(d&&d.user&&d.user.username){try{sessionStorage.removeItem(key)}catch(e){}location.replace('/beranda-trader.html#mm44-feed');return;}"
                 +"if(++tries<18)setTimeout(check,500);else done();}).catch(function(){if(++tries<18)setTimeout(check,650);else done();});}check();})();";
         }
         String install="(function(){if(!("+ready+"))return 'retry';"+common+"\\n"+homeCards+"\\n"+brandingScript+"\\n"+
