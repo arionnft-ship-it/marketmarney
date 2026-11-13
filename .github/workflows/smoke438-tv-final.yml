@@ -26,6 +26,7 @@ jobs:
           test -s "$APK"
           sha256sum "$APK" | tee artifact/Marney438-MarketMarneyTV-device.sha256
           grep -F '1db4c6699de2a4ca6a566f203179da748e74a19b10aa7b57dcf0d1139f752063' artifact/Marney438-MarketMarneyTV-device.sha256
+          unzip -t "$APK" | tee artifact/Marney438-MarketMarneyTV-archive-test.txt
       - name: Prepare stable device smoke
         shell: bash
         run: |
@@ -33,23 +34,36 @@ jobs:
           set -euo pipefail
           mkdir -p smoke438tv
           APK=artifact/deliver/Marney438-MarketMarneyTV.apk
+          PACKAGE=com.marketmarney.mobile.beta438tv
+          ACTIVITY=$PACKAGE/com.marketmarney.mobile.MainActivity
           adb shell wm size 480x960
           adb shell wm density 240
-          adb install -r "$APK"
-          adb shell am force-stop com.marketmarney.mobile.beta438tv
+          adb install -r "$APK" | tee smoke438tv/install.txt
+          grep -F 'Success' smoke438tv/install.txt
+          adb shell am force-stop "$PACKAGE"
           adb logcat -c
-          adb shell am start -W -n com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity | tee smoke438tv/cold-start.txt
-          sleep 6
+          adb shell am start -W -n "$ACTIVITY" | tee smoke438tv/cold-start.txt
+          grep -F 'Status: ok' smoke438tv/cold-start.txt
+          grep -F "Activity: $ACTIVITY" smoke438tv/cold-start.txt
+          sleep 7
           adb shell dumpsys activity activities > smoke438tv/activities-home.txt
-          grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' smoke438tv/activities-home.txt
-          adb exec-out screencap -p > smoke438tv/home.png
-          adb shell input tap 240 920
-          sleep 6
+          grep -F "$ACTIVITY" smoke438tv/activities-home.txt
+          grep -F 'topResumedActivity=' smoke438tv/activities-home.txt
+
+          # Select the third bottom destination, which is MarketMarney TV.
+          # The static verifier already proves its exact label, icon and route;
+          # this device smoke verifies the app remains active after selection.
+          adb shell input tap 240 900
+          sleep 5
           adb shell dumpsys activity activities > smoke438tv/activities-tv.txt
-          grep -F 'com.marketmarney.mobile.beta438tv/com.marketmarney.mobile.MainActivity' smoke438tv/activities-tv.txt
-          adb exec-out screencap -p > smoke438tv/marketmarney-tv.png
-          adb shell dumpsys package com.marketmarney.mobile.beta438tv > smoke438tv/package.txt
+          grep -F "$ACTIVITY" smoke438tv/activities-tv.txt
+          grep -F 'topResumedActivity=' smoke438tv/activities-tv.txt
+
+          adb shell dumpsys package "$PACKAGE" > smoke438tv/package.txt
           grep -F 'versionName=4.38.1-tv' smoke438tv/package.txt
+          grep -F 'versionCode=43' smoke438tv/package.txt
+          adb shell pidof "$PACKAGE" | tee smoke438tv/pid.txt
+          test -s smoke438tv/pid.txt
           adb logcat -d -s AndroidRuntime:E > smoke438tv/runtime-errors.txt
           test ! -s smoke438tv/runtime-errors.txt
           adb logcat -d -s MMAPP_TV:I > smoke438tv/tv-route-log.txt || true
