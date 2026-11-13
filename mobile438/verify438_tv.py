@@ -33,7 +33,7 @@ assets = root / "app/src/main/assets"
 
 required = [
     'labels={"Beranda","Berita","MarketMarney TV","Market Live","Social Marney"}',
-    'paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html"}',
+    'paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html#mm44-feed"}',
     '"MarketMarney\\nTV":labels[i]',
     'c.drawRoundRect(2,4,22,19,3,3,p)',
     'if("mm-app-tv".equals(h)&&tab!=XAUWAR)',
@@ -49,7 +49,7 @@ required = [
     "document.getElementById('authForm')",
     "sessionStorage.setItem(key,'1')",
     "fetch('/api/community/status'",
-    "location.replace('/beranda-trader.html')",
+    "location.replace('/beranda-trader.html#mm44-feed')",
     'expected.getQueryParameter("pengaturan")==null',
     'if(firstPaint)endLaunchAnimation(true,"first-frame")',
     'if(firstPaint)endLaunchAnimation(true,"page-finished")',
@@ -65,7 +65,7 @@ for marker in required:
 for forbidden in [
     'labels={"Beranda","Berita","XAUWar","Market Live","Social Marney"}',
     'paths={"/index.html",NEWS_PATH,XAUWAR_PATH',
-    '"/beranda-trader.html#mm44-feed"',
+    'paths={"/index.html",NEWS_PATH,"/index.html#mm-app-tv","/index.html#marketlive","/beranda-trader.html"}',
     'if(tab!=XAUWAR){navigate(XAUWAR);if(!(BASE+XAUWAR_PATH)',
     "app.querySelector('.mm-tv-filters')",
 ]:
@@ -104,6 +104,7 @@ for apk in (base_apk, install_apk):
             b"MM438_LAUNCH",
             b"mmapp:social-login-pending",
             b"/api/community/status",
+            b"#mm44-feed",
             b".mm-tv-grid",
         ]:
             assert marker in dex, (apk.name, marker)
@@ -118,7 +119,7 @@ quality.mkdir(exist_ok=True)
     "success": True,
     "base": "Marney 4.38 Fluid",
     "requestedChanges": [
-        "Social login redirects to Linimasa",
+        "Social login redirects to Linimasa #mm44-feed",
         "MarketMarney TV waits for the current catalogue DOM",
     ],
     "installPackage": "com.marketmarney.mobile.beta438tv",
