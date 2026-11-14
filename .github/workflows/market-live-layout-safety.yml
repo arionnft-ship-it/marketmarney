@@ -1,0 +1,34 @@
+name: Market Live Terminal Layout Safety
+on:
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+    paths:
+      - .github/workflows/market-live-layout-safety.yml
+      - warxau-fbs/market-live-terminal.cjs
+      - warxau-fbs/market-live-terminal.test.cjs
+      - warxau-fbs/Dockerfile.ihsg
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Market Live browser JS, CSS injection, layout and fullscreen
+        run: |
+          set -euo pipefail
+          cd warxau-fbs
+          node --check market-live-terminal.cjs
+          node --test market-live-terminal.test.cjs
+      - name: Confirm still preserves the main homepage and headline ticker
+        run: |
+          set -euo pipefail
+          cd warxau-fbs
+          node --check bootstrap.cjs
+          node --test news-ticker.test.cjs
