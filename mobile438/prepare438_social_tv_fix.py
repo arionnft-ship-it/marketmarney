@@ -238,8 +238,22 @@ def apply(root: Path) -> None:
         "resume TV recovery",
     )
 
+    # Keep the original premium opening on a fresh install, but do not replay
+    # its visual sequence on every later cold launch. UI-test launches that
+    # supply startTab continue to bypass the opening as before.
+    src = once(
+        src,
+        'if(state==null&&!getIntent().hasExtra("startTab"))showLaunchAnimation();',
+        'if(state==null&&!getIntent().hasExtra("startTab")){'
+        'boolean seen=getPreferences(MODE_PRIVATE).getBoolean("mm438_intro_seen",false);'
+        'if(!seen)showLaunchAnimation();'
+        'getPreferences(MODE_PRIVATE).edit().putBoolean("mm438_intro_seen",true).apply();'
+        '}',
+        "one-time premium opening",
+    )
+
     path.write_text(src, encoding="utf-8")
-    print("PASS: Social login returns to timeline; MarketMarney TV uses resilient routing")
+    print("PASS: Marney TV, Social login, and one-time premium opening optimized")
 
 
 if __name__ == "__main__":
