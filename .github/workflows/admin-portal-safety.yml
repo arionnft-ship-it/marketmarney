@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: '22'
       - run: node --check warxau-fbs/admin-portal.cjs
+      - run: node --check warxau-fbs/market-live-terminal.cjs
+      - run: node --test warxau-fbs/market-live-terminal.test.cjs
       - run: node --check warxau-fbs/marney-token-creator.cjs
       - run: node --check warxau-fbs/marney-whitepaper.cjs
       - run: node --test warxau-fbs/marney-whitepaper.test.cjs
