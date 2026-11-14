@@ -62,6 +62,7 @@ required = [
     'int retainLimit=lowRamDevice||nativePowerSave?1:2',
     'MM438_NAV',
     'MM438_ASSETS',
+    'mm438_intro_seen',
 ]
 for marker in required:
     assert marker in main, f"Missing required marker: {marker}"
@@ -79,8 +80,8 @@ assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
 assert "applicationId 'com.marketmarney.mobile.beta438tvfix'" in install_build
-assert "versionCode 44" in install_build
-assert "versionName '4.38.2-tvfix'" in install_build
+assert "versionCode 45" in install_build
+assert "versionName '4.38.3-optimized'" in install_build
 
 expected_assets = {
     "assets/" + p.relative_to(assets).as_posix(): p
@@ -123,10 +124,11 @@ quality.mkdir(exist_ok=True)
     "base": "Marney 4.38 Fluid + MarketMarney TV",
     "requestedChanges": [
         "Social Marney login returns directly to Linimasa",
+        "Original opening appears on first launch only; later cold launches are faster",
         "MarketMarney TV waits for the real catalogue and recovers safely",
     ],
     "installPackage": "com.marketmarney.mobile.beta438tvfix",
-    "version": "4.38.2-tvfix",
+    "version": "4.38.3-optimized",
     "apkSha256": apk_digest,
     "assetCount": len(expected_assets),
     "preservedFiles": len(manifest["preserved"]),
