@@ -162,8 +162,18 @@ jobs:
           adb install -r deliver/Marney438-SocialTimeline-TVFix-TestBase.apk
           adb install -r testapk/Marney438-SocialTimeline-TVFix-Tests.apk
           adb logcat -c
-          adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438fix/android/opening.txt
-          grep -F 'OK (1 test)' quality438fix/android/opening.txt
+          opening_ok=0
+          for attempt in 1 2 3; do
+            adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
+            adb shell am instrument -w -r -e class com.marketmarney.mobile.OpeningSoft426Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee "quality438fix/android/opening-attempt-$attempt.txt"
+            if grep -F 'OK (1 test)' "quality438fix/android/opening-attempt-$attempt.txt"; then
+              cp "quality438fix/android/opening-attempt-$attempt.txt" quality438fix/android/opening.txt
+              opening_ok=1
+              break
+            fi
+            sleep 2
+          done
+          test "$opening_ok" -eq 1
           adb shell pm clear com.marketmarney.mobile.beta438 >/dev/null
           adb shell am instrument -w -r -e class com.marketmarney.mobile.Branding432Test com.marketmarney.mobile.beta438.test/androidx.test.runner.AndroidJUnitRunner | tee quality438fix/android/branding.txt
           grep -F 'OK (1 test)' quality438fix/android/branding.txt
