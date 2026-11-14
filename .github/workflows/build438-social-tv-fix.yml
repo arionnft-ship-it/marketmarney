@@ -1,7 +1,7 @@
-name: Marney 4.38 Social Timeline and TV Fix
+name: Marney 4.38.3 Optimized Stable
 on:
   push:
-    branches: [fix/marney438-social-timeline-tvfix-20261113]
+    branches: [fix/marney438-premium-stability-20261114]
     paths:
       - 'mobile438/prepare438_social_tv_fix.py'
       - 'mobile438/verify438_social_tv_fix.py'
@@ -104,8 +104,8 @@ jobs:
           s=p.read_text(encoding='utf-8')
           replacements={
               "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438tvfix'",
-              'versionCode 42':'versionCode 44',
-              "versionName '4.38.0-beta'":"versionName '4.38.2-tvfix'",
+              'versionCode 42':'versionCode 45',
+              "versionName '4.38.0-beta'":"versionName '4.38.3-optimized'",
           }
           for old,new in replacements.items():
               assert s.count(old)==1,(old,s.count(old))
@@ -125,20 +125,21 @@ jobs:
           grep -F "versionCode='42'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "versionName='4.38.0-beta'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "name='com.marketmarney.mobile.beta438tvfix'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
-          grep -F "versionCode='44'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
-          grep -F "versionName='4.38.2-tvfix'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "versionCode='45'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "versionName='4.38.3-optimized'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
           python3 mobile438/verify438_social_tv_fix.py android438 android438-install deliver
           cat > deliver/README-INSTALASI.txt <<'TXT'
-          MarketMarney 4.38 — Social Timeline + TV Fix
+          MarketMarney 4.38.3 — Optimized Social + TV
 
           Perbaikan:
           1. Setelah login Social Marney, aplikasi langsung kembali ke Linimasa.
           2. MarketMarney TV mencari tombol SPA terbaru, menunggu katalog asli siap,
              dan dapat memulihkan rute ketika tab dibuka ulang atau aplikasi dilanjutkan.
-          3. Tampilan dan seluruh aset Marney 4.38 tetap dipertahankan.
+          3. Opening premium hanya muncul saat pertama kali membuka APK ini.
+          4. Tampilan dan seluruh aset Marney 4.38 tetap dipertahankan.
 
           Package: com.marketmarney.mobile.beta438tvfix
-          Versi: 4.38.2-tvfix
+          Versi: 4.38.3-optimized
 
           Package dibuat terpisah agar pemasangan tidak bentrok dengan APK uji sebelumnya.
           Login mungkin perlu dilakukan kembali pada paket baru ini.
@@ -215,7 +216,7 @@ jobs:
           adb shell dumpsys activity activities > quality438fix/android/tv-activities.txt
           grep -F 'com.marketmarney.mobile.beta438tvfix/com.marketmarney.mobile.MainActivity' quality438fix/android/tv-activities.txt
           adb shell dumpsys package com.marketmarney.mobile.beta438tvfix > quality438fix/android/package.txt
-          grep -F 'versionName=4.38.2-tvfix' quality438fix/android/package.txt
+          grep -F 'versionName=4.38.3-optimized' quality438fix/android/package.txt
           adb logcat -d -s AndroidRuntime:E > quality438fix/android/tv-runtime-errors.txt
           test ! -s quality438fix/android/tv-runtime-errors.txt
 
