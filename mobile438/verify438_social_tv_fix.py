@@ -79,9 +79,9 @@ for forbidden in [
 assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
-assert "applicationId 'com.marketmarney.mobile.beta438opt3'" in install_build
-assert "versionCode 45" in install_build
-assert "versionName '4.38.3-optimized'" in install_build
+assert "applicationId 'com.marketmarney.mobile.beta438opt4'" in install_build
+assert "versionCode 46" in install_build
+assert "versionName '4.38.4-optimized'" in install_build
 
 expected_assets = {
     "assets/" + p.relative_to(assets).as_posix(): p
@@ -125,10 +125,10 @@ quality.mkdir(exist_ok=True)
     "requestedChanges": [
         "Social Marney login returns directly to Linimasa",
         "Original opening appears on first launch only; later cold launches are faster",
-        "MarketMarney TV waits for the real catalogue and recovers safely",
+        "MarketMarney TV uses single-flight SPA routing, then waits for its actual catalogue",
     ],
-    "installPackage": "com.marketmarney.mobile.beta438opt3",
-    "version": "4.38.3-optimized",
+    "installPackage": "com.marketmarney.mobile.beta438opt4",
+    "version": "4.38.4-optimized",
     "apkSha256": apk_digest,
     "assetCount": len(expected_assets),
     "preservedFiles": len(manifest["preserved"]),
