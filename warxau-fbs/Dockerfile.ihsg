@@ -26,6 +26,7 @@ COPY warxau-fbs/article-publisher.cjs ./
 COPY warxau-fbs/article-banner.cjs ./
 COPY warxau-fbs/tv-fundamental-once.cjs ./
 COPY warxau-fbs/tv-psychology-subtitle-once.cjs ./
+COPY warxau-fbs/tv-supply-demand-once.cjs ./
 COPY warxau-fbs/topchat.cjs warxau-fbs/topchat-layout.js warxau-fbs/topchat.css warxau-fbs/start-topchat.cjs ./
 COPY warxau-fbs/btc-feed.js warxau-fbs/btc-addon.cjs warxau-fbs/start-btc.cjs ./
 COPY warxau-fbs/oil-feed.js warxau-fbs/oil-addon.cjs warxau-fbs/oil-preload.cjs warxau-fbs/start-oil.cjs ./
