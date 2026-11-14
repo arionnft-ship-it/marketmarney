@@ -1,0 +1,6 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm');
+const {injectMarketTerminal,SCRIPT,STYLE}=require('./market-live-terminal.cjs');
+test('terminal injected once only into valid HTML',()=>{const html='<html><head></head><body><main id="app"></main></body></html>';const result=injectMarketTerminal(html);assert.match(result,/mm-market-terminal-script/);assert.match(result,/mm-market-terminal-style/);assert.equal(injectMarketTerminal(result),result);assert.equal(injectMarketTerminal('invalid'),'invalid')});
+test('market live terminal browser script compiles',()=>{const code=SCRIPT.replace(/^<script[^>]*>/,'').replace(/<\/script>$/,'');new vm.Script(code)});
+test('dark TradingView watchlist works only in Market Live and keeps chat accessible',()=>{assert.match(SCRIPT,/\.mm85-shell/);assert.match(SCRIPT,/\.navbtn\.active\[data-page="Market Live"\]/);assert.match(SCRIPT,/embed-widget-advanced-chart\.js/);assert.match(SCRIPT,/watchlist:WATCHLIST/);assert.match(SCRIPT,/hide_side_toolbar:false/);assert.match(SCRIPT,/mm-terminal-chat-open/);assert.match(SCRIPT,/renderChart\(\)/);assert.match(STYLE,/body\.mm-terminal-on/);assert.match(SCRIPT,/data dapat tertunda/);assert.doesNotMatch(SCRIPT,/localStorage|sessionStorage|signTransaction|sendTransaction/)});
