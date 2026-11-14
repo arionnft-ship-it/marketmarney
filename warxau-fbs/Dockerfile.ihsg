@@ -19,7 +19,7 @@ RUN node install-live-stream.cjs
 COPY warxau-fbs/article-reading-width.cjs ./
 COPY warxau-fbs/hash-article-fix.cjs ./
 COPY warxau-fbs/token-creator-nav.cjs ./
-COPY warxau-fbs/market-live-terminal.cjs ./
+COPY warxau-fbs/market-live-terminal.cjs warxau-fbs/market-live-terminal.test.cjs ./
 COPY warxau-fbs/editorial-article-clean.cjs ./
 COPY warxau-fbs/news-ticker.cjs warxau-fbs/squawk-feed.cjs warxau-fbs/news-ticker.test.cjs ./
 COPY warxau-fbs/article-publisher.cjs ./
@@ -42,6 +42,7 @@ COPY --from=brandbuild /build/marney-brand/dist ./marney-brand-assets
 RUN node signup/otp/install.cjs && node signup/otp/activation.cjs && node signup/password/install.cjs && node brand-install.cjs bootstrap.cjs && node signup/install.cjs branding.cjs && node sidebar3d/install.cjs branding.cjs
 RUN for file in *.cjs *.js signup/*.cjs signup/otp/*.cjs signup/password/*.cjs sidebar3d/*.cjs sidebar3d/*.js; do node --check "$file" || exit 1; done
 RUN node --test news-ticker.test.cjs
+RUN node --test market-live-terminal.test.cjs
 RUN node --test logo-asset.test.cjs about-refresh.test.cjs youtube-referrer.test.cjs tv-layout.test.cjs tv-learning.test.cjs tv-heygen-import.test.cjs tv-hedra-audio.test.cjs analysis-upload.test.cjs live-stream.test.cjs social-experience-preload.test.cjs social-experience-refinement.test.cjs social-routing-fix.test.cjs && node social-upload-preload.test.cjs && node social-upload-runtime-patch.test.cjs && node social-upload-sw-preload.test.cjs && node automatic-pivot.test.cjs && node automatic-pivot-internal-route.test.cjs && node xau-public-live.test.cjs && node xau-public-live-preload.test.cjs
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--require=/opt/warxau-fbs/signup/preload.cjs --require=/opt/warxau-fbs/ihsg-preload.cjs --require=/opt/warxau-fbs/social-upload-preload.cjs --require=/opt/warxau-fbs/social-upload-runtime-patch.cjs --require=/opt/warxau-fbs/gateway-integrity-compat.cjs --require=/opt/warxau-fbs/release-verification-diagnostic.cjs --require=/opt/warxau-fbs/social-upload-sw-preload.cjs --require=/opt/warxau-fbs/live-stream-preload.cjs --require=/opt/warxau-fbs/social-experience-preload.cjs --require=/opt/warxau-fbs/social-experience-refinement.cjs --require=/opt/warxau-fbs/social-routing-fix.cjs --require=/opt/warxau-fbs/xau-public-live-preload.cjs --require=/opt/warxau-fbs/automatic-pivot.cjs --require=/opt/warxau-fbs/automatic-pivot-internal-route.cjs"
