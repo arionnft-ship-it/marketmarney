@@ -49,8 +49,8 @@ def apply(root: Path) -> None:
             +"var h=app.querySelector('.pagehead h1'),title=((h&&h.textContent)||'').toLowerCase();"
             +"var filters=app.querySelector('.mm-tv-filters'),grid=app.querySelector('.mm-tv-grid');"
             +"var card=app.querySelector('article.mm-tv-card'),learning=app.querySelector('section.mm-tv-learning');"
-            +"return (title.indexOf('marketmarney tv')>=0&&(filters||grid||learning))"
-            +"||(filters&&(grid||card||learning)&&(app.innerText||'').toLowerCase().indexOf('marketmarney tv')>=0);})()";
+            +"return !!(card||learning||(title.indexOf('marketmarney tv')>=0&&(filters||grid))"
+            +");})()";
         target.evaluateJavascript(js,value->{
             if(destroyed||target!=web||token!=tvReadyToken||!tvReadyChecking||mainFailed||!marketmarneyTvDocument(url))return;
             if("true".equals(value)){
@@ -197,8 +197,8 @@ def apply(root: Path) -> None:
         }'''
     new_tv = '''        String tvRoute="";
         if(tab==XAUWAR&&("/".equals(path)||"/index.html".equals(path))){
-            tvRoute="(function(){var holder=window.__mmAppTvRoute=window.__mmAppTvRoute||{seq:0,timer:0};"
-                +"var token=++holder.seq,tries=0,lastClick=0;if(holder.timer)clearTimeout(holder.timer);"
+            tvRoute="(function(){if(document.documentElement.dataset.mmAppTv==='ready')return;var holder=window.__mmAppTvRoute=window.__mmAppTvRoute||{seq:0,timer:0,active:false};"
+                +"if(holder.active)return;holder.active=true;var token=++holder.seq,tries=0,lastClick=0;if(holder.timer)clearTimeout(holder.timer);"
                 +"function text(el){return (((el&&el.getAttribute&&el.getAttribute('data-page'))||'')+' '+((el&&el.textContent)||'')).replace(/\\\\s+/g,' ').trim().toUpperCase();}"
                 +"function button(){var nav=document.getElementById('nav')||document.querySelector('nav');if(!nav)return null;"
                 +"var exact=nav.querySelector('button[data-page=\\\"MarketMarney TV\\\"],button[data-page=\\\"MARKETMARNEY TV\\\"]');if(exact)return exact;"
@@ -206,12 +206,12 @@ def apply(root: Path) -> None:
                 +"function ready(){var app=document.getElementById('app');if(!app)return false;var h=app.querySelector('.pagehead h1');"
                 +"var title=((h&&h.textContent)||'').toUpperCase();var filters=app.querySelector('.mm-tv-filters'),grid=app.querySelector('.mm-tv-grid');"
                 +"var card=app.querySelector('article.mm-tv-card'),learning=app.querySelector('section.mm-tv-learning');"
-                +"return (title.indexOf('MARKETMARNEY TV')>=0&&(filters||grid||learning))||(filters&&(grid||card||learning));}"
-                +"function finish(){document.documentElement.dataset.mmAppTv='ready';if(holder.timer)clearTimeout(holder.timer);try{window.dispatchEvent(new CustomEvent('mmapp:tv-ready'));}catch(e){}}"
+                +"return !!(card||learning||(title.indexOf('MARKETMARNEY TV')>=0&&(filters||grid)));}"
+                +"function finish(){holder.active=false;document.documentElement.dataset.mmAppTv='ready';if(holder.timer)clearTimeout(holder.timer);try{window.dispatchEvent(new CustomEvent('mmapp:tv-ready'));}catch(e){}}"
                 +"function route(){if(!window.__mmAppTvRoute||holder.seq!==token)return;if(ready()){finish();return;}var b=button(),now=Date.now();"
                 +"if(b&&now-lastClick>3000){lastClick=now;try{b.click();}catch(e){try{b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));}catch(ignore){}}}"
                 +"if(!b&&tries>8&&now-lastClick>3000&&typeof window.go==='function'){lastClick=now;try{window.go('MarketMarney TV');}catch(ignore){}}"
-                +"if(ready()){finish();return;}if(++tries>=100){document.documentElement.dataset.mmAppTv='error';try{window.dispatchEvent(new CustomEvent('mmapp:tv-error'));}catch(e){}return;}"
+                +"if(ready()){finish();return;}if(++tries>=100){holder.active=false;document.documentElement.dataset.mmAppTv='error';try{window.dispatchEvent(new CustomEvent('mmapp:tv-error'));}catch(e){}return;}"
                 +"holder.timer=setTimeout(route,200);}route();})();";
             Log.i("MMAPP_TV","robust route injected tab=2 selector=navbtn/text");
         }'''
