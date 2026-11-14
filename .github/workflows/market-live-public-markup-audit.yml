@@ -1,0 +1,32 @@
+name: Market Live Public Markup Audit
+on:
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+    paths:
+      - .github/workflows/market-live-public-markup-audit.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect live HTML without browser cache
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 2 --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            -H 'Pragma: no-cache' \
+            'https://marketmarney.com/?layout_audit=53219ff4043ea982' -D response.headers -o live.html
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('live.html').read_text('utf-8')
+          names=['mm-market-terminal-script','mm-market-terminal-style','mm-market-terminal-layout-fix','mm85-shell','MARKET LIVE']
+          print('PUBLIC_LIVE_MARKUP_AUDIT',{x:html.count(x) for x in names},'html_chars',len(html))
+          print('HTTP_HEADERS',Path('response.headers').read_text('utf-8')[:1700])
+          if 'mm-market-terminal-script' in html and 'mm-market-terminal-layout-fix' not in html:
+           raise SystemExit('Layout patch missing from live page despite existing Market Live terminal')
+          assert 'mm-market-terminal-layout-fix' in html
+          assert '#mm-terminal-tv' in html
+          PY
