@@ -79,7 +79,7 @@ for forbidden in [
 assert "applicationId 'com.marketmarney.mobile.beta438'" in build
 assert "versionCode 42" in build
 assert "versionName '4.38.0-beta'" in build
-assert "applicationId 'com.marketmarney.mobile.beta438tvfix'" in install_build
+assert "applicationId 'com.marketmarney.mobile.beta438opt3'" in install_build
 assert "versionCode 45" in install_build
 assert "versionName '4.38.3-optimized'" in install_build
 
@@ -127,7 +127,7 @@ quality.mkdir(exist_ok=True)
         "Original opening appears on first launch only; later cold launches are faster",
         "MarketMarney TV waits for the real catalogue and recovers safely",
     ],
-    "installPackage": "com.marketmarney.mobile.beta438tvfix",
+    "installPackage": "com.marketmarney.mobile.beta438opt3",
     "version": "4.38.3-optimized",
     "apkSha256": apk_digest,
     "assetCount": len(expected_assets),
