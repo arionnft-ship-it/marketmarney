@@ -78,12 +78,17 @@ def apply(root: Path) -> None:
         String path=Uri.parse(url).getPath();
         if("/beranda-trader.html".equals(path)){cancelSocialLoginFlow();return;}
         long token=socialLoginToken;
-        String js="(function(){if(window.__mmSocialTimelineProbe)return;window.__mmSocialTimelineProbe=true;"
+        String js="(function(){if(window.__mmSocialTimelineProbe&&window.__mmSocialTimelineProbe.active)return;"
+            +"var flow={attempts:0,active:true};window.__mmSocialTimelineProbe=flow;"
+            +"function check(){if(!flow.active||window.__mmSocialTimelineProbe!==flow)return;"
             +"fetch('/api/community/status',{credentials:'same-origin',cache:'no-store'})"
             +".then(function(r){if(!r.ok)throw new Error('status '+r.status);return r.json();})"
-            +".then(function(d){if(d&&d.user){location.replace('/beranda-trader.html#mm44-feed');}"
-            +"else window.__mmSocialTimelineProbe=false;})"
-            +".catch(function(){window.__mmSocialTimelineProbe=false;});})();";
+            +".then(function(d){if(!flow.active)return;"
+            +"var member=d&&(d.user||(d.data&&d.data.user));"
+            +"if(member){flow.active=false;location.replace('/beranda-trader.html#mm44-feed');return;}"
+            +"if(++flow.attempts<3)setTimeout(check,500*flow.attempts);else flow.active=false;})"
+            +".catch(function(){if(++flow.attempts<8)setTimeout(check,500*flow.attempts);else flow.active=false;});}"
+            +"check();})();";
         target.evaluateJavascript(js,value->{
             if(destroyed||target!=web||token!=socialLoginToken||!socialLoginFlow||tab!=SOCIAL)return;
             Log.i("MMAPP_SOCIAL","login flow checks authenticated session and returns to timeline");
@@ -204,7 +209,8 @@ def apply(root: Path) -> None:
                 +"return (title.indexOf('MARKETMARNEY TV')>=0&&(filters||grid||learning))||(filters&&(grid||card||learning));}"
                 +"function finish(){document.documentElement.dataset.mmAppTv='ready';if(holder.timer)clearTimeout(holder.timer);try{window.dispatchEvent(new CustomEvent('mmapp:tv-ready'));}catch(e){}}"
                 +"function route(){if(!window.__mmAppTvRoute||holder.seq!==token)return;if(ready()){finish();return;}var b=button(),now=Date.now();"
-                +"if(b&&now-lastClick>650){lastClick=now;try{b.click();}catch(e){try{b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));}catch(ignore){}}}"
+                +"if(b&&now-lastClick>3000){lastClick=now;try{b.click();}catch(e){try{b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));}catch(ignore){}}}"
+                +"if(!b&&tries>8&&now-lastClick>3000&&typeof window.go==='function'){lastClick=now;try{window.go('MarketMarney TV');}catch(ignore){}}"
                 +"if(ready()){finish();return;}if(++tries>=100){document.documentElement.dataset.mmAppTv='error';try{window.dispatchEvent(new CustomEvent('mmapp:tv-error'));}catch(e){}return;}"
                 +"holder.timer=setTimeout(route,200);}route();})();";
             Log.i("MMAPP_TV","robust route injected tab=2 selector=navbtn/text");
