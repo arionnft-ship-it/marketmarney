@@ -1,0 +1,60 @@
+name: MarketMarney 4.38.5 Live and Linimasa
+on:
+  push:
+    branches: [fix/marney4385-live-streamer-timeline]
+    paths:
+      - 'mobile4385/**'
+      - '.github/workflows/android-live-timeline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare Android SDK
+        run: |
+          manager=$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)
+          "$manager" "platforms;android-36" "build-tools;35.0.0"
+      - name: Reconstruct and apply feature updates
+        run: |
+          python3 -m pip install Pillow==13.0.0
+          bash mobile4385/reconstruct.sh
+          bash mobile4385/apply.sh android438
+      - name: Compile installable APK and instrumentation tests
+        run: |
+          gradle --no-daemon -p android438 :app:assembleDebug :app:assembleDebugAndroidTest
+          mkdir -p deliver
+          cp android438/app/build/outputs/apk/debug/app-debug.apk deliver/MarketMarney-4.38.5-Live.apk
+          tools_dir="$ANDROID_HOME/build-tools/35.0.0"
+          "$tools_dir/apksigner" verify --verbose deliver/*.apk
+          "$tools_dir/aapt" dump badging deliver/*.apk > "$RUNNER_TEMP/mm-package.txt"
+          grep -E "^package: name='com.marketmarney.mobile.beta438live5' versionCode='47' versionName='4.38.5-beta'" "$RUNNER_TEMP/mm-package.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney-4.38.5-Live
+          path: deliver/MarketMarney-4.38.5-Live.apk
+          if-no-files-found: error
+      - name: Enable emulator acceleration
+        run: sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          disable-animations: false
+          script: bash mobile4385/emulator.sh

@@ -1,0 +1,19 @@
+html[data-mm46-reels] #mm46-toolbar #mm-live-reels {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 7px;
+    color: #9e311f;
+    font: 750 12px/1.1 system-ui, sans-serif;
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: 9px;
+}
+#mm-live-reels:focus-visible, #mm-live-create:focus-visible {
+    outline: 2px solid #a43a16;
+    outline-offset: -2px;
+}

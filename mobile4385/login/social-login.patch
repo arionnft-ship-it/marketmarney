@@ -1,0 +1,93 @@
+--- a/app/src/main/java/com/marketmarney/mobile/MainActivity.java
++++ b/app/src/main/java/com/marketmarney/mobile/MainActivity.java
+@@ -82,7 +82,7 @@
+     private int tvReadyChecks;
+     private boolean tvReadyChecking;
+     private boolean socialLoginFlow;
+-    private long socialLoginToken;
++    private String socialLoginScript;
+     private int pendingIndexTab=-1;
+     private void discardView(WebView v){
+         if(v==null)return;
+@@ -284,28 +284,29 @@
+         }
+         completePageReady(target,url);
+     }
+-    private void beginSocialLoginFlow(){socialLoginFlow=true;socialLoginToken++;}
+-    private void cancelSocialLoginFlow(){socialLoginFlow=false;socialLoginToken++;}
++    private void beginSocialLoginFlow(){socialLoginFlow=true;}
++    private void cancelSocialLoginFlow(){socialLoginFlow=false;}
++
++    private void socialDocumentStarted(String url){
++        if(tab!=SOCIAL||!own(url))return;
++        Uri uri=Uri.parse(url);
++        String path=uri.getPath();
++        if("/akun.html".equals(path)){
++            socialLoginFlow=uri.getQueryParameter("pengaturan")==null;
++        }else if("/login".equals(path)){
++            beginSocialLoginFlow();
++        }else if(!"/profil.html".equals(path)&&!"/api/auth/google/callback".equals(path)){
++            cancelSocialLoginFlow();
++        }
++    }
++
+     private void redirectSocialLoginToTimeline(WebView target,String url){
+-        if(!socialLoginFlow||tab!=SOCIAL||target!=web||!own(url)||mainFailed)return;
++        if(tab!=SOCIAL||target!=web||mainFailed||!Recovery414.sameDocument(url,target.getUrl()))return;
+         String path=Uri.parse(url).getPath();
+-        if("/beranda-trader.html".equals(path)){cancelSocialLoginFlow();return;}
+-        long token=socialLoginToken;
+-        String js="(function(){if(window.__mmSocialTimelineProbe&&window.__mmSocialTimelineProbe.active)return;"
+-            +"var flow={attempts:0,active:true};window.__mmSocialTimelineProbe=flow;"
+-            +"function check(){if(!flow.active||window.__mmSocialTimelineProbe!==flow)return;"
+-            +"fetch('/api/community/status',{credentials:'same-origin',cache:'no-store'})"
+-            +".then(function(r){if(!r.ok)throw new Error('status '+r.status);return r.json();})"
+-            +".then(function(d){if(!flow.active)return;"
+-            +"var member=d&&(d.user||(d.data&&d.data.user));"
+-            +"if(member){flow.active=false;location.replace('/beranda-trader.html#mm44-feed');return;}"
+-            +"if(++flow.attempts<3)setTimeout(check,500*flow.attempts);else flow.active=false;})"
+-            +".catch(function(){if(++flow.attempts<8)setTimeout(check,500*flow.attempts);else flow.active=false;});}"
+-            +"check();})();";
+-        target.evaluateJavascript(js,value->{
+-            if(destroyed||target!=web||token!=socialLoginToken||!socialLoginFlow||tab!=SOCIAL)return;
+-            Log.i("MMAPP_SOCIAL","login flow checks authenticated session and returns to timeline");
+-        });
++        boolean account="/akun.html".equals(path)||"/login".equals(path);
++        if(!account&&!(socialLoginFlow&&"/profil.html".equals(path)))return;
++        if(socialLoginScript==null)socialLoginScript=asset("social-login.js");
++        target.evaluateJavascript(socialLoginScript+"("+socialLoginFlow+","+JSONObject.quote(path)+");",null);
+     }
+     private boolean currentRequest(WebView target,WebResourceRequest request){
+         return target==web&&request.isForMainFrame()&&Recovery414.sameDocument(request.getUrl().toString(),lastUrl);
+@@ -726,8 +727,7 @@
+                 if(!req.isForMainFrame())return false;
+                 if(own(u)){
+                     String p=u.getPath()==null?"":u.getPath();
+-                    if(tab==SOCIAL&&"/akun.html".equals(p)&&u.getQueryParameter("pengaturan")==null)beginSocialLoginFlow();
+-                    if(tab==SOCIAL&&( "/login".equals(p)||p.startsWith("/api/auth/")))beginSocialLoginFlow();
++                    if(v==web&&tab==SOCIAL&&req.hasGesture()&&"/profil.html".equals(p))cancelSocialLoginFlow();
+                     if(NEWS_PATH.equals(p)){navigate(NEWS);return true;}
+                     // XAUWar links no longer claim the MarketMarney TV tab.
+                     if(XAUWAR_PAGE.equals(p))return false;
+@@ -751,7 +751,11 @@
+                 return true;
+             }
+             @Override public void onPageStarted(WebView v,String url,android.graphics.Bitmap favicon){
+-                if(own(url)){String p=Uri.parse(url).getPath();if("/akun.html".equals(p)||p!=null&&p.startsWith("/api/auth/"))dropRetained();if(v==web&&tab==SOCIAL&&( "/login".equals(p)||p!=null&&p.startsWith("/api/auth/")))beginSocialLoginFlow();if(v==web&&"/beranda-trader.html".equals(p))cancelSocialLoginFlow();}
++                if(v==web&&own(url)){
++                    String p=Uri.parse(url).getPath();
++                    if("/akun.html".equals(p)||p!=null&&p.startsWith("/api/auth/"))dropRetained();
++                    socialDocumentStarted(url);
++                }
+                 if(v!=web)return;resetTvReadyProbe();lastAdaptedDocument="";lastRuntimeSignature="";if(pendingIndexTab!=-1){navigationSequence++;pendingIndexTab=-1;}if(fileOwner==v)finishFileSelection(null);clearOffline();beginPageWait(v);progress.setVisibility(View.VISIBLE);if(own(url))lastUrl=url;
+             }
+             @Override public void doUpdateVisitedHistory(WebView v,String url,boolean reload){
+@@ -760,7 +764,7 @@
+                 if(next!=reelsChrome){reelsChrome=next;updateSocialChrome();drawTabs();}
+                 v.evaluateJavascript("try{window.MMChrome424&&window.MMChrome424.sync(true)}catch(e){}",null);
+             }
+-            @Override public void onPageCommitVisible(WebView v,String url){if(v==web&&own(url)){pageReady(v,url);if(firstPaint)endLaunchAnimation(true,"first-frame");}}
++            @Override public void onPageCommitVisible(WebView v,String url){if(v==web&&own(url)){redirectSocialLoginToTimeline(v,url);pageReady(v,url);if(firstPaint)endLaunchAnimation(true,"first-frame");}}
+             @Override public void onPageFinished(WebView v,String url){if(v!=web)return;adapt(v,url);pageReady(v,url);redirectSocialLoginToTimeline(v,url);if(firstPaint)endLaunchAnimation(true,"page-finished");}
+             @Override public void onReceivedError(WebView v,WebResourceRequest r,WebResourceError error){if(currentRequest(v,r)){String code=Recovery414.networkCode(error.getErrorCode());showFailure(code,Recovery414.message(code));}}
+             @Override public void onReceivedHttpError(WebView v,WebResourceRequest r,WebResourceResponse response){if(currentRequest(v,r)&&response.getStatusCode()>=400){String code="HTTP "+response.getStatusCode();showFailure(code,Recovery414.message(code));}}
