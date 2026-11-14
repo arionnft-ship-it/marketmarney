@@ -103,7 +103,7 @@ jobs:
           p=Path('android438-install/app/build.gradle')
           s=p.read_text(encoding='utf-8')
           replacements={
-              "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438tvfix'",
+              "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438opt3'",
               'versionCode 42':'versionCode 45',
               "versionName '4.38.0-beta'":"versionName '4.38.3-optimized'",
           }
@@ -124,7 +124,7 @@ jobs:
           grep -F "name='com.marketmarney.mobile.beta438'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "versionCode='42'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "versionName='4.38.0-beta'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
-          grep -F "name='com.marketmarney.mobile.beta438tvfix'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta438opt3'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
           grep -F "versionCode='45'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
           grep -F "versionName='4.38.3-optimized'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
           python3 mobile438/verify438_social_tv_fix.py android438 android438-install deliver
@@ -138,10 +138,10 @@ jobs:
           3. Opening premium hanya muncul saat pertama kali membuka APK ini.
           4. Tampilan dan seluruh aset Marney 4.38 tetap dipertahankan.
 
-          Package: com.marketmarney.mobile.beta438tvfix
+          Package: com.marketmarney.mobile.beta438opt3
           Versi: 4.38.3-optimized
 
-          Package dibuat terpisah agar pemasangan tidak bentrok dengan APK uji sebelumnya.
+          Paket beta khusus agar dapat dipasang berdampingan dengan APK 4.38.2 sebelumnya.
           Login mungkin perlu dilakukan kembali pada paket baru ini.
           TXT
           (cd deliver && zip -9 MarketMarney438-SocialTimeline-TVFix-Package.zip \
@@ -203,9 +203,9 @@ jobs:
           test ! -s quality438fix/android/base-runtime-errors.txt
 
           adb install -r deliver/Marney438-SocialTimeline-TVFix.apk
-          adb shell am force-stop com.marketmarney.mobile.beta438tvfix
+          adb shell am force-stop com.marketmarney.mobile.beta438opt3
           adb logcat -c
-          adb shell am start -W -n com.marketmarney.mobile.beta438tvfix/com.marketmarney.mobile.MainActivity --ei startTab 2 | tee quality438fix/android/tv-start.txt
+          adb shell am start -W -n com.marketmarney.mobile.beta438opt3/com.marketmarney.mobile.MainActivity --ei startTab 2 | tee quality438fix/android/tv-start.txt
           found=0
           for i in $(seq 1 35); do
             adb logcat -d -s MMAPP_TV:I '*:S' > quality438fix/android/tv-route-log.txt || true
@@ -214,18 +214,18 @@ jobs:
           done
           test "$found" -eq 1
           adb shell dumpsys activity activities > quality438fix/android/tv-activities.txt
-          grep -F 'com.marketmarney.mobile.beta438tvfix/com.marketmarney.mobile.MainActivity' quality438fix/android/tv-activities.txt
-          adb shell dumpsys package com.marketmarney.mobile.beta438tvfix > quality438fix/android/package.txt
+          grep -F 'com.marketmarney.mobile.beta438opt3/com.marketmarney.mobile.MainActivity' quality438fix/android/tv-activities.txt
+          adb shell dumpsys package com.marketmarney.mobile.beta438opt3 > quality438fix/android/package.txt
           grep -F 'versionName=4.38.3-optimized' quality438fix/android/package.txt
           adb logcat -d -s AndroidRuntime:E > quality438fix/android/tv-runtime-errors.txt
           test ! -s quality438fix/android/tv-runtime-errors.txt
 
-          adb shell am force-stop com.marketmarney.mobile.beta438tvfix
+          adb shell am force-stop com.marketmarney.mobile.beta438opt3
           adb logcat -c
-          adb shell am start -W -n com.marketmarney.mobile.beta438tvfix/com.marketmarney.mobile.MainActivity --ei startTab 4 | tee quality438fix/android/social-start.txt
+          adb shell am start -W -n com.marketmarney.mobile.beta438opt3/com.marketmarney.mobile.MainActivity --ei startTab 4 | tee quality438fix/android/social-start.txt
           sleep 7
           adb shell dumpsys activity activities > quality438fix/android/social-activities.txt
-          grep -F 'com.marketmarney.mobile.beta438tvfix/com.marketmarney.mobile.MainActivity' quality438fix/android/social-activities.txt
+          grep -F 'com.marketmarney.mobile.beta438opt3/com.marketmarney.mobile.MainActivity' quality438fix/android/social-activities.txt
           adb logcat -d -s AndroidRuntime:E > quality438fix/android/social-runtime-errors.txt
           test ! -s quality438fix/android/social-runtime-errors.txt
           SH
