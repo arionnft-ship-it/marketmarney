@@ -1,4 +1,4 @@
-name: Marney 4.38.3 Optimized APK - Build
+name: Marney 4.38.4 Optimized APK - Build
 on:
   push:
     branches: [fix/marney438-premium-stability-20261114]
@@ -103,9 +103,9 @@ jobs:
           p=Path('android438-install/app/build.gradle')
           s=p.read_text(encoding='utf-8')
           replacements={
-              "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438opt3'",
-              'versionCode 42':'versionCode 45',
-              "versionName '4.38.0-beta'":"versionName '4.38.3-optimized'",
+              "applicationId 'com.marketmarney.mobile.beta438'":"applicationId 'com.marketmarney.mobile.beta438opt4'",
+              'versionCode 42':'versionCode 46',
+              "versionName '4.38.0-beta'":"versionName '4.38.4-optimized'",
           }
           for old,new in replacements.items():
               assert s.count(old)==1,(old,s.count(old))
@@ -124,9 +124,9 @@ jobs:
           grep -F "name='com.marketmarney.mobile.beta438'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "versionCode='42'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
           grep -F "versionName='4.38.0-beta'" deliver/Marney438-SocialTimeline-TVFix-TestBase-Package.txt
-          grep -F "name='com.marketmarney.mobile.beta438opt3'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
-          grep -F "versionCode='45'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
-          grep -F "versionName='4.38.3-optimized'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "name='com.marketmarney.mobile.beta438opt4'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "versionCode='46'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
+          grep -F "versionName='4.38.4-optimized'" deliver/Marney438-SocialTimeline-TVFix-Package.txt
           python3 mobile438/verify438_social_tv_fix.py android438 android438-install deliver
           cat > deliver/README-INSTALASI.txt <<'TXT'
           MarketMarney 4.38.3 — Optimized Social + TV
@@ -138,8 +138,8 @@ jobs:
           3. Opening premium hanya muncul saat pertama kali membuka APK ini.
           4. Tampilan dan seluruh aset Marney 4.38 tetap dipertahankan.
 
-          Package: com.marketmarney.mobile.beta438opt3
-          Versi: 4.38.3-optimized
+          Package: com.marketmarney.mobile.beta438opt4
+          Versi: 4.38.4-optimized
 
           Paket beta khusus agar dapat dipasang berdampingan dengan APK 4.38.2 sebelumnya.
           Login mungkin perlu dilakukan kembali pada paket baru ini.
