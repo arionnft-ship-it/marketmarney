@@ -91,7 +91,7 @@ test('Edukasi and Video Marney preserve published videos without an empty second
 });
 test('Two TV collection controls, learning path and video player remain accessible',()=>{
  assert.equal(VERSION,'mm-tv-learning-20261115-v2');
- for(const token of ['data.collection','Pilih Edukasi atau Video Marney','Video Marney','Belajar Bersama MarketMarney','aria-pressed','mm-tv-learning-course','host.dataset.mmTvLearning','#tvMount']){
+ for(const token of ['dataset.collection','Pilih Edukasi atau Video Marney','Video Marney','Belajar Bersama MarketMarney','aria-pressed','mm-tv-learning-course','host.dataset.mmTvLearning','#tvMount']){
   assert.ok(CLIENT.includes(token),'missing client feature '+token);
  }
  for(const token of ['.mm-tv-collection-choices','.mm-tv-learning-course[hidden]{display:none!important}','@media(max-width:440px)']){
