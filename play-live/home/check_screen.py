@@ -15,9 +15,19 @@ def adb(*args, binary=False):
 
 
 def nodes():
-    adb("shell", "uiautomator", "dump", "/sdcard/mm-play-home.xml")
-    source = adb("exec-out", "cat", "/sdcard/mm-play-home.xml")
-    return ET.fromstring(source[source.index("<?xml"):]).findall(".//node")
+    path = "/sdcard/mm-play-home.xml"
+    try:
+        # Some A16 boots briefly return a null accessibility root with exit code zero.
+        # Remove the previous document so a failed dump can never pass on stale UI.
+        adb("shell", "rm", "-f", path)
+        adb("shell", "uiautomator", "dump", path)
+        source = adb("exec-out", "cat", path)
+        start = source.find("<hierarchy")
+        if start < 0:
+            return []
+        return ET.fromstring(source[start:]).findall(".//node")
+    except (subprocess.SubprocessError, ET.ParseError):
+        return []
 
 
 def plain(value):
@@ -48,12 +58,19 @@ try:
 except (OSError, ValueError, KeyError) as exc:
     print("Current publisher response unavailable; comparing with dated packaged edition:",type(exc).__name__)
 
-for _ in range(8):
+# Wake/unlock the clean fixture without drawing any UI over the tested Activity.
+adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
+adb("shell", "wm", "dismiss-keyguard")
+for _ in range(15):
     screen = nodes()
     item = next((n for n in screen if label(n) in stories and n.get("visible-to-user","true")=="true"),None)
     if item is not None: break
     time.sleep(0.7)
-else: raise SystemExit("Real publisher headline not found on Home")
+else:
+    (output/"failed-home.png").write_bytes(adb("exec-out","screencap","-p",binary=True))
+    (output/"failed-home-window.txt").write_text(adb("shell","dumpsys","window","displays"))
+    print("Observed final accessibility labels:", [label(n)[:120] for n in screen if label(n)][:20])
+    raise SystemExit("Real publisher headline not found on Home")
 article=stories[label(item)]
 print("Home accessible headline matches published article",article["id"])
 (output/"home.png").write_bytes(adb("exec-out","screencap","-p",binary=True))
@@ -70,7 +87,10 @@ for _ in range(8):
     detail=nodes()
     if any(passage(n) for n in detail):break
     time.sleep(0.7)
-else: raise SystemExit("Tapped headline did not expose the article body")
+else:
+    (output/"failed-detail.png").write_bytes(adb("exec-out","screencap","-p",binary=True))
+    print("Observed final accessibility labels:", [label(n)[:120] for n in detail if label(n)][:20])
+    raise SystemExit("Tapped headline did not expose the article body")
 (output/"article.png").write_bytes(adb("exec-out","screencap","-p",binary=True))
 adb("shell","input","keyevent","KEYCODE_BACK")
 for _ in range(6):

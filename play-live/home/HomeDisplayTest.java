@@ -91,6 +91,18 @@ public final class HomeDisplayTest {
         }
         assertTrue("SPA headline shown",ready);
     }
+    @Test public void nativeReaderNeverCoversArticleDeepLinks() throws Exception{
+        document("<main id='app'></main>");
+        waitForStory();
+        script("location.hash='artikel/qa-issued-deep-link'");
+        boolean uncovered=false;
+        for(int i=0;i<80&&!uncovered;i++){
+            if("true".equals(script("location.hash==='#artikel/qa-issued-deep-link'")) && home()==null)uncovered=true;
+            else SystemClock.sleep(60);
+        }
+        assertTrue("The WebView deep link must remain accessible",uncovered);
+    }
+
     @Test public void publishedFeedExcludesDraftsAndRetainsFullBodyAndPublicationDates() throws Exception {
         String fixture="{\"articles\":[{\"id\":\"1\",\"title\":\"Satu\",\"status\":\"draft\",\"body\":\"X\"},"
             +"{\"id\":\"2\",\"date\":\"2026-11-15\",\"title\":\"Dua\",\"body\":\"<p>Isi laporan</p>\"}]}";

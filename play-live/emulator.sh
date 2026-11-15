@@ -38,13 +38,14 @@ trap diagnostics EXIT
 # Check the centre of a cold-start Home screen separately from instrumentation:
 # the release branch previously painted only a header over a blank body.
 sleep 3
-python3 play-live/home/check_screen.py evidence/home
+status=0
+python3 play-live/home/check_screen.py evidence/home || status=1
 adb exec-out screencap -p > evidence/01-beranda.png
-python3 play-live/check_visible_content.py evidence/01-beranda.png
-run_suite home HomeDisplayTest
-run_suite login SocialLoginTimelineTest
-run_suite live LiveCaptureTest
-run_suite reels Reels433LayoutTest
+python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
+run_suite home HomeDisplayTest || status=1
+run_suite login SocialLoginTimelineTest || status=1
+run_suite live LiveCaptureTest || status=1
+run_suite reels Reels433LayoutTest || status=1
 
 adb shell pm clear "$pkg" >/dev/null
 adb shell am start -W -n "$pkg/.MainActivity" --ei startTab 4 > evidence/social-launch.txt
@@ -54,3 +55,4 @@ diagnostics
 if grep -Fq 'FATAL EXCEPTION' evidence/runtime-errors.txt; then
     echo 'Android fatal exception during release smoke' >&2; exit 1
 fi
+exit "$status"
