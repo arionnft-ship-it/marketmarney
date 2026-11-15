@@ -141,3 +141,4 @@ for name in ("HomeNews.java", "HomeNewsView.java"):
     copyfile(here/name,source/name)
 copyfile(here/"home-edition.json",root/"app/src/main/assets/home-edition.json")
 copyfile(here/"HomeDisplayTest.java",root/"app/src/androidTest"/pkg/"HomeDisplayTest.java")
+copyfile(here/"HomeColdStartTest.java",root/"app/src/androidTest"/pkg/"HomeColdStartTest.java")

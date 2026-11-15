@@ -54,6 +54,25 @@ public final class HomeDisplayTest {
     private void document(String html){
         inst.runOnMainSync(()->{web.stopLoading();web.loadDataWithBaseURL(HOME,html,"text/html","UTF-8",HOME);});
     }
+    private void httpsDocument(String html){
+        inst.runOnMainSync(()->{
+            web.stopLoading();
+            WebViewClient delegate=web.getWebViewClient();
+            web.setWebViewClient(new WebViewClient(){
+                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                    if(!request.isForMainFrame()||!HOME.equals(request.getUrl().toString()))
+                        return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));
+                    return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+                }
+                @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return delegate.shouldOverrideUrlLoading(v,r);}
+                @Override public void onPageStarted(WebView v,String u,Bitmap icon){delegate.onPageStarted(v,u,icon);}
+                @Override public void onPageCommitVisible(WebView v,String u){delegate.onPageCommitVisible(v,u);}
+                @Override public void onPageFinished(WebView v,String u){delegate.onPageFinished(v,u);}
+                @Override public void doUpdateVisitedHistory(WebView v,String u,boolean reload){delegate.doUpdateVisitedHistory(v,u,reload);}
+            });
+            web.loadUrl(HOME);
+        });
+    }
     private String script(String js) throws Exception{
         AtomicReference<String> out=new AtomicReference<>();
         CountDownLatch done=new CountDownLatch(1);
@@ -90,36 +109,26 @@ public final class HomeDisplayTest {
         });
     }
     @Test public void genuineWebHeadlineReplacesFallbackAndNavigationClearsNativeView() throws Exception{
-        document("<meta name=viewport content='width=device-width,initial-scale=1'><main id='app'><div id='headlineCarousel'><h2>Berita redaksi yang terlihat pada Beranda</h2></div></main>");
+        httpsDocument("<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
+            +"<main id='app'><div id='headlineCarousel'><h2>Berita redaksi yang terlihat pada Beranda</h2></div></main>");
+        long deadline=SystemClock.elapsedRealtime()+19000;
         boolean ready=false;
-        for(int i=0;i<120&&!ready;i++){
-            ready="true".equals(script("!!document.querySelector('#headlineCarousel h2')"))&&home()==null;
-            if(!ready)SystemClock.sleep(60);
+        String dom="";
+        while(!ready&&SystemClock.elapsedRealtime()<deadline){
+            dom=script("JSON.stringify([location.href,document.readyState,!!document.querySelector('#headlineCarousel h2')])");
+            AtomicReference<Boolean> uncovered=new AtomicReference<>();
+            inst.runOnMainSync(()->uncovered.set(home()==null && web.isShown()));
+            ready=dom.contains("complete")&&dom.contains("true")&&uncovered.get();
+            if(!ready)SystemClock.sleep(90);
         }
-        assertTrue("SPA headline shown",ready);
+        assertTrue("SPA fixture headline did not take over. Document="+dom,ready);
     }
     @Test public void nativeReaderNeverCoversArticleDeepLinks() throws Exception{
-        inst.runOnMainSync(()->{
-            web.stopLoading();
-            WebViewClient delegate=web.getWebViewClient();
-            web.setWebViewClient(new WebViewClient(){
-                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
-                    String html="<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        String html="<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'>"
                         +"<main id='app'><a id='fixtureLink' href='#artikel/qa-issued-deep-link'>Artikel</a>"
                         +"<article id='fixtureDetail' hidden>Isi artikel tujuan tautan uji.</article></main>"
                         +"<script>onhashchange=function(){document.getElementById('fixtureDetail').hidden=false;};</script>";
-                    if(!request.isForMainFrame()||!HOME.equals(request.getUrl().toString()))
-                        return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));
-                    return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
-                }
-                @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return delegate.shouldOverrideUrlLoading(v,r);}
-                @Override public void onPageStarted(WebView v,String u,Bitmap icon){delegate.onPageStarted(v,u,icon);}
-                @Override public void onPageCommitVisible(WebView v,String u){delegate.onPageCommitVisible(v,u);}
-                @Override public void onPageFinished(WebView v,String u){delegate.onPageFinished(v,u);}
-                @Override public void doUpdateVisitedHistory(WebView v,String u,boolean reload){delegate.doUpdateVisitedHistory(v,u,reload);}
-            });
-            web.loadUrl(HOME);
-        });
+        httpsDocument(html);
         // Wait for the new HTTPS document rather than running the hash change in a
         // previous page while the native publisher bootstrap already has headlines.
         boolean installed=false;

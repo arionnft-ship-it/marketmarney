@@ -42,22 +42,19 @@ diagnostics() {
 }
 trap diagnostics EXIT
 
-# Check the centre of a cold-start Home screen separately from instrumentation:
-# the release branch previously painted only a header over a blank body.
 status=0
+run_suite cold-home HomeColdStartTest || status=1
+adb pull "/sdcard/Android/data/$pkg/files/qa-home" evidence/home || status=1
+if [[ -s evidence/home/home.png ]]; then
+    cp evidence/home/home.png evidence/01-beranda.png
+    python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
+else
+    status=1
+fi
 run_suite home HomeDisplayTest || status=1
 run_suite login SocialLoginTimelineTest || status=1
 run_suite live LiveCaptureTest || status=1
 run_suite reels Reels433LayoutTest || status=1
-
-test "$(adb get-state)" = device
-adb shell pm clear "$pkg"
-adb shell am start -W -n "$pkg/.MainActivity" > evidence/cold-home-launch.txt
-sleep 3
-timeout -k 5 285 python3 -u play-live/home/check_screen.py evidence/home || status=1
-adb exec-out screencap -p > evidence/01-beranda.png
-python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
-
 adb shell pm clear "$pkg" >/dev/null
 adb shell am start -W -n "$pkg/.MainActivity" --ei startTab 4 > evidence/social-launch.txt
 sleep 4
