@@ -43,6 +43,10 @@ diagnostics() {
 trap diagnostics EXIT
 
 status=0
+run_suite home HomeDisplayTest || status=1
+run_suite login SocialLoginTimelineTest || status=1
+run_suite live LiveCaptureTest || status=1
+run_suite reels Reels433LayoutTest || status=1
 run_suite cold-home HomeColdStartTest || status=1
 adb pull "/sdcard/Android/data/$pkg/files/qa-home" evidence/home || status=1
 if [[ -s evidence/home/home.png ]]; then
@@ -51,10 +55,6 @@ if [[ -s evidence/home/home.png ]]; then
 else
     status=1
 fi
-run_suite home HomeDisplayTest || status=1
-run_suite login SocialLoginTimelineTest || status=1
-run_suite live LiveCaptureTest || status=1
-run_suite reels Reels433LayoutTest || status=1
 adb shell pm clear "$pkg" >/dev/null
 adb shell am start -W -n "$pkg/.MainActivity" --ei startTab 4 > evidence/social-launch.txt
 sleep 4

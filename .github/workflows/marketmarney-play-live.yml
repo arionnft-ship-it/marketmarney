@@ -53,7 +53,9 @@ jobs:
           path: deliver/
           if-no-files-found: error
       - name: Enable emulator acceleration
-        run: sudo chmod 666 /dev/kvm
+        run: |
+          gradle --stop
+          sudo chmod 666 /dev/kvm
       - name: Test the actual bundle-generated APK on Android 16
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -64,7 +66,7 @@ jobs:
           profile: pixel_2
           cores: 2
           ram-size: 2048M
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -feature -Vulkan -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           heap-size: 512M
           disable-animations: false
           script: bash play-live/emulator.sh

@@ -16,7 +16,10 @@ import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.PixelCopy;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -81,10 +84,26 @@ public final class HomeColdStartTest {
         return null;
     }
     private void capture(String file) throws Exception {
-        Bitmap bitmap=inst.getUiAutomation().takeScreenshot();assertNotNull("Android display screenshot",bitmap);
+        progress("copy window pixels for "+file);
+        CountDownLatch copied=new CountDownLatch(1);
+        AtomicReference<Bitmap> image=new AtomicReference<>();
+        AtomicReference<Integer> status=new AtomicReference<>();
+        inst.runOnMainSync(()->{
+            View content=activity.getWindow().getDecorView();
+            Bitmap snapshot=Bitmap.createBitmap(content.getWidth(),content.getHeight(),Bitmap.Config.ARGB_8888);
+            image.set(snapshot);
+            PixelCopy.request(activity.getWindow(),snapshot,code->{status.set(code);copied.countDown();},
+                new Handler(Looper.getMainLooper()));
+        });
+        assertTrue("PixelCopy callback within 5s",copied.await(5,TimeUnit.SECONDS));
+        assertEquals("Android window pixel copy",Integer.valueOf(PixelCopy.SUCCESS),status.get());
+        Bitmap bitmap=image.get();
         try(FileOutputStream out=new FileOutputStream(new File(output,file))){
             assertTrue("Encode display pixels",bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }finally{bitmap.recycle();}
+    }
+    private void progress(String message){
+        Bundle note=new Bundle();note.putString("stream","HOME_QA "+message+"\n");inst.sendStatus(2,note);
     }
     private void tap(Hit h){
         long down=SystemClock.uptimeMillis();
@@ -123,13 +142,17 @@ public final class HomeColdStartTest {
         index(stories,HomeNews.parse(HomeNews.read(ctx.getAssets().open("home-edition.json"))));
         Intent normal=ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
         assertNotNull("launcher activity",normal);normal.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        progress("launch app");
         activity=(MainActivity)inst.startActivitySync(normal);web=(WebView)field("web");
         try {
+            progress("read current public feed");
             try{index(fresh,HomeNews.parse(HomeNews.download()));}catch(Exception e){android.util.Log.i("MMAPP_HOME","QA public feed: "+e.getClass().getSimpleName());}
+            progress("current public rows="+fresh.size());
             stories.putAll(fresh);
             long deadline=SystemClock.elapsedRealtime()+12000;Hit hit=null;
             while(hit==null&&SystemClock.elapsedRealtime()<deadline){hit=findHeadline();if(hit==null)SystemClock.sleep(100);}
             assertNotNull("Real publisher headline visible through the ordinary launcher",hit);
+            progress("headline "+hit.story.id+" on "+hit.surface);
             capture("home.png");tap(hit);
             String passage=null;deadline=SystemClock.elapsedRealtime()+11000;
             while(passage==null&&SystemClock.elapsedRealtime()<deadline){passage=detailPassage(hit.story);if(passage==null)SystemClock.sleep(120);}
