@@ -91,16 +91,13 @@ test('Edukasi and Video Marney preserve published videos without an empty second
 });
 test('Two TV collection controls, learning path and video player remain accessible',()=>{
  assert.equal(VERSION,'mm-tv-learning-20261115-v2');
- assert.match(CLIENT,/data\\.collection/);
- assert.match(CLIENT,/Pilih Edukasi atau Video Marney/);
- assert.match(CLIENT,/Video Marney/);
- assert.match(CLIENT,/Belajar Bersama MarketMarney/);
- assert.match(CLIENT,/aria-pressed/);
- assert.match(CLIENT,/mm-tv-learning-course/);
- assert.match(CLIENT,/host\\.dataset\\.mmTvLearning/);
- assert.match(CLIENT,/#tvMount/);
- assert.match(CSS,/\\.mm-tv-collection-choices/);
- assert.match(CSS,/\\.mm-tv-learning-course\\[hidden\\]\\{display:none!important\\}/);
- assert.match(CSS,/@media\\(max-width:440px\\)/);
- assert.doesNotMatch(CLIENT,/\\/api\\/admin|localStorage|sessionStorage|\\.remove\\(|fetch\\(\\s*['"]https?:/);
+ for(const token of ['data.collection','Pilih Edukasi atau Video Marney','Video Marney','Belajar Bersama MarketMarney','aria-pressed','mm-tv-learning-course','host.dataset.mmTvLearning','#tvMount']){
+  assert.ok(CLIENT.includes(token),'missing client feature '+token);
+ }
+ for(const token of ['.mm-tv-collection-choices','.mm-tv-learning-course[hidden]{display:none!important}','@media(max-width:440px)']){
+  assert.ok(CSS.includes(token),'missing CSS rule '+token);
+ }
+ for(const token of ['/api/admin','localStorage','sessionStorage','.remove(','fetch("http','fetch(\'http']){
+  assert.ok(!CLIENT.includes(token),'unexpected mutation or remote request '+token);
+ }
 });
