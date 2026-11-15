@@ -1,0 +1,36 @@
+name: MarketMarney TV Edukasi & Video Marney
+on:
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+    paths:
+      - .github/workflows/marketmarney-tv-two-choices.yml
+      - marney-brand/tv-learning.cjs
+      - marney-brand/tv-learning.test.cjs
+      - marney-brand/tv-layout.cjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Edukasi and Video Marney client and regressions
+        run: |
+          set -euo pipefail
+          cd marney-brand
+          node --check tv-learning.cjs
+          node --check tv-layout.cjs
+          node --test tv-learning.test.cjs tv-layout.test.cjs
+      - name: Check original route and TV files remain intact
+        run: |
+          set -euo pipefail
+          grep -qF 'COPY marney-brand/branding.cjs' warxau-fbs/Dockerfile.ihsg
+          grep -qF 'tv-learning.test.cjs' warxau-fbs/Dockerfile.ihsg
+          grep -qF 'tv-learning.cjs' marney-brand/branding.cjs
+          grep -qF 'mm-tv-filters{display:none!important}' marney-brand/tv-layout.cjs
