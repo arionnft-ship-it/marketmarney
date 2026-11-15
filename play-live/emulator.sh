@@ -24,9 +24,13 @@ run_suite() {
     for name in "$@"; do classes+=("$pkg.$name"); done
     local selected
     selected=$(IFS=,; echo "${classes[*]}")
-    adb shell pm clear "$pkg" >/dev/null
-    adb shell am instrument -w -r -e class "$selected" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" \
-        | tee "evidence/${label}.txt"
+    timeout -k 3 25 adb shell pm clear "$pkg" >/dev/null || return 1
+    printf 'START %s at %s\n' "$label" "$(date -u +%T)"
+    if ! timeout -k 8 210 adb shell am instrument -w -r -e class "$selected" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" \
+        | tee "evidence/${label}.txt"; then
+        timeout -k 2 12 adb shell am force-stop "$pkg" || true
+        return 1
+    fi
     grep -Eq '^OK \([1-9][0-9]* tests?\)' "evidence/${label}.txt"
 }
 diagnostics() {
@@ -39,7 +43,7 @@ trap diagnostics EXIT
 # the release branch previously painted only a header over a blank body.
 sleep 3
 status=0
-python3 play-live/home/check_screen.py evidence/home || status=1
+timeout -k 5 285 python3 -u play-live/home/check_screen.py evidence/home || status=1
 adb exec-out screencap -p > evidence/01-beranda.png
 python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
 run_suite home HomeDisplayTest || status=1

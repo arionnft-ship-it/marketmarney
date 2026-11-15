@@ -25,6 +25,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public final class HomeDisplayTest {
+    @org.junit.Rule public final org.junit.rules.Timeout testTimeout=org.junit.rules.Timeout.seconds(60);
     private Instrumentation inst;
     private MainActivity activity;
     private WebView web;
@@ -107,6 +108,8 @@ public final class HomeDisplayTest {
                         +"<main id='app'><a id='fixtureLink' href='#artikel/qa-issued-deep-link'>Artikel</a>"
                         +"<article id='fixtureDetail' hidden>Isi artikel tujuan tautan uji.</article></main>"
                         +"<script>onhashchange=function(){document.getElementById('fixtureDetail').hidden=false;};</script>";
+                    if(!request.isForMainFrame()||!HOME.equals(request.getUrl().toString()))
+                        return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));
                     return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
                 }
                 @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return delegate.shouldOverrideUrlLoading(v,r);}
@@ -120,7 +123,8 @@ public final class HomeDisplayTest {
         // Wait for the new HTTPS document rather than running the hash change in a
         // previous page while the native publisher bootstrap already has headlines.
         boolean installed=false;
-        for(int i=0;i<120&&!installed;i++){
+        long deadline=SystemClock.elapsedRealtime()+12000;
+        while(!installed && SystemClock.elapsedRealtime()<deadline){
             installed="true".equals(script("location.href==='https://marketmarney.com/index.html' && document.readyState==='complete' && !!document.getElementById('fixtureLink')"));
             if(!installed)SystemClock.sleep(60);
         }
@@ -128,7 +132,8 @@ public final class HomeDisplayTest {
         waitForStory();
         script("document.getElementById('fixtureLink').click()");
         boolean visible=false;
-        for(int i=0;i<120&&!visible;i++){
+        deadline=SystemClock.elapsedRealtime()+12000;
+        while(!visible && SystemClock.elapsedRealtime()<deadline){
             boolean route="true".equals(script("location.hash==='#artikel/qa-issued-deep-link' && !document.getElementById('fixtureDetail').hidden"));
             AtomicReference<Boolean> uncovered=new AtomicReference<>();
             inst.runOnMainSync(()->uncovered.set(home()==null && web.isShown()));
