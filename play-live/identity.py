@@ -35,6 +35,13 @@ for path in (app / 'src/androidTest').rglob('*.java'):
     if before != after: path.write_text(after)
 with gradle.open('a') as output:
     output.write("""
+def qaPath = System.getenv('MM_QA_STORE')
+if (qaPath) {
+    android.signingConfigs.debug.storeFile = file(qaPath)
+    android.signingConfigs.debug.storePassword = 'android'
+    android.signingConfigs.debug.keyAlias = 'androiddebugkey'
+    android.signingConfigs.debug.keyPassword = 'android'
+}
 def uploadPath = System.getenv('MM_PLAY_KEYSTORE_PATH')
 if (uploadPath) {
     android {

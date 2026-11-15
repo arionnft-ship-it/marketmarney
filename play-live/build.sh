@@ -20,6 +20,10 @@ case "$provided" in
     *) echo "Incomplete upload signing credentials" >&2; exit 1 ;;
 esac
 trap 'if [[ -n "${MM_PLAY_KEYSTORE_PATH:-}" ]]; then rm -f "$MM_PLAY_KEYSTORE_PATH"; fi' EXIT
+# Use the same explicit test certificate for instrumentation and bundle-generated APKs.
+export MM_QA_STORE="$RUNNER_TEMP/mm-instrumentation-qa.p12"
+keytool -genkeypair -noprompt -keystore "$MM_QA_STORE" -storetype PKCS12 -alias androiddebugkey \
+    -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 7 -dname 'CN=Android Debug, O=MarketMarney QA'
 gradle --no-daemon -p android438 :app:bundleRelease :app:assembleDebugAndroidTest
 aab="deliver/MarketMarney-4.38.5-${signing_status}.aab"
 cp android438/app/build/outputs/bundle/release/app-release.aab "$aab"
@@ -36,7 +40,7 @@ fi
 
 # Gradle signs the instrumentation APK with its ephemeral CI debug signing key.
 # Sign only QA-delivered APK splits with that SAME key to allow instrumentation.
-qa_store="$HOME/.android/debug.keystore"
+qa_store="$MM_QA_STORE"
 test -s "$qa_store"
 apks="$RUNNER_TEMP/marketmarney-universal.apks"
 java -jar "$bundletool" build-apks --bundle="$aab" --output="$apks" --mode=universal --overwrite \
