@@ -6,6 +6,12 @@ import android.os.SystemClock;
 import android.widget.Button;
 import android.widget.TextView;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.graphics.Bitmap;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -92,15 +98,44 @@ public final class HomeDisplayTest {
         assertTrue("SPA headline shown",ready);
     }
     @Test public void nativeReaderNeverCoversArticleDeepLinks() throws Exception{
-        document("<main id='app'></main>");
-        waitForStory();
-        script("location.hash='artikel/qa-issued-deep-link'");
-        boolean uncovered=false;
-        for(int i=0;i<80&&!uncovered;i++){
-            if("true".equals(script("location.hash==='#artikel/qa-issued-deep-link'")) && home()==null)uncovered=true;
-            else SystemClock.sleep(60);
+        inst.runOnMainSync(()->{
+            web.stopLoading();
+            WebViewClient delegate=web.getWebViewClient();
+            web.setWebViewClient(new WebViewClient(){
+                @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                    String html="<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                        +"<main id='app'><a id='fixtureLink' href='#artikel/qa-issued-deep-link'>Artikel</a>"
+                        +"<article id='fixtureDetail' hidden>Isi artikel tujuan tautan uji.</article></main>"
+                        +"<script>onhashchange=function(){document.getElementById('fixtureDetail').hidden=false;};</script>";
+                    return new WebResourceResponse("text/html","UTF-8",new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+                }
+                @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return delegate.shouldOverrideUrlLoading(v,r);}
+                @Override public void onPageStarted(WebView v,String u,Bitmap icon){delegate.onPageStarted(v,u,icon);}
+                @Override public void onPageCommitVisible(WebView v,String u){delegate.onPageCommitVisible(v,u);}
+                @Override public void onPageFinished(WebView v,String u){delegate.onPageFinished(v,u);}
+                @Override public void doUpdateVisitedHistory(WebView v,String u,boolean reload){delegate.doUpdateVisitedHistory(v,u,reload);}
+            });
+            web.loadUrl(HOME);
+        });
+        // Wait for the new HTTPS document rather than running the hash change in a
+        // previous page while the native publisher bootstrap already has headlines.
+        boolean installed=false;
+        for(int i=0;i<120&&!installed;i++){
+            installed="true".equals(script("location.href==='https://marketmarney.com/index.html' && document.readyState==='complete' && !!document.getElementById('fixtureLink')"));
+            if(!installed)SystemClock.sleep(60);
         }
-        assertTrue("The WebView deep link must remain accessible",uncovered);
+        assertTrue("HTTPS link fixture committed before user navigation",installed);
+        waitForStory();
+        script("document.getElementById('fixtureLink').click()");
+        boolean visible=false;
+        for(int i=0;i<120&&!visible;i++){
+            boolean route="true".equals(script("location.hash==='#artikel/qa-issued-deep-link' && !document.getElementById('fixtureDetail').hidden"));
+            AtomicReference<Boolean> uncovered=new AtomicReference<>();
+            inst.runOnMainSync(()->uncovered.set(home()==null && web.isShown()));
+            visible=route&&uncovered.get();
+            if(!visible)SystemClock.sleep(60);
+        }
+        assertTrue("Article route committed but remained covered; URL="+script("location.href"),visible);
     }
 
     @Test public void publishedFeedExcludesDraftsAndRetainsFullBodyAndPublicationDates() throws Exception {

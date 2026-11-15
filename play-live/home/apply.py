@@ -58,10 +58,14 @@ once("    private boolean marketmarneyTvDocument(String url){", '''    private b
     }
     private void probeHome(WebView target,String url,long generation,int attempt){
         if(destroyed||generation!=homeProbeGeneration||target!=web||homeNewsView==null
-                ||mainFailed||!homeDocument(target.getUrl()))return;
+                ||mainFailed)return;
+        if(!homeDocument(target.getUrl())){
+            clearHomeNews();return;
+        }
         // A publisher headline with visible text and pixels must be in the viewport.
         // A loaded empty #app, a hero wordmark, a menu or a loading message is insufficient.
-        String read="(function(){var nodes=document.querySelectorAll('#app #headlineCarousel h2,#app .mm90-story h3,#app .card[data-id] h3');"
+        String read="(function(){if(location.origin==='https://marketmarney.com'&&location.hash&&location.hash!=='#mm-app-home')return 'subpage';"
+            +"var nodes=document.querySelectorAll('#app #headlineCarousel h2,#app .mm90-story h3,#app .card[data-id] h3');"
             +"for(var i=0;i<nodes.length;i++){var n=nodes[i],r=n.getBoundingClientRect();"
             +"if(!(n.innerText||'').trim()||r.width<30||r.height<10)continue;"
             +"var l=Math.max(0,r.left),t=Math.max(0,r.top),b=Math.min(innerHeight,r.bottom),right=Math.min(innerWidth,r.right);"
@@ -69,7 +73,13 @@ once("    private boolean marketmarneyTvDocument(String url){", '''    private b
             +"if(hit&&(hit===n||n.contains(hit))&&getComputedStyle(n).visibility==='visible')return true;}return false;})()";
         target.evaluateJavascript(read,result->{
             if(destroyed||generation!=homeProbeGeneration||target!=web||homeNewsView==null
-                    ||mainFailed||!homeDocument(target.getUrl()))return;
+                    ||mainFailed)return;
+            if(!homeDocument(target.getUrl())){
+                clearHomeNews();return;
+            }
+            if("\\"subpage\\"".equals(result)){
+                clearHomeNews();return;
+            }
             if("true".equals(result)&&!homeNewsView.isReading()&&!homeNewsView.hasBeenUsed()){
                 clearHomeNews();completePageReady(target,url);endLaunchAnimation(true,"home-web-headline");
                 Log.i("MMAPP_HOME","web headline visible");return;
@@ -103,6 +113,10 @@ once('                if(v!=web)return;resetTvReadyProbe();lastAdaptedDocument='
                     homeProbeGeneration++;homeProbing=false;showHomeNews();
                 }else clearHomeNews();
                 resetTvReadyProbe();lastAdaptedDocument=''')
+once('                    // XAUWar links no longer claim the MarketMarney TV tab.', '''                    if(v==web&&homeNewsView!=null&&!homeDocument(u.toString())){
+                        clearHomeNews();verifiedHomeUrl="";
+                    }
+                    // XAUWar links no longer claim the MarketMarney TV tab.''')
 once('                boolean next=tab==SOCIAL&&"mm44-reels"', '''                if(!homeDocument(url)){verifiedHomeUrl="";if(homeNewsView!=null)clearHomeNews();}
                 boolean next=tab==SOCIAL&&"mm44-reels"''')
 once('            lastUrl=own(web.getUrl())?web.getUrl():BASE+paths[tab];resumePage(web);', '''            lastUrl=own(web.getUrl())?web.getUrl():BASE+paths[tab];resumePage(web);
