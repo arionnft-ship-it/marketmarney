@@ -1,0 +1,78 @@
+name: MarketMarney Live Play candidate
+on:
+  push:
+    branches: [release/marketmarney-play-live-20261115]
+    paths: ['play-live/**', 'mobile4385/**', '.github/workflows/marketmarney-play-live.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: marketmarney-play-live-${{ github.sha }}
+  cancel-in-progress: true
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          manager=$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)
+          "$manager" 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Reconstruct tested Live and prepare production package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check Pillow==13.0.0
+          bash mobile4385/reconstruct.sh
+          bash mobile4385/apply.sh android438
+          python3 play-live/identity.py android438
+          python3 play-live/home/apply.py android438
+      - name: Build and validate release bundle
+        shell: bash
+        env:
+          MM_UPLOAD_KEYSTORE_B64: ${{ secrets.MM_UPLOAD_KEYSTORE_B64 }}
+          MM_PLAY_STORE_PASSWORD: ${{ secrets.MM_PLAY_STORE_PASSWORD }}
+          MM_PLAY_KEY_ALIAS: ${{ secrets.MM_PLAY_KEY_ALIAS }}
+          MM_PLAY_KEY_PASSWORD: ${{ secrets.MM_PLAY_KEY_PASSWORD }}
+        run: bash play-live/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarketMarney-4.38.5-Play-Bundle
+          path: deliver/
+          if-no-files-found: error
+      - name: Enable emulator acceleration
+        run: |
+          gradle --stop
+          sudo chmod 666 /dev/kvm
+      - name: Test the actual bundle-generated APK on Android 16
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          emulator-boot-timeout: 350
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          emulator-options: -no-window -feature -Vulkan -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          heap-size: 512M
+          disable-animations: false
+          script: bash play-live/emulator.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MarketMarney-4.38.5-Android16-QA
+          path: evidence/
+          if-no-files-found: warn

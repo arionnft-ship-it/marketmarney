@@ -1,0 +1,9 @@
+Menandatangani AAB MarketMarney di Windows
+
+1. Ekstrak SEMUA isi ZIP ke satu folder yang dapat ditulis.
+2. Pasang JDK 17 atau lebih baru (misalnya Eclipse Temurin JDK). Pilih opsi menambahkan Java ke PATH. Jika sudah terpasang, langsung ke langkah 3.
+3. Klik dua kali Tandatangani-MarketMarney.cmd. Pilih 1 untuk memakai kunci upload aplikasi yang sudah ada. Masukkan lokasi keystore dan alias saat diminta. Jika ini aplikasi baru dan Anda belum memiliki kunci upload, pilih 2. Karakter kata sandi tidak terlihat saat diketik.
+4. Tunggu sampai muncul MarketMarney-4.38.5-SIGNED.aab serta Hasil-Verifikasi.txt. Laporan memuat sidik jari SHA-256 file dan sertifikat upload. Paket resmi adalah com.marketmarney.mobile, versi 4.38.5 (48).
+5. Simpan keystore dan kata sandinya secara pribadi beserta cadangan. Jika membuat kunci baru, lokasinya ditampilkan di jendela, umumnya %LOCALAPPDATA%\MarketMarney\MarketMarney-Upload.p12 dan aliasnya marketmarney-upload.
+
+AAB ditandatangani dan diverifikasi di PC Anda. Proses unggah ke Play Console dilakukan terpisah. Untuk aplikasi yang sudah memakai Play App Signing, cocokkan sertifikat upload di Hasil-Verifikasi.txt dengan sertifikat kunci upload milik aplikasi di Play Console.
