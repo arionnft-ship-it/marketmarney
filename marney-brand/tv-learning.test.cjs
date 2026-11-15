@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm');
-const {VERSION,LEVELS,stageOf,albumOf,learningCatalog,CLIENT,CSS,JS_PATH,CSS_PATH,assets,injectHtml}=require('./tv-learning.cjs');
+const {VERSION,LEVELS,stageOf,albumOf,isEducational,learningCatalog,CLIENT,CSS,JS_PATH,CSS_PATH,assets,injectHtml}=require('./tv-learning.cjs');
 const examples=[
  {id:'v1',status:'published',title:'Memahami Konsep Trading Secara Mendalam | MarketMarney Academy'},
  {id:'v2',status:'published',title:'Panduan Trading untuk Pemula — Mulai dari Nol | MarketMarney Academy'},
@@ -67,4 +67,40 @@ test('Learning assets are safe, responsive, and do not modify stored video recor
  assert.match(CSS,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(CLIENT,/\/api\/admin|localStorage|sessionStorage|PUT|POST|\.remove\(/);
  assert.doesNotMatch(CSS,/\.navbtn|\.mm-tv-feature|\.social-home|header\s*\{|body\s*\{/);
+});
+
+
+test('Edukasi and Video Marney preserve published videos without an empty second collection',()=>{
+ const collection=[
+  ...examples,
+  {id:'v7',status:'published',cat:'Edukasi',title:'Psikologi Trading di Market'},
+  {id:'v8',status:'published',cat:'Forex',title:'Analisis Harian Emas'},
+  {id:'v9',status:'published',cat:'Berita',title:'MarketMarney Update Global'},
+  {id:'v10',status:'draft',cat:'Berita',title:'Video Belum Terbit'}
+ ];
+ const all=learningCatalog(collection);
+ const edu=learningCatalog(all.videos.filter(isEducational));
+ assert.equal(all.videos.length,9);
+ assert.equal(edu.videos.length,7);
+ assert.equal(isEducational({title:'Fundamental',cat:'Edukasi'}),true);
+ assert.equal(isEducational({title:'Cara Mengenali Area Liquidity',cat:'Forex'}),true);
+ assert.equal(isEducational({title:'MarketMarney Update Global',cat:'Berita'}),false);
+ assert.equal(isEducational({title:'Marney Promo',category:'News',album:'MarketMarney Academy'}),true);
+ assert.ok(edu.videos.every(x=>all.videos.some(y=>y.id===x.id)),'Edukasi subset; Video Marney is complete catalogue');
+ assert.ok(!all.videos.some(x=>x.status==='draft'));
+});
+test('Two TV collection controls, learning path and video player remain accessible',()=>{
+ assert.equal(VERSION,'mm-tv-learning-20261115-v2');
+ assert.match(CLIENT,/data\\.collection/);
+ assert.match(CLIENT,/Pilih Edukasi atau Video Marney/);
+ assert.match(CLIENT,/Video Marney/);
+ assert.match(CLIENT,/Belajar Bersama MarketMarney/);
+ assert.match(CLIENT,/aria-pressed/);
+ assert.match(CLIENT,/mm-tv-learning-course/);
+ assert.match(CLIENT,/host\\.dataset\\.mmTvLearning/);
+ assert.match(CLIENT,/#tvMount/);
+ assert.match(CSS,/\\.mm-tv-collection-choices/);
+ assert.match(CSS,/\\.mm-tv-learning-course\\[hidden\\]\\{display:none!important\\}/);
+ assert.match(CSS,/@media\\(max-width:440px\\)/);
+ assert.doesNotMatch(CLIENT,/\\/api\\/admin|localStorage|sessionStorage|\\.remove\\(|fetch\\(\\s*['"]https?:/);
 });
