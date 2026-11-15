@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +62,9 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          ram-size: 3072M
+          cores: 2
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           heap-size: 512M
           disable-animations: false
           script: bash play-live/emulator.sh

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Test the exact release bundle's generated APK on Android 16 without contacting Play Console.
 set -euo pipefail
+export MM_ADB_BIN
+MM_ADB_BIN=$(type -P adb)
+adb() { timeout -k 3 25 "$MM_ADB_BIN" "$@"; }
 pkg=com.marketmarney.mobile
 mkdir -p evidence
 java -jar "$RUNNER_TEMP/bundletool-1.18.3.jar" install-apks --apks="$RUNNER_TEMP/marketmarney-universal.apks"
@@ -24,11 +27,11 @@ run_suite() {
     for name in "$@"; do classes+=("$pkg.$name"); done
     local selected
     selected=$(IFS=,; echo "${classes[*]}")
-    timeout -k 3 25 adb shell pm clear "$pkg" >/dev/null || return 1
+    timeout -k 3 25 "$MM_ADB_BIN" shell pm clear "$pkg" >/dev/null || return 1
     printf 'START %s at %s\n' "$label" "$(date -u +%T)"
-    if ! timeout -k 8 210 adb shell am instrument -w -r -e class "$selected" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" \
+    if ! timeout -k 8 210 "$MM_ADB_BIN" shell am instrument -w -r -e class "$selected" "$pkg.test/androidx.test.runner.AndroidJUnitRunner" \
         | tee "evidence/${label}.txt"; then
-        timeout -k 2 12 adb shell am force-stop "$pkg" || true
+        timeout -k 2 12 "$MM_ADB_BIN" shell am force-stop "$pkg" || true
         return 1
     fi
     grep -Eq '^OK \([1-9][0-9]* tests?\)' "evidence/${label}.txt"
@@ -41,15 +44,19 @@ trap diagnostics EXIT
 
 # Check the centre of a cold-start Home screen separately from instrumentation:
 # the release branch previously painted only a header over a blank body.
-sleep 3
 status=0
-timeout -k 5 285 python3 -u play-live/home/check_screen.py evidence/home || status=1
-adb exec-out screencap -p > evidence/01-beranda.png
-python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
 run_suite home HomeDisplayTest || status=1
 run_suite login SocialLoginTimelineTest || status=1
 run_suite live LiveCaptureTest || status=1
 run_suite reels Reels433LayoutTest || status=1
+
+test "$(adb get-state)" = device
+adb shell pm clear "$pkg"
+adb shell am start -W -n "$pkg/.MainActivity" > evidence/cold-home-launch.txt
+sleep 3
+timeout -k 5 285 python3 -u play-live/home/check_screen.py evidence/home || status=1
+adb exec-out screencap -p > evidence/01-beranda.png
+python3 play-live/check_visible_content.py evidence/01-beranda.png || status=1
 
 adb shell pm clear "$pkg" >/dev/null
 adb shell am start -W -n "$pkg/.MainActivity" --ei startTab 4 > evidence/social-launch.txt
