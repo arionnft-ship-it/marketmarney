@@ -1,0 +1,18 @@
+/* Opt-in link only; do not restyle the existing MarketMarney SPA. */
+aside.sidebar .mm-terminal-edition-link{
+ display:flex!important;align-items:center!important;gap:8px!important;min-height:46px!important;
+ width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+ padding:8px 9px!important;margin:5px 0!important;background:#102922!important;
+ color:#c5f6e1!important;border:1px solid #337d63!important;border-radius:10px!important;
+ text-decoration:none!important;font-family:inherit!important;position:relative!important;z-index:1!important
+}
+aside.sidebar .mm-terminal-edition-link:hover{
+ border-color:#35c98e!important;background:#184336!important;color:#f0fffa!important
+}
+aside.sidebar .mm-terminal-edition-link:focus-visible{outline:2px solid #e79e44!important;outline-offset:2px!important}
+aside.sidebar .mm-terminal-edition-icon{font-size:19px!important;flex:0 0 auto!important;width:20px!important;text-align:center!important}
+aside.sidebar .mm-terminal-edition-copy{display:flex!important;flex:1 1 auto!important;min-width:0!important;flex-direction:column!important;align-items:flex-start!important;gap:1px!important}
+aside.sidebar .mm-terminal-edition-copy strong{color:inherit!important;font-size:10px!important;letter-spacing:.02em!important;font-weight:860!important;line-height:1.4!important}
+aside.sidebar .mm-terminal-edition-copy small{font-size:9px!important;color:#8fcbb2!important;font-weight:530!important;line-height:1.3!important}
+aside.sidebar .mm-terminal-edition-badge{background:#ec9f45!important;color:#121e22!important;font-size:8px!important;font-weight:850!important;border-radius:4px!important;padding:2px 4px!important;white-space:nowrap!important}
+@media(max-width:600px){aside.sidebar .mm-terminal-edition-link{padding:7px!important}.mm-terminal-edition-badge{font-size:7px!important}}
