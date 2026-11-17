@@ -4,7 +4,7 @@
  const CATEGORIES=['Emas','Forex','Kripto','Saham','Ekonomi','Geopolitik'];
  const STORAGE_KEY='mm_terminal_saved_feeds_v1';
  const publisherHosts=['actionforex.com','marketpulse.com','federalreserve.gov'];
- const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,feeds:[],selectedFeed:'',loading:false,updated:null,stream:null,streamConnected:false,lastHeartbeat:0,revision:0,knownIds:new Set(),newUntil:new Map()};
+ const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,feeds:[],selectedFeed:'',loading:false,updated:null,stream:null,streamConnected:false,lastHeartbeat:0,revision:0,session:'',knownIds:new Set(),newUntil:new Map()};
  const fmtClock={jakarta:'Asia/Jakarta',london:'Europe/London',ny:'America/New_York',tokyo:'Asia/Tokyo'};
  function elem(tag,className,contents){
   const n=document.createElement(tag);
@@ -196,7 +196,9 @@
    const ts=Number(el.dataset.ts);
    if(Number.isFinite(ts))el.textContent=timeText(ts);
   }
-  for(const [id,until]of state.newUntil)if(until<Date.now())state.newUntil.delete(id);
+  let expired=false;
+  for(const [id,until]of state.newUntil)if(until<Date.now()){state.newUntil.delete(id);expired=true}
+  if(expired)renderNews();
  }
  function liveConnectionState(connected){
   state.streamConnected=connected;
@@ -216,6 +218,7 @@
  }
  function setLiveNews(packet){
   if(!packet||!Array.isArray(packet.articles)||!Array.isArray(packet.headlines)||!Number.isSafeInteger(packet.revision))return;
+  if(typeof packet.session==='string'&&packet.session!==state.session){state.session=packet.session;state.revision=0;}
   if(packet.revision===0&&!packet.articles.length&&!packet.headlines.length)return;
   if(packet.revision<=state.revision&&state.all.length)return;
   const next=mergeResults(parseContent({articles:packet.articles}),parseTicker({headlines:packet.headlines}));
