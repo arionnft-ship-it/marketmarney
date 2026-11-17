@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="id">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="theme-color" content="#0c1116">
+ <meta name="description" content="MarketMarney Terminal — berita keuangan dari sumber asli, feed sesuai minat, kalender ekonomi, dan akses ke Market Live dalam satu dashboard.">
+ <meta name="robots" content="index,follow">
+ <link rel="canonical" href="https://marketmarney.com/terminal">
+ <link rel="icon" href="/favicon.png">
+ <link rel="preconnect" href="https://marketmarney.com">
+ <link rel="stylesheet" href="/assets/mm-terminal-v1.css?v=marney-terminal-20261118-v1">
+ <script defer src="/assets/mm-terminal-v1.js?v=marney-terminal-20261118-v1"></script>
+ <title>MarketMarney Terminal — Berita yang Menggerakkan Pasar</title>
+</head>
+<body>
+ <a class="skip" href="#berita">Lewati ke berita</a>
+ <div class="terminal">
+  <aside class="side" aria-label="Navigasi MarketMarney Terminal">
+   <a class="identity" href="/terminal" aria-label="MarketMarney Terminal">
+    <img src="/assets/brand-wordmark-dark.webp" alt="MARNEY" width="148" height="40">
+    <span class="identity-edition">TERMINAL EDITION</span>
+   </a>
+   <div class="side-group">
+    <span class="side-label">TERMINAL</span>
+    <a class="side-link active" href="#berita"><span class="side-icon" aria-hidden="true">▤</span><span>News Terminal</span></a>
+    <a class="side-link" href="#feed-saya"><span class="side-icon" aria-hidden="true">▦</span><span>Feed Saya</span></a>
+    <a class="side-link" href="#kalender"><span class="side-icon" aria-hidden="true">▣</span><span>Kalender Ekonomi</span></a>
+    <a class="side-link" href="#kripto"><span class="side-icon" aria-hidden="true">◈</span><span>Pasar Kripto</span></a>
+   </div>
+   <div class="side-group">
+    <span class="side-label">MARKETMARNEY</span>
+    <a class="side-link" href="/"><span class="side-icon" aria-hidden="true">⌂</span><span>Beranda Utama</span></a>
+    <a class="side-link" href="/beranda-trader.html"><span class="side-icon" aria-hidden="true">◎</span><span>Social Marney</span></a>
+    <a class="side-link" href="/"><span class="side-icon" aria-hidden="true">▶</span><span>MarketMarney TV <small>Buka dari menu utama</small></span></a>
+   </div>
+   <div class="side-bottom">
+    <div class="side-status"><span class="status-led" aria-hidden="true"></span><span id="server-status">Memeriksa sumber berita</span></div>
+    <p>Berita asli dari penerbit, disajikan sebagai ringkasan dan tautan. Bukan rekomendasi investasi.</p>
+    <a class="classic-link" href="/">Beralih ke situs klasik <span aria-hidden="true">↗</span></a>
+   </div>
+  </aside>
+  <div class="main-area">
+   <header class="topbar">
+    <div class="topbar-left"><span class="topbar-eyebrow">MARKETMARNEY / INTELLIGENCE</span><span class="topbar-divider"></span><span class="live-dot"></span><span>Feed publik</span></div>
+    <div class="topbar-right"><span id="last-sync" aria-live="polite">Menyiapkan feed…</span><button id="refresh" type="button" class="refresh" aria-label="Muat ulang berita">↻ <span>Perbarui</span></button><a class="home-link" href="/">Website utama ↗</a></div>
+   </header>
+   <main class="workspace">
+    <div class="intro">
+     <div class="kicker">NEWS TERMINAL <span>•</span> MARKETMARNEY</div>
+     <h1>Berita yang menggerakkan <em>pasar.</em></h1>
+     <p>Satu layar untuk memantau headline keuangan, mengatur berita sesuai kebutuhan, dan mengikuti kalender ekonomi. Konten berasal dari sumber yang tercantum pada setiap berita.</p>
+    </div>
+    <div class="columns">
+     <div class="primary">
+      <section class="news-panel" id="berita" aria-labelledby="news-title">
+       <div class="section-top">
+        <div><div class="section-eyebrow">MARKET INTELLIGENCE</div><h2 id="news-title">News Terminal</h2></div>
+        <span class="count" id="news-count">Memuat…</span>
+       </div>
+       <div class="searchline">
+        <label class="searchbox"><span aria-hidden="true">⌕</span><span class="sr-only">Cari berita</span><input type="search" id="news-search" placeholder="Cari headline, emas, The Fed, Bitcoin…" autocomplete="off"></label>
+        <button id="create-feed" type="button" class="create-feed"><span aria-hidden="true">＋</span> Buat feed</button>
+       </div>
+       <div class="topics" id="topics" role="group" aria-label="Kategori berita">
+        <button type="button" class="topic active" data-category="Semua" aria-pressed="true">Semua</button>
+        <button type="button" class="topic" data-category="Emas" aria-pressed="false">Emas</button>
+        <button type="button" class="topic" data-category="Forex" aria-pressed="false">Forex</button>
+        <button type="button" class="topic" data-category="Kripto" aria-pressed="false">Kripto</button>
+        <button type="button" class="topic" data-category="Saham" aria-pressed="false">Saham</button>
+        <button type="button" class="topic" data-category="Ekonomi" aria-pressed="false">Ekonomi</button>
+        <button type="button" class="topic" data-category="Geopolitik" aria-pressed="false">Geopolitik</button>
+       </div>
+       <div class="filters">
+        <label class="importance-label" for="importance">Prioritas headline <span id="importance-value">Semua</span></label>
+        <input type="range" id="importance" min="0" max="100" value="0" step="10" aria-describedby="importance-help">
+        <label class="sort-label" for="news-sort">Urutkan <select id="news-sort"><option value="latest">Terbaru</option><option value="important">Paling relevan</option></select></label>
+       </div>
+       <p class="filter-note" id="importance-help">Prioritas adalah perkiraan berdasarkan topik dan kata kunci, bukan penilaian resmi penerbit.</p>
+       <div class="feed-toggle" id="feed-saya">
+        <div><strong>Feed saya</strong><span>Atur topik dan kata kunci favoritmu di browser ini</span></div>
+        <div id="saved-feeds" class="saved-feeds" aria-label="Feed tersimpan"></div>
+       </div>
+       <div class="items" id="news-list" aria-live="polite" aria-busy="true">
+        <p class="loading">Mengambil headline dari sumber berita…</p>
+       </div>
+       <button id="more-news" type="button" class="load-more" hidden>Tampilkan berita lainnya</button>
+      </section>
+     </div>
+     <aside class="right-rail" aria-label="Data dan utilitas pasar">
+      <section class="rail-card quick">
+       <div class="rail-heading"><span class="rail-tag">MARKETMARNEY</span><h2>Market Pulse</h2></div>
+       <p>Sumber, bukan sensasi. Pantau berita penting tanpa memenuhi layar.</p>
+       <div class="metric-line"><span>Headline tersedia</span><strong id="stat-total">—</strong></div>
+       <div class="metric-line"><span>Sumber terhubung</span><strong id="stat-sources">—</strong></div>
+       <div class="metric-line"><span>Headline prioritas</span><strong id="stat-important">—</strong></div>
+       <small id="stat-disclaimer">Jumlah disesuaikan setelah feed dimuat.</small>
+      </section>
+      <section class="rail-card calendar" id="kalender">
+       <div class="rail-heading"><span class="rail-tag">EVENT</span><h2>Kalender Ekonomi</h2></div>
+       <p>Jadwal rilis ekonomi yang dapat memengaruhi forex, saham, dan emas.</p>
+       <div class="calendar-preview" id="calendar-preview"><div class="cal-icon">▦</div><span>Widget kalender TradingView dimuat hanya jika diperlukan.</span></div>
+       <button type="button" id="load-calendar" class="rail-btn">Tampilkan kalender</button>
+       <div id="calendar-widget" class="calendar-widget" hidden></div>
+       <a class="rail-external" href="https://www.tradingview.com/economic-calendar/" target="_blank" rel="noopener noreferrer">Lihat kalender di TradingView ↗</a>
+      </section>
+      <section class="rail-card crypto" id="kripto">
+       <div class="rail-heading"><span class="rail-tag">CRYPTO</span><h2>Likuidasi Kripto</h2></div>
+       <p>Angka likuidasi real-time belum terhubung ke terminal ini. Kami tidak menampilkan nilai perkiraan sebagai data live.</p>
+       <div class="crypto-indicator"><span class="crypto-dot"></span><span>Memerlukan sumber data terverifikasi</span></div>
+       <a class="rail-external" href="https://www.coinglass.com/" target="_blank" rel="noopener noreferrer">Buka CoinGlass ↗</a>
+      </section>
+      <section class="rail-card world-clocks">
+       <div class="rail-heading"><span class="rail-tag">GLOBAL</span><h2>Jam Pasar Dunia</h2></div>
+       <div class="clock"><span>Jakarta <small>WIB</small></span><strong id="clock-jakarta">--:--</strong></div>
+       <div class="clock"><span>London</span><strong id="clock-london">--:--</strong></div>
+       <div class="clock"><span>New York</span><strong id="clock-ny">--:--</strong></div>
+       <div class="clock"><span>Tokyo</span><strong id="clock-tokyo">--:--</strong></div>
+       <small>Jam lokal, bukan indikator sesi pasar sedang buka.</small>
+      </section>
+      <section class="rail-card shortcuts">
+       <div class="rail-heading"><span class="rail-tag">MENU</span><h2>Jelajahi Marney</h2></div>
+       <a href="/" class="shortcut"><span>Grafik dan analisis pasar</span><span aria-hidden="true">↗</span></a>
+       <a href="/beranda-trader.html" class="shortcut"><span>Social Marney</span><span aria-hidden="true">↗</span></a>
+       <a href="/" class="shortcut"><span>MarketMarney TV melalui menu utama</span><span aria-hidden="true">↗</span></a>
+      </section>
+     </aside>
+    </div>
+    <footer class="foot"><span>© MarketMarney · Informasi pasar. Perspektif lebih luas.</span><span>Terminal ini menampilkan headline dari sumber asli. Tidak ada nasihat investasi.</span></footer>
+   </main>
+  </div>
+ </div>
+ <dialog id="feed-dialog" aria-labelledby="feed-dialog-title">
+  <form method="dialog" id="feed-form" class="feed-form">
+   <div class="dialog-top"><h2 id="feed-dialog-title">Buat Feed Sendiri</h2><button type="button" id="close-feed" class="close-feed" aria-label="Tutup">✕</button></div>
+   <p>Pilih berita berdasarkan kategori dan kata kunci. Feed disimpan di browser ini, bukan ke akun MarketMarney.</p>
+   <label class="input-label">Nama feed <input name="name" id="feed-name" maxlength="36" required placeholder="Contoh: Emas & The Fed"></label>
+   <label class="input-label">Kata kunci <input name="keywords" id="feed-keywords" maxlength="100" placeholder="Contoh: gold, fed, inflation"></label>
+   <fieldset><legend>Pilih kategori</legend>
+    <label><input type="checkbox" name="categories" value="Emas"> Emas</label>
+    <label><input type="checkbox" name="categories" value="Forex"> Forex</label>
+    <label><input type="checkbox" name="categories" value="Kripto"> Kripto</label>
+    <label><input type="checkbox" name="categories" value="Saham"> Saham</label>
+    <label><input type="checkbox" name="categories" value="Ekonomi"> Ekonomi</label>
+    <label><input type="checkbox" name="categories" value="Geopolitik"> Geopolitik</label>
+   </fieldset>
+   <div class="feed-submit"><button type="button" id="cancel-feed" class="cancel">Batal</button><button type="submit" class="save">Simpan feed</button></div>
+   <span id="feed-error" class="feed-error" role="alert"></span>
+  </form>
+ </dialog>
+</body>
+</html>
