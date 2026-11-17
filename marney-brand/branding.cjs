@@ -5,6 +5,7 @@ const SEO=require('./seo.cjs');
 const YOUTUBE=require('./youtube-referrer.cjs');
 const TV_LAYOUT=require('./tv-layout.cjs');
 const TV_LEARNING=require('./tv-learning.cjs');
+const TERMINAL=require('./terminal-edition.cjs');
 const TV_HEDRA=require('./tv-hedra-audio.cjs');
 const TV_HEYGEN_IMPORT=require('./tv-heygen-import.cjs');
 const ABOUT=require('./about-refresh.cjs');
@@ -75,6 +76,7 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
  for(const [url,a] of YOUTUBE.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of TV_LAYOUT.assets())assets.set(url,[a.body,a.mime]);
  for(const [url,a] of TV_LEARNING.assets())assets.set(url,[a.body,a.mime]);
+ for(const [url,a] of TERMINAL.assets())assets.set(url,[a.body,a.mime]);
  function handle(req,res){
   if(TV_HEDRA.send(req,res))return true;
   const p=String(req.url||'').split('?')[0];
@@ -156,7 +158,8 @@ function createBranding({assetRoot=ROOT,appRoot=APP}={}){
    const videoHtml=YOUTUBE.injectHtml(aboutHtml,p);
    const tvHtml=TV_LAYOUT.injectHtml(videoHtml,p);
    const learningHtml=TV_LEARNING.injectHtml(tvHtml,p);
-   const analysisOut=learningHtml===out.toString('utf8')?out:Buffer.from(learningHtml);
+   const terminalHtml=TERMINAL.injectHtml(learningHtml,p);
+   const analysisOut=terminalHtml===out.toString('utf8')?out:Buffer.from(terminalHtml);
    const seoHtml=SEO.patchHtml(analysisOut.toString('utf8'),p,seoEnabled),final=seoHtml===analysisOut.toString('utf8')?analysisOut:Buffer.from(seoHtml);
    if(seoEnabled)SEO.clearBlockingHeader(this);
    // Only the public SPA HTML requires an identifying Referer for YouTube embeds.
