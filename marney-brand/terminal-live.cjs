@@ -119,7 +119,7 @@ function createTerminalLive({fetchImpl=globalThis.fetch,now=Date.now,
    watchers.delete(res);
    if(!watchers.size)stop();
   }
-  req.on('close',end);res.on('close',end);
+  req.on('aborted',end);res.on('close',end);
   start();
   return true;
  }
