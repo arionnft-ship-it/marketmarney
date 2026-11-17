@@ -1,0 +1,40 @@
+name: MarketMarney Terminal Edition Safety
+on:
+  push:
+    branches:
+      - fix/admin-portal-route-20261113
+    paths:
+      - .github/workflows/marketmarney-terminal-edition.yml
+      - marney-brand/terminal-edition.cjs
+      - marney-brand/terminal-edition.test.cjs
+      - marney-brand/terminal/**
+      - marney-brand/branding.cjs
+      - warxau-fbs/Dockerfile.ihsg
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test terminal routing, scripts, content safety and existing MarketMarney TV
+        run: |
+          set -euo pipefail
+          cd marney-brand
+          node --check terminal-edition.cjs
+          node --check terminal/terminal.js
+          node --check terminal/terminal-entry.js
+          node --check branding.cjs
+          node --test terminal-edition.test.cjs tv-learning.test.cjs tv-layout.test.cjs
+      - name: Verify image retains original protected functions
+        run: |
+          set -euo pipefail
+          grep -qF 'COPY marney-brand/terminal ./terminal' warxau-fbs/Dockerfile.ihsg
+          grep -qF 'terminal-edition.test.cjs' warxau-fbs/Dockerfile.ihsg
+          grep -qF 'terminal-edition.cjs' warxau-fbs/Dockerfile.ihsg
+          grep -qF 'COPY signup ./signup' warxau-fbs/Dockerfile.ihsg
