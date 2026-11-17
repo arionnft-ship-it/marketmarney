@@ -44,7 +44,7 @@ function parseRss(xml,provider,nowMs=Date.now()){
  }
  return rows;
 }
-function createMarketTicker({fetchImpl=globalThis.fetch,now=Date.now,cacheMs=300000,providers=PROVIDERS}={}){
+function createMarketTicker({fetchImpl=globalThis.fetch,now=Date.now,cacheMs=60000,providers=PROVIDERS}={}){
  let cache=null,pending=null;
  async function download(provider){
   if(!allowedUrl(provider.url,provider.domain))throw Error('unapproved_feed');
