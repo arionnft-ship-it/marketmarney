@@ -4,7 +4,7 @@
  const CATEGORIES=['Emas','Forex','Kripto','Saham','Ekonomi','Geopolitik'];
  const STORAGE_KEY='mm_terminal_saved_feeds_v1';
  const publisherHosts=['actionforex.com','marketpulse.com','federalreserve.gov'];
- const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,feeds:[],selectedFeed:'',loading:false,updated:null};
+ const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,feeds:[],selectedFeed:'',loading:false,updated:null,stream:null,streamConnected:false,lastHeartbeat:0,revision:0,knownIds:new Set(),newUntil:new Map()};
  const fmtClock={jakarta:'Asia/Jakarta',london:'Europe/London',ny:'America/New_York',tokyo:'Asia/Tokyo'};
  function elem(tag,className,contents){
   const n=document.createElement(tag);
@@ -81,7 +81,8 @@
   const ms=Date.now()-value;
   if(ms<0)return 'Terjadwal';
   const minutes=Math.floor(ms/60000);
-  if(minutes<2)return 'Baru saja';
+  if(minutes<1)return Math.max(0,Math.floor(ms/1000))+' detik lalu';
+  if(minutes<2)return '1 menit lalu';
   if(minutes<60)return minutes+' menit lalu';
   if(minutes<1440)return Math.floor(minutes/60)+' jam lalu';
   const days=Math.floor(minutes/1440);
@@ -130,10 +131,13 @@
   }
  }
  function itemNode(item){
-  const article=elem('article','news-item');
+  const article=elem('article','news-item'+(state.newUntil.get(item.id)>Date.now()?' newly-added':''));
   const meta=elem('div','news-meta');
   meta.append(elem('span','news-publisher',item.source));
-  meta.append(elem('span','',timeText(item.time)));
+  const age=elem('time','news-age',timeText(item.time));
+  if(item.time){age.dataset.ts=String(item.time);age.dateTime=new Date(item.time).toISOString();}
+  meta.append(age);
+  if(state.newUntil.get(item.id)>Date.now())meta.append(elem('span','news-new','BARU'));
   meta.append(elem('span','news-label',item.category));
   if(item.importance>=80)meta.append(elem('span','news-priority','● Prioritas'));
   const h=elem('h3');const link=elem('a','',item.title);link.href=item.href;
@@ -158,6 +162,7 @@
  }
  async function loadNews(){
   if(state.loading)return;
+  const revisionAtStart=state.revision;
   state.loading=true;const button=$('refresh');button.disabled=true;
   const endpoints=['/api/marketmarney/news-ticker','/api/content'];
   const reads=await Promise.allSettled(endpoints.map(async url=>{
@@ -168,21 +173,91 @@
   const ok=reads.filter(x=>x.status==='fulfilled').length;
   const headlines=reads[0].status==='fulfilled'?parseTicker(reads[0].value):[];
   const articles=reads[1].status==='fulfilled'?parseContent(reads[1].value):[];
-  if(ok){
+  if(ok&&(!state.streamConnected||state.revision===revisionAtStart)){
    state.all=mergeResults(articles,headlines);
    state.updated=new Date();
   }
-  const status=$('server-status'),led=document.querySelector('.status-led');
-  if(ok===2){status.textContent='Dua feed aktif';led?.classList.remove('off')}
-  else if(ok===1){status.textContent='Satu feed tersedia';led?.classList.remove('off')}
-  else {status.textContent='Sumber sedang tidak tersedia';led?.classList.add('off')}
-  if(state.updated){
-   const time=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'}).format(state.updated);
-   $('last-sync').textContent='Diperbarui '+time+' WIB';
-  }else $('last-sync').textContent='Koneksi belum tersedia';
+  if(!state.streamConnected){
+   const status=$('server-status'),led=document.querySelector('.status-led');
+   if(ok===2){status.textContent='Mode cadangan · dua feed aktif';led?.classList.remove('off')}
+   else if(ok===1){status.textContent='Mode cadangan · satu feed aktif';led?.classList.remove('off')}
+   else {status.textContent='Sumber berita belum tersedia';led?.classList.add('off')}
+   if(state.updated){
+    const time=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'}).format(state.updated);
+    $('last-sync').textContent='Terakhir diperbarui '+time+' WIB';
+   }else $('last-sync').textContent='Menunggu koneksi';
+  }
   $('news-list')?.setAttribute('aria-busy','false');
   state.loading=false;button.disabled=false;
   renderNews();
+ }
+ function refreshVisibleAges(){
+  for(const el of document.querySelectorAll('.news-age[data-ts]')){
+   const ts=Number(el.dataset.ts);
+   if(Number.isFinite(ts))el.textContent=timeText(ts);
+  }
+  for(const [id,until]of state.newUntil)if(until<Date.now())state.newUntil.delete(id);
+ }
+ function liveConnectionState(connected){
+  state.streamConnected=connected;
+  const dot=document.querySelector('.live-dot');
+  dot?.classList.toggle('off',!connected);
+  const status=$('server-status');
+  if(connected){status.textContent='LIVE · terhubung';}
+  else if(!document.hidden){status.textContent='Menyambungkan ulang…'}
+ }
+ function liveClock(at){
+  const node=$('last-sync');
+  if(!node)return;
+  const date=new Date(Number(at)||Date.now());
+  if(!Number.isFinite(date.getTime()))return;
+  const hhmmss=new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(date);
+  node.textContent='LIVE · '+hhmmss+' WIB';
+ }
+ function setLiveNews(packet){
+  if(!packet||!Array.isArray(packet.articles)||!Array.isArray(packet.headlines)||!Number.isSafeInteger(packet.revision))return;
+  if(packet.revision===0&&!packet.articles.length&&!packet.headlines.length)return;
+  if(packet.revision<=state.revision&&state.all.length)return;
+  const next=mergeResults(parseContent({articles:packet.articles}),parseTicker({headlines:packet.headlines}));
+  if(!next.length&&state.all.length)return;
+  if(state.revision>0){
+   for(const item of next)if(!state.knownIds.has(item.id))state.newUntil.set(item.id,Date.now()+45000);
+  }
+  state.knownIds=new Set(next.map(x=>x.id));
+  state.all=next;
+  state.revision=packet.revision;
+  state.updated=new Date();
+  renderNews();
+ }
+ function openLive(){
+  if(state.stream||document.hidden||typeof EventSource!=='function')return;
+  const stream=new EventSource('/api/terminal/live');
+  state.stream=stream;
+  stream.onopen=()=>{if(state.stream!==stream)return;liveConnectionState(true);};
+  stream.addEventListener('heartbeat',event=>{
+   if(state.stream!==stream)return;
+   try{
+    const packet=JSON.parse(event.data);
+    state.lastHeartbeat=Date.now();
+    liveConnectionState(true);
+    liveClock(packet.at);
+    refreshVisibleAges();
+   }catch{}
+  });
+  stream.addEventListener('news',event=>{
+   if(state.stream!==stream)return;
+   try{setLiveNews(JSON.parse(event.data));}catch{}
+  });
+  stream.onerror=()=>{
+   if(state.stream!==stream)return;
+   liveConnectionState(false);
+   $('last-sync').textContent='Menghubungkan feed live…';
+  };
+ }
+ function closeLive(){
+  if(state.stream){state.stream.close();state.stream=null}
+  state.streamConnected=false;
+  state.lastHeartbeat=0;
  }
  function saveNewFeed(event){
   event.preventDefault();
@@ -248,9 +323,19 @@
   $('cancel-feed').addEventListener('click',()=>dialog.close());
   $('feed-form').addEventListener('submit',saveNewFeed);
   $('load-calendar').addEventListener('click',activateCalendar);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.updated&&Date.now()-state.updated.getTime()>120000)loadNews()});
-  setInterval(()=>{if(!document.hidden)loadNews()},120000);
-  loadNews();
+  document.addEventListener('visibilitychange',()=>{
+   if(document.hidden)closeLive();
+   else {openLive();if(!state.updated||Date.now()-state.updated.getTime()>30000)void loadNews()}
+  });
+  setInterval(()=>{
+   if(document.hidden)return;
+   refreshVisibleAges();
+   if(state.streamConnected&&Date.now()-state.lastHeartbeat>5500)liveConnectionState(false);
+  },1000);
+  // Fallback on browsers that block SSE. Avoid per-second HTTP requests.
+  setInterval(()=>{if(!document.hidden&&!state.streamConnected)void loadNews()},30000);
+  openLive();
+  void loadNews();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
  else start();
