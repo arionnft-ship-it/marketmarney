@@ -58,7 +58,8 @@ test('Client compiles, fetches only existing read-only public market endpoints, 
  assert.match(client,/status.*published/);
  assert.match(client,/https:\/\/s3\.tradingview\.com\/external-embedding\/embed-widget-events\.js/);
  assert.match(client,/source/);
- assert.doesNotMatch(client,/\/api\/admin|\/auth\/|Authorization|password|Bearer |fetch\([^)]*method:\s*['"]POST/);
+ assert.doesNotMatch(client,/\/api\/admin|\/auth\/|Authorization|Bearer |fetch\([^)]*method:\s*['"]POST/);
+ assert.match(client,/u\.password/,'URL credentials must be disallowed');
  assert.doesNotMatch(client,/watcherguru/i);
  assert.doesNotMatch(entry,/\/api\//);
 });
