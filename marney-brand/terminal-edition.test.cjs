@@ -78,3 +78,20 @@ test('CSS is responsive, light weight, respects reduced motion, and keeps old SP
  assert.match(current,/TERMINAL\.injectHtml\(learningHtml,p\)/);
  assert.match(current,/TERMINAL\.assets\(\)/);
 });
+
+
+test('Terminal client uses one-second live push while retaining source-safe fallback',()=>{
+ const client=assets().get('/assets/mm-terminal-v1.js').body.toString();
+ const html=assets().get('/terminal').body.toString();
+ assert.match(client,/new EventSource\('\/api\/terminal\/live'\)/);
+ assert.match(client,/stream\.addEventListener\('heartbeat'/);
+ assert.match(client,/stream\.addEventListener\('news'/);
+ assert.match(client,/setInterval\(\(\)=>\{[\s\S]*refreshVisibleAges[\s\S]*\},1000\)/);
+ assert.match(client,/setInterval\(\(\)=>\{if\(!document\.hidden&&!state\.streamConnected\)/);
+ assert.match(client,/document\.hidden\)closeLive\(\)/);
+ assert.match(client,/state\.session=packet\.session/);
+ assert.match(html,/id="live-cadence"/);
+ assert.match(html,/id="last-sync"/);
+ assert.match(html,/sumber 15–60 dtk/);
+ assert.doesNotMatch(client,/setInterval\([^)]*fetch\(/);
+});
