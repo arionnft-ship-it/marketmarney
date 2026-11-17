@@ -4,6 +4,7 @@
 // presented as a claim that a publisher releases news every second.
 const crypto=require('node:crypto');
 const ENDPOINT='/api/terminal/live';
+const SESSION=crypto.randomUUID();
 const MAX_CLIENTS=120;
 function articlePreview(a){
  if(!a||!a.id||String(a.status)!=='published')return null;
@@ -32,7 +33,7 @@ function createTerminalLive({fetchImpl=globalThis.fetch,now=Date.now,
  let lastSignature='',revision=0;
  function owns(req){return String(req?.url||'').split('?')[0]===ENDPOINT}
  function payload(){
-  return {revision,articles,headlines,checkedAt:new Date(now()).toISOString(),
+  return {session:SESSION,revision,articles,headlines,checkedAt:new Date(now()).toISOString(),
    sources:{marney:lastArticleSuccess?'connected':'checking',external:lastTickerSuccess?'connected':'checking'},
    lastSuccess:{marney:lastArticleSuccess?new Date(lastArticleSuccess).toISOString():null,
     external:lastTickerSuccess?new Date(lastTickerSuccess).toISOString():null}};
