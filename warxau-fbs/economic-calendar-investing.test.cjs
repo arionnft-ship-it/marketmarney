@@ -103,3 +103,15 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
  active=true;events.mutation();assert.equal(classes.has('mm-investing-calendar-on'),true);
  assert.equal(mounted.length,1,'reselecting calendar must reuse existing DOM');
 });
+
+
+test('accepts pasted official iframe snippet, never passes its markup through',()=>{
+ const generated='<iframe width="650" height="467" src="'+GOOD.replace(/&/g,'&amp;')+'" frameborder="0"></iframe><div class="poweredBy">Investing.com</div>';
+ assert.equal(approvedInvestingUrl(generated),GOOD);
+ const injected=injectInvestingCalendar(HTML,generated);
+ assert.match(injected,/sslecal2\.investing\.com/);
+ assert.doesNotMatch(injected,/poweredBy/);
+ assert.equal(approvedInvestingUrl('<iframe src="https://example.net/?timeZone=27&importance=3"></iframe>'),null);
+ assert.equal(approvedInvestingUrl('<script>bad</script><iframe src="'+GOOD+'"></iframe>'),null);
+ assert.equal(approvedInvestingUrl('<iframe src="'+GOOD.replace('importance=3','importance=1')+'"></iframe>'),null);
+});
