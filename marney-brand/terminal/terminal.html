@@ -71,6 +71,14 @@
         <button type="button" class="topic" data-category="Ekonomi" aria-pressed="false">Ekonomi</button>
         <button type="button" class="topic" data-category="Geopolitik" aria-pressed="false">Geopolitik</button>
        </div>
+       <div class="source-toolbar" aria-label="Saring asal dan umur berita">
+        <div class="source-choices" id="source-choices" role="group" aria-label="Pilih sumber berita">
+         <button type="button" class="source-choice active" data-source="Semua" aria-pressed="true">Semua sumber</button>
+         <button type="button" class="source-choice" data-source="Marney" aria-pressed="false">MarketMarney</button>
+         <button type="button" class="source-choice" data-source="Eksternal" aria-pressed="false">Sumber eksternal</button>
+        </div>
+        <button type="button" id="recent-only" class="recent-choice" aria-pressed="false" title="Tampilkan berita dengan waktu publikasi 30 menit terakhir">30 menit terakhir</button>
+       </div>
        <div class="filters">
         <label class="importance-label" for="importance">Prioritas headline <span id="importance-value">Semua</span></label>
         <input type="range" id="importance" min="0" max="100" value="0" step="10" aria-describedby="importance-help">
@@ -81,10 +89,12 @@
         <div><strong>Feed saya</strong><span>Atur topik dan kata kunci favoritmu di browser ini</span></div>
         <div id="saved-feeds" class="saved-feeds" aria-label="Feed tersimpan"></div>
        </div>
-       <div class="items" id="news-list" aria-live="polite" aria-busy="true">
+       <button type="button" class="news-alert" id="news-alert" hidden aria-live="polite"><span class="news-alert-dot" aria-hidden="true"></span><strong id="news-alert-label">Ada headline baru</strong><span aria-hidden="true">Lihat ↑</span></button>
+       <div class="items" id="news-list" aria-live="off" aria-busy="true">
         <p class="loading">Mengambil headline dari sumber berita…</p>
        </div>
        <button id="more-news" type="button" class="load-more" hidden>Tampilkan berita lainnya</button>
+       <div class="news-update-foot" id="news-update-foot" aria-live="off">Menunggu pembaruan feed…</div>
       </section>
      </div>
      <aside class="right-rail" aria-label="Data dan utilitas pasar">
@@ -92,9 +102,14 @@
        <div class="rail-heading"><span class="rail-tag">MARKETMARNEY</span><h2>Market Pulse</h2></div>
        <p>Sumber, bukan sensasi. Pantau berita penting tanpa memenuhi layar.</p>
        <div class="metric-line"><span>Headline tersedia</span><strong id="stat-total">—</strong></div>
-       <div class="metric-line"><span>Sumber terhubung</span><strong id="stat-sources">—</strong></div>
+       <div class="metric-line"><span>Sumber yang tampil</span><strong id="stat-sources">—</strong></div>
        <div class="metric-line"><span>Headline prioritas</span><strong id="stat-important">—</strong></div>
-       <small id="stat-disclaimer">Jumlah disesuaikan setelah feed dimuat.</small>
+       <div class="metric-line"><span>Terbit 30 menit terakhir</span><strong id="stat-new">—</strong></div>
+       <div class="source-health" id="source-health" aria-label="Status pemeriksaan dua sumber berita">
+        <div class="source-health-line"><span><i class="health-dot checking" id="health-marney-dot" aria-hidden="true"></i>Artikel MarketMarney</span><strong id="health-marney-text">Menghubungkan…</strong></div>
+        <div class="source-health-line"><span><i class="health-dot checking" id="health-external-dot" aria-hidden="true"></i>Feed penerbit</span><strong id="health-external-text">Menghubungkan…</strong></div>
+       </div>
+       <small id="stat-disclaimer">Sumber dihitung dari headline yang tampil. Status pemeriksaan berarti koneksi ke data berhasil, bukan jaminan bahwa penerbit merilis berita setiap detik.</small>
       </section>
       <section class="rail-card calendar" id="kalender">
        <div class="rail-heading"><span class="rail-tag">EVENT</span><h2>Kalender Ekonomi</h2></div>
