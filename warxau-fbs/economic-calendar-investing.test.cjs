@@ -38,7 +38,9 @@ test('rejects wrong timezone, impact or missing macro-country data',()=>{
   GOOD.replace('importance=3','importance=1,2,3'),
   GOOD.replace('5%2C72%2C4%2C35','5%2C72%2C4'),
   GOOD.replace('exc_previous','exc_whatever'),
-  GOOD.replace('calType=week','calType=invalid')
+  GOOD.replace('calType=week','calType=invalid'),
+  GOOD+'&timeZone=12',
+  GOOD+'&importance=1'
  ];
  for(const url of invalid)assert.equal(approvedInvestingUrl(url),null,url);
 });
