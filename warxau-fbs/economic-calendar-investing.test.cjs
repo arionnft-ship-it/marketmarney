@@ -49,6 +49,7 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
  const events={};const classes=new Set();let active=true,mounted=[],toggled=null,nextTimeout=0;
  const iframe={src:'',addEventListener(name,fn){events['frame_'+name]=fn;}};
  const state={textContent:''};
+ const scroll={calls:[],scrollBy(options){this.calls.push(options);}};
  const shell={
    querySelector(selector){return selector==='#mm-investing-calendar'?mounted[0]||null:null;},
    prepend(element){mounted.unshift(element);}
@@ -72,6 +73,9 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
        querySelector(selector){
          if(selector==='iframe')return iframe;
          if(selector==='#mm-investing-calendar-state')return state;
+         if(selector==='.mm-investing-calendar-scroll')return scroll;
+         if(selector==='#mm-investing-calendar-left')return {addEventListener(name,fn){events.left=fn;}};
+         if(selector==='#mm-investing-calendar-right')return {addEventListener(name,fn){events.right=fn;}};
          if(selector==='#mm-investing-calendar-reload')return {addEventListener(name,fn){events.reload=fn;}};
          if(selector==='#mm-investing-calendar-legacy')return {addEventListener(name,fn){events.legacy=fn;}};
          return null;
@@ -90,6 +94,8 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
  assert.equal(iframe.src,GOOD);
  assert.equal(classes.has('mm-investing-calendar-on'),true);
  assert.match(state.textContent,/Menghubungkan/);
+ events.right();events.left();
+ assert.deepEqual(scroll.calls,[{left:320,behavior:'smooth'},{left:-320,behavior:'smooth'}]);
  events.mutation();assert.equal(mounted.length,1,'must not duplicate widget on mutation');
  events.timeout();assert.match(state.textContent,/belum merespons/);
  events.frame_load();assert.match(state.textContent,/Pemuatan iframe selesai/);
@@ -114,4 +120,18 @@ test('accepts pasted official iframe snippet, never passes its markup through',(
  assert.equal(approvedInvestingUrl('<iframe src="https://example.net/?timeZone=27&importance=3"></iframe>'),null);
  assert.equal(approvedInvestingUrl('<script>bad</script><iframe src="'+GOOD+'"></iframe>'),null);
  assert.equal(approvedInvestingUrl('<iframe src="'+GOOD.replace('importance=3','importance=1')+'"></iframe>'),null);
+});
+
+test('mobile keeps the desktop calendar with all columns and accessible sideways scrolling',()=>{
+ assert.match(STYLE,/min-width:900px/,'widget keeps wide desktop presentation');
+ assert.match(STYLE,/@media\\(max-width:960px\\)/,'phone and tablet controls');
+ assert.match(STYLE,/@media\\(max-width:720px\\)/,'phone layout adapts without hiding desktop columns');
+ assert.match(STYLE,/scrollbar-width:thin/,'horizontal scroll is visible');
+ assert.match(CLIENT,/mm-investing-calendar-mobile-nav/);
+ assert.match(CLIENT,/mm-investing-calendar-left/);
+ assert.match(CLIENT,/mm-investing-calendar-right/);
+ assert.match(CLIENT,/role="region"/);
+ assert.match(CLIENT,/tabindex="0"/);
+ assert.match(CLIENT,/scrollBy\\(\\{left:direction\\*320,behavior:'smooth'\\}\\)/);
+ assert.doesNotMatch(STYLE,/max-width:720px[\\s\\S]*display:none[^}]*iframe/,'iframe not hidden on mobile');
 });
