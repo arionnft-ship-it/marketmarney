@@ -40,3 +40,42 @@ test('rejects wrong timezone, impact or missing macro-country data',()=>{
  ];
  for(const url of invalid)assert.equal(approvedInvestingUrl(url),null,url);
 });
+
+test('renders in the observed MarketMarney mm88-desk and leaves other pages alone',()=>{
+ const events={};let active=true,mounted=[],iframe={src:''},toggled=null;
+ const shell={
+   querySelector(selector){return selector==='#mm-investing-calendar'?mounted[0]||null:null;},
+   prepend(element){mounted.unshift(element);}
+ };
+ const document={
+   readyState:'complete',
+   body:{classList:{toggle(cls,value){if(cls==='mm-investing-calendar-on')toggled=value;}}},
+   getElementById(id){return id==='app'?{}:id==='toplabel'?{textContent:active?'MARKET INTELLIGENCE / KALENDER EKONOMI':'MARKET LIVE'}:null;},
+   querySelector(selector){
+     if(selector==='.navbtn.active,.navbtn.is-active')return active?{dataset:{page:'Kalender Ekonomi'},textContent:'KALENDER EKONOMI'}:{dataset:{page:'Market Live'},textContent:'MARKET LIVE'};
+     if(selector==='section.mm88-desk')return active?shell:null;
+     return null;
+   },
+   createElement(tag){
+     assert.equal(tag,'section');
+     return {id:null,innerHTML:'',setAttribute(){},
+       querySelector(selector){
+         if(selector==='iframe')return iframe;
+         if(selector==='#mm-investing-calendar-reload')return {addEventListener(name,fn){events.reload=fn;}};
+         return null;
+       }
+     };
+   },
+   addEventListener(name,fn){events[name]=fn;}
+ };
+ class Observer{constructor(fn){events.mutation=fn;}observe(){}}
+ const context={document,location:{pathname:'/'},MutationObserver:Observer,requestAnimationFrame(fn){fn();}};
+ vm.runInNewContext(CLIENT.replace('__MM_IFRAME_URL__',JSON.stringify(GOOD)),context);
+ assert.equal(mounted.length,1);
+ assert.equal(iframe.src,GOOD);
+ assert.equal(toggled,true);
+ assert.match(mounted[0].innerHTML,/Kalender Ekonomi/);
+ events.mutation();assert.equal(mounted.length,1,'must not duplicate widget after mutations');
+ active=false;events.mutation();assert.equal(toggled,false,'must not overlay Market Live');
+ iframe.src='';events.reload();assert.equal(iframe.src,GOOD);
+});
