@@ -14,6 +14,7 @@ function approvedInvestingUrl(raw){
      url.port||url.username||url.password||url.pathname!=='/'||url.hash||!url.search)return null;
   // Require the exact user-requested defaults from the official Indonesian widget:
   // GMT+7 Bangkok/Hanoi/Jakarta = 27; High Impact only = 3.
+  if(['timeZone','importance','calType','lang','countries','columns'].some(name=>url.searchParams.getAll(name).length!==1))return null;
   if(url.searchParams.get('timeZone')!=='27'||url.searchParams.get('importance')!=='3')return null;
   if(!['week','day'].includes(url.searchParams.get('calType')))return null;
   if(!/^\d+$/.test(url.searchParams.get('lang')||''))return null;
@@ -84,7 +85,7 @@ function createCalendar(){
  }
  iframe.addEventListener('load',()=>{
    cancelTimer();
-   setState('Kalender dimuat oleh Investing.com. Waktu dan filter mengikuti pengaturan sumber resmi.');
+   setState('Pemuatan iframe selesai. Jika kalender kosong, gunakan Muat ulang atau Kalender sebelumnya.');
  });
  iframe.addEventListener('error',()=>{
    cancelTimer();
