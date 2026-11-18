@@ -25,6 +25,8 @@ test('client script compiles and uses selected calendar page only',()=>{
  assert.match(CLIENT,/mm88-desk/);
  assert.match(CLIENT,/MutationObserver/);
  assert.match(CLIENT,/loading="eager/);
+ assert.match(CLIENT,/mm-investing-calendar-legacy/);
+ assert.match(CLIENT,/mm-investing-calendar-state/);
  assert.match(CLIENT,/mm-investing-calendar-reload/);
  assert.match(STYLE,/overflow-x:auto/);
  assert.doesNotMatch(CLIENT,/localStorage|sessionStorage|fetch\(/);
@@ -41,15 +43,21 @@ test('rejects wrong timezone, impact or missing macro-country data',()=>{
  for(const url of invalid)assert.equal(approvedInvestingUrl(url),null,url);
 });
 
-test('renders in the observed MarketMarney mm88-desk and leaves other pages alone',()=>{
- const events={};let active=true,mounted=[],iframe={src:''},toggled=null;
+test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',()=>{
+ const events={};const classes=new Set();let active=true,mounted=[],toggled=null,nextTimeout=0;
+ const iframe={src:'',addEventListener(name,fn){events['frame_'+name]=fn;}};
+ const state={textContent:''};
  const shell={
    querySelector(selector){return selector==='#mm-investing-calendar'?mounted[0]||null:null;},
    prepend(element){mounted.unshift(element);}
  };
  const document={
    readyState:'complete',
-   body:{classList:{toggle(cls,value){if(cls==='mm-investing-calendar-on')toggled=value;}}},
+   body:{classList:{
+      add(...names){names.forEach(name=>classes.add(name));},
+      remove(...names){names.forEach(name=>classes.delete(name));},
+      contains(name){return classes.has(name);}
+   }},
    getElementById(id){return id==='app'?{}:id==='toplabel'?{textContent:active?'MARKET INTELLIGENCE / KALENDER EKONOMI':'MARKET LIVE'}:null;},
    querySelector(selector){
      if(selector==='.navbtn.active,.navbtn.is-active')return active?{dataset:{page:'Kalender Ekonomi'},textContent:'KALENDER EKONOMI'}:{dataset:{page:'Market Live'},textContent:'MARKET LIVE'};
@@ -61,7 +69,9 @@ test('renders in the observed MarketMarney mm88-desk and leaves other pages alon
      return {id:null,innerHTML:'',setAttribute(){},
        querySelector(selector){
          if(selector==='iframe')return iframe;
+         if(selector==='#mm-investing-calendar-state')return state;
          if(selector==='#mm-investing-calendar-reload')return {addEventListener(name,fn){events.reload=fn;}};
+         if(selector==='#mm-investing-calendar-legacy')return {addEventListener(name,fn){events.legacy=fn;}};
          return null;
        }
      };
@@ -69,13 +79,25 @@ test('renders in the observed MarketMarney mm88-desk and leaves other pages alon
    addEventListener(name,fn){events[name]=fn;}
  };
  class Observer{constructor(fn){events.mutation=fn;}observe(){}}
- const context={document,location:{pathname:'/'},MutationObserver:Observer,requestAnimationFrame(fn){fn();}};
+ const context={
+   document,location:{pathname:'/'},MutationObserver:Observer,requestAnimationFrame(fn){fn();},
+   setTimeout(fn){events.timeout=fn;return ++nextTimeout;},clearTimeout(){events.timeout=null;}
+ };
  vm.runInNewContext(CLIENT.replace('__MM_IFRAME_URL__',JSON.stringify(GOOD)),context);
  assert.equal(mounted.length,1);
  assert.equal(iframe.src,GOOD);
- assert.equal(toggled,true);
- assert.match(mounted[0].innerHTML,/Kalender Ekonomi/);
- events.mutation();assert.equal(mounted.length,1,'must not duplicate widget after mutations');
- active=false;events.mutation();assert.equal(toggled,false,'must not overlay Market Live');
+ assert.equal(classes.has('mm-investing-calendar-on'),true);
+ assert.match(state.textContent,/Menghubungkan/);
+ events.mutation();assert.equal(mounted.length,1,'must not duplicate widget on mutation');
+ events.timeout();assert.match(state.textContent,/belum merespons/);
+ events.frame_load();assert.match(state.textContent,/Investing.com/);
  iframe.src='';events.reload();assert.equal(iframe.src,GOOD);
+ events.frame_error();assert.match(state.textContent,/Gagal memuat/);
+ events.legacy();assert.equal(classes.has('mm-investing-calendar-fallback'),true);
+ assert.equal(classes.has('mm-investing-calendar-on'),false);
+ events.mutation();assert.equal(mounted.length,1,'manual fallback should not remount iframe');
+ active=false;events.mutation();assert.equal(classes.has('mm-investing-calendar-fallback'),false,'switching pages resets fallback');
+ assert.equal(classes.has('mm-investing-calendar-on'),false,'Market Live must stay untouched');
+ active=true;events.mutation();assert.equal(classes.has('mm-investing-calendar-on'),true);
+ assert.equal(mounted.length,1,'reselecting calendar must reuse existing DOM');
 });
