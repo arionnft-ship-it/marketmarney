@@ -47,6 +47,10 @@ body.mm-investing-calendar-on #mm-investing-calendar{display:block!important;box
 .mm-investing-calendar-foot a{color:#bb6300;font-weight:750;text-decoration:none}
 .mm-investing-calendar-foot a:hover{text-decoration:underline}
 .mm-investing-calendar-note{font-size:12px;color:#667085;line-height:1.7;margin:13px 2px 0}
+.mm-investing-calendar-state{display:block;padding:10px 15px;background:#fffaf3;border-bottom:1px solid #ffe5ba;color:#88500a;font-size:12px;line-height:1.55;margin:0}
+.mm-investing-calendar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.mm-investing-calendar-bar .mm-investing-calendar-back{color:#975003;border-color:#ffe0b1}
+body.mm-investing-calendar-fallback #mm-investing-calendar{display:none!important}
 @media(max-width:720px){body.mm-investing-calendar-on #mm-investing-calendar{padding:0 8px;margin:10px auto 22px}.mm-investing-calendar-scroll iframe{height:650px}.mm-investing-calendar-card{border-radius:12px}.mm-investing-calendar-head h1{font-size:22px}}
 </style>`;
 
@@ -63,16 +67,49 @@ function isCalendar(){
 }
 function createCalendar(){
  const section=document.createElement('section');section.id='mm-investing-calendar';section.setAttribute('aria-label','Kalender Ekonomi Investing.com');
- section.innerHTML='<div class="mm-investing-calendar-head"><div><h1>Kalender Ekonomi</h1><p>Pantau jadwal data ekonomi penting dan hasil rilis langsung.</p></div><div class="mm-investing-calendar-badges"><span>● Pembaruan otomatis</span><span>WIB · UTC+7</span><span>High Impact</span></div></div><div class="mm-investing-calendar-card"><div class="mm-investing-calendar-bar"><strong>KALENDER EKONOMI GLOBAL</strong><button type="button" id="mm-investing-calendar-reload" aria-label="Muat ulang kalender">↻ Muat ulang</button></div><div class="mm-investing-calendar-scroll"><iframe id="mm-investing-calendar-frame" title="Kalender Ekonomi Investing.com, waktu WIB dan dampak tinggi" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="mm-investing-calendar-foot"><span>Data, jadwal, dan pembaruan disediakan Investing.com</span><a href="https://id.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer nofollow">Buka kalender lengkap di Investing.com ↗</a></div></div><p class="mm-investing-calendar-note">Tampilan pada ponsel dapat digeser ke samping. Filter dan zona waktu mengikuti konfigurasi widget resmi Investing.com; jadwal serta hasil rilis dapat berubah.</p>';
- const iframe=section.querySelector('iframe');iframe.src=EMBED_URL;
- section.querySelector('#mm-investing-calendar-reload').addEventListener('click',()=>{iframe.src=EMBED_URL;});
+ section.innerHTML='<div class="mm-investing-calendar-head"><div><h1>Kalender Ekonomi</h1><p>Pantau jadwal data ekonomi penting dan hasil rilis langsung.</p></div><div class="mm-investing-calendar-badges"><span>● Pembaruan otomatis</span><span>WIB · UTC+7</span><span>High Impact</span></div></div><div class="mm-investing-calendar-card"><div class="mm-investing-calendar-bar"><strong>KALENDER EKONOMI GLOBAL</strong><div class="mm-investing-calendar-actions"><button type="button" id="mm-investing-calendar-reload" aria-label="Muat ulang kalender">↻ Muat ulang</button><button type="button" class="mm-investing-calendar-back" id="mm-investing-calendar-legacy">Kalender sebelumnya</button></div></div><p class="mm-investing-calendar-state" id="mm-investing-calendar-state" role="status" aria-live="polite">Menghubungkan kalender Investing.com…</p><div class="mm-investing-calendar-scroll"><iframe id="mm-investing-calendar-frame" title="Kalender Ekonomi Investing.com, waktu WIB dan dampak tinggi" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="mm-investing-calendar-foot"><span>Data, jadwal, dan pembaruan disediakan Investing.com</span><a href="https://id.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer nofollow">Buka kalender lengkap di Investing.com ↗</a></div></div><p class="mm-investing-calendar-note">Tampilan pada ponsel dapat digeser ke samping. Filter dan zona waktu mengikuti konfigurasi widget resmi Investing.com; jadwal serta hasil rilis dapat berubah.</p>';
+ const iframe=section.querySelector('iframe');
+ const state=section.querySelector('#mm-investing-calendar-state');
+ let loadTimeout=null;
+ function setState(message){state.textContent=message;}
+ function cancelTimer(){if(loadTimeout!==null){clearTimeout(loadTimeout);loadTimeout=null;}}
+ function loadFrame(){
+   cancelTimer();
+   setState('Menghubungkan kalender Investing.com…');
+   iframe.src=EMBED_URL;
+   loadTimeout=setTimeout(()=>{
+     loadTimeout=null;
+     setState('Kalender belum merespons. Coba muat ulang atau gunakan kalender sebelumnya.');
+   },18000);
+ }
+ iframe.addEventListener('load',()=>{
+   cancelTimer();
+   setState('Kalender dimuat oleh Investing.com. Waktu dan filter mengikuti pengaturan sumber resmi.');
+ });
+ iframe.addEventListener('error',()=>{
+   cancelTimer();
+   setState('Gagal memuat Investing.com. Gunakan tombol Kalender sebelumnya.');
+ });
+ section.querySelector('#mm-investing-calendar-reload').addEventListener('click',loadFrame);
+ section.querySelector('#mm-investing-calendar-legacy').addEventListener('click',()=>{
+   cancelTimer();
+   document.body.classList.add('mm-investing-calendar-fallback');
+   document.body.classList.remove('mm-investing-calendar-on');
+ });
+ loadFrame();
  return section;
 }
 let lastShell=null,pending=false;
 function mount(){
- const active=isCalendar();const shell=active?document.querySelector('section.mm88-desk'):null;
- document.body.classList.toggle('mm-investing-calendar-on',!!shell);
- if(!shell){lastShell=null;return;}
+ const active=isCalendar();
+ const shell=active?document.querySelector('section.mm88-desk'):null;
+ if(!shell){
+   lastShell=null;
+   document.body.classList.remove('mm-investing-calendar-on','mm-investing-calendar-fallback');
+   return;
+ }
+ if(document.body.classList.contains('mm-investing-calendar-fallback'))return;
+ document.body.classList.add('mm-investing-calendar-on');
  if(shell===lastShell && shell.querySelector('#mm-investing-calendar'))return;
  if(!shell.querySelector('#mm-investing-calendar'))shell.prepend(createCalendar());
  lastShell=shell;
