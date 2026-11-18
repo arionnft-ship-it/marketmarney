@@ -31,10 +31,20 @@ function createTerminalLive({fetchImpl=globalThis.fetch,now=Date.now,
  const watchers=new Set();
  let timer=null,pending=null,articles=[],headlines=[],checkedArticles=0,checkedTicker=0,lastArticleSuccess=0,lastTickerSuccess=0;
  let lastSignature='',revision=0;
+ function sourceHealth(){
+  const t=now();
+  const one=(success,attempt,ttl)=>({
+   status:success?(t-success<=ttl?'fresh':'stale'):(attempt?'unavailable':'checking'),
+   lastSuccess:success?new Date(success).toISOString():null,
+   ageSeconds:success?Math.max(0,Math.floor((t-success)/1000)):null,
+   retrySeconds:attempt?Math.max(0,Math.ceil(((attempt+(ttl===articleMs*3?articleMs:tickerMs))-t)/1000)):0
+  });
+  return {marney:one(lastArticleSuccess,checkedArticles,articleMs*3),external:one(lastTickerSuccess,checkedTicker,tickerMs*3)};
+ }
  function owns(req){return String(req?.url||'').split('?')[0]===ENDPOINT}
  function payload(){
   return {session:SESSION,revision,articles,headlines,checkedAt:new Date(now()).toISOString(),
-   sources:{marney:lastArticleSuccess?'connected':'checking',external:lastTickerSuccess?'connected':'checking'},
+   sources:sourceHealth(),
    lastSuccess:{marney:lastArticleSuccess?new Date(lastArticleSuccess).toISOString():null,
     external:lastTickerSuccess?new Date(lastTickerSuccess).toISOString():null}};
  }
@@ -89,7 +99,7 @@ function createTerminalLive({fetchImpl=globalThis.fetch,now=Date.now,
  function tick(){
   if(!watchers.size)return;
   const t=now();
-  broadcast('heartbeat',{at:t,revision,articleAge:lastArticleSuccess?t-lastArticleSuccess:null,tickerAge:lastTickerSuccess?t-lastTickerSuccess:null});
+  broadcast('heartbeat',{at:t,revision,sourceHealth:sourceHealth(),articleAge:lastArticleSuccess?t-lastArticleSuccess:null,tickerAge:lastTickerSuccess?t-lastTickerSuccess:null});
   void refresh();
  }
  function stop(){
