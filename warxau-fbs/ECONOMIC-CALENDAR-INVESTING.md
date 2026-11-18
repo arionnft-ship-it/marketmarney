@@ -32,3 +32,11 @@ Tidak ada scraping, penyimpanan ulang data pihak ketiga, atau pengubahan feed Tr
 - GitHub Actions: https://github.com/arionnft-ship-it/marketmarney/actions/workflows/investing-calendar-tests.yml
 - Tes mencakup batas URL, deteksi parameter ganda, mount DOM `section.mm88-desk`, navigasi, status error, pengulangan, dan fallback kalender.
 - **Belum ada tes integrasi dengan iframe berlisensi** karena URL yang dihasilkan setelah persetujuan syarat penyedia belum tersedia. Jangan klaim kalender sudah aktif.
+
+## Paritas tampilan website desktop dan mobile (19 November 2026)
+- **HTML dan sumber data sama** pada desktop maupun ponsel; tidak ada kalender alternatif, kolom yang hilang, atau data simulasi.
+- Warna, judul, label WIB/High Impact, tombol Muat ulang, dan pengakuan sumber konsisten pada kedua layar.
+- Karena iframe berasal dari domain pihak ketiga, isi internal tidak dapat direstrukturisasi dengan CSS MarketMarney. Ukuran iframe minimal **900px** mempertahankan tampilan desktop; di layar kecil, tabel digeser horizontal tanpa mengecilkan angka hingga sulit dibaca.
+- Tombol **← →** memudahkan melihat kolom kanan/kiri jika sapuan pada iframe tidak menggeser pembungkus di sebagian browser. Area tabel dapat difokuskan dengan keyboard.
+- Layout header, badge, tombol, dan footer disusun ulang secara responsif tanpa mengubah identitas visual.
+- Harus tetap diuji pada perangkat nyata setelah kode iframe resmi selesai diterbitkan oleh Investing.com.
