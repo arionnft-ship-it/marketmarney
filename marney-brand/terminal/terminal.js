@@ -4,7 +4,7 @@
  const CATEGORIES=['Emas','Forex','Kripto','Saham','Ekonomi','Geopolitik'];
  const STORAGE_KEY='mm_terminal_saved_feeds_v1';
  const publisherHosts=['actionforex.com','marketpulse.com','federalreserve.gov'];
- const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,feeds:[],selectedFeed:'',loading:false,updated:null,stream:null,streamConnected:false,lastHeartbeat:0,revision:0,session:'',knownIds:new Set(),newUntil:new Map()};
+ const state={all:[],category:'Semua',search:'',sort:'latest',threshold:0,limit:13,source:'Semua',recentOnly:false,arrivalCount:0,serverHealth:null,feeds:[],selectedFeed:'',loading:false,updated:null,stream:null,streamConnected:false,lastHeartbeat:0,revision:0,session:'',knownIds:new Set(),newUntil:new Map()};
  const fmtClock={jakarta:'Asia/Jakarta',london:'Europe/London',ny:'America/New_York',tokyo:'Asia/Tokyo'};
  function elem(tag,className,contents){
   const n=document.createElement(tag);
@@ -44,7 +44,7 @@
   if(!a||a.id==null||plain(a.status,30).toLowerCase()!=='published')return null;
   const title=plain(a.title,220),id=plain(a.id,140);
   if(!title||!id)return null;
-  const when=Date.parse(a.updatedAt||a.date||a.createdAt||'');
+  const when=Date.parse(a.date||a.createdAt||a.updatedAt||'');
   const category=categoryFor(title,a.cat||a.category||'');
   const href='/berita/'+encodeURIComponent(id);
   return {id:'marney:'+id,href,title,source:'MarketMarney',category,
@@ -106,6 +106,9 @@
   const filtered=state.all.filter(item=>{
    const hay=(item.title+' '+item.excerpt+' '+item.source).toLocaleLowerCase('id-ID');
    if(state.category!=='Semua'&&item.category!==state.category)return false;
+   if(state.source==='Marney'&&item.kind!=='marney')return false;
+   if(state.source==='Eksternal'&&item.kind!=='external')return false;
+   if(state.recentOnly&&(!item.time||Date.now()-item.time>30*60000||Date.now()-item.time<0))return false;
    if(state.threshold>0&&item.importance<state.threshold)return false;
    if(needle&&!hay.includes(needle))return false;
    if(feed&&feed.categories.length&&!feed.categories.includes(item.category))return false;
@@ -114,6 +117,39 @@
   });
   filtered.sort((a,b)=>state.sort==='important'?b.importance-a.importance||b.time-a.time:b.time-a.time||b.importance-a.importance);
   return filtered;
+ }
+ function updateSourceChoice(){
+  for(const button of document.querySelectorAll('#source-choices [data-source]')){
+   const active=state.source===button.dataset.source;
+   button.classList.toggle('active',active);
+   button.setAttribute('aria-pressed',String(active));
+  }
+  const recent=$('recent-only');
+  if(recent){recent.classList.toggle('active',state.recentOnly);recent.setAttribute('aria-pressed',String(state.recentOnly));}
+ }
+ function showArrivalAlert(){
+  const button=$('news-alert'),label=$('news-alert-label');
+  if(!button||!label)return;
+  label.textContent=state.arrivalCount+' headline baru diterima';
+  button.hidden=state.arrivalCount===0;
+ }
+ function updateHealth(health){
+  if(!health||typeof health!=='object')return;
+  state.serverHealth=health;
+  const names={marney:'Artikel Marney',external:'Feed penerbit'};
+  for(const key of ['marney','external']){
+   const val=health[key];
+   if(!val||typeof val.status!=='string')continue;
+   const dot=$('health-'+key+'-dot'),target=$('health-'+key+'-text');
+   const status=['fresh','stale','unavailable','checking'].includes(val.status)?val.status:'checking';
+   if(dot)dot.className='health-dot '+status;
+   if(!target)continue;
+   const age=Number.isFinite(Number(val.ageSeconds))&&val.ageSeconds!==null?Math.max(0,Math.floor(Number(val.ageSeconds))):null;
+   if(status==='fresh')target.textContent='OK · '+(age===null?'baru diperiksa':age+' dtk lalu');
+   else if(status==='stale')target.textContent='Terlambat · '+(age===null?'—':age+' dtk');
+   else if(status==='unavailable')target.textContent='Mencoba ulang…';
+   else target.textContent='Menghubungkan…';
+  }
  }
  function renderFeedPills(){
   const host=$('saved-feeds');if(!host)return;
@@ -131,13 +167,15 @@
   }
  }
  function itemNode(item){
-  const article=elem('article','news-item'+(state.newUntil.get(item.id)>Date.now()?' newly-added':''));
+  const justArrived=state.newUntil.get(item.id)>Date.now();
+  const recentlyPublished=item.time&&item.time<=Date.now()&&Date.now()-item.time<30*60000;
+  const article=elem('article','news-item'+(justArrived?' newly-added':''));
   const meta=elem('div','news-meta');
   meta.append(elem('span','news-publisher',item.source));
   const age=elem('time','news-age',timeText(item.time));
   if(item.time){age.dataset.ts=String(item.time);age.dateTime=new Date(item.time).toISOString();}
   meta.append(age);
-  if(state.newUntil.get(item.id)>Date.now())meta.append(elem('span','news-new','BARU'));
+  if(justArrived||recentlyPublished)meta.append(elem('span','news-new',justArrived?'BARU MASUK':'TERBARU'));
   meta.append(elem('span','news-label',item.category));
   if(item.importance>=80)meta.append(elem('span','news-priority','● Prioritas'));
   const h=elem('h3');const link=elem('a','',item.title);link.href=item.href;
@@ -150,15 +188,19 @@
   const host=$('news-list'),counter=$('news-count'),more=$('more-news');
   if(!host||!counter)return;
   const list=filterList();
+  const active=document.activeElement;
+  const focused=host.contains(active)&&active?.tagName==='A'?active.getAttribute('href'):null;
   counter.textContent=list.length+' headline';
   host.replaceChildren();
   if(!list.length)host.append(elem('p','no-results',state.all.length?'Tidak ada berita yang cocok. Ubah kategori, kata kunci, atau prioritas.':'Belum ada data berita dari sumber publik. Coba perbarui lagi.'));
   else for(const item of list.slice(0,state.limit))host.append(itemNode(item));
+  if(focused){const match=[...host.querySelectorAll('.news-item a')].find(a=>a.getAttribute('href')===focused);match?.focus({preventScroll:true});}
   host.setAttribute('aria-busy','false');
   if(more)more.hidden=list.length<=state.limit;
   $('stat-total').textContent=String(state.all.length);
   $('stat-important').textContent=String(state.all.filter(x=>x.importance>=75).length);
   $('stat-sources').textContent=String(new Set(state.all.map(x=>x.source)).size);
+  $('stat-new').textContent=String(state.all.filter(x=>x.time&&x.time<=Date.now()&&Date.now()-x.time<30*60000).length);
  }
  async function loadNews(){
   if(state.loading)return;
@@ -175,6 +217,7 @@
   const articles=reads[1].status==='fulfilled'?parseContent(reads[1].value):[];
   if(ok&&(!state.streamConnected||state.revision===revisionAtStart)){
    state.all=mergeResults(articles,headlines);
+   if(!state.knownIds.size)state.knownIds=new Set(state.all.map(x=>x.id));
    state.updated=new Date();
   }
   if(!state.streamConnected){
@@ -198,6 +241,12 @@
   }
   let expired=false;
   for(const [id,until]of state.newUntil)if(until<Date.now()){state.newUntil.delete(id);expired=true}
+  const footer=$('news-update-foot');
+  if(footer){
+   const h=state.serverHealth;
+   const fresh=h?['marney','external'].filter(k=>h[k]?.status==='fresh').length:null;
+   footer.textContent=state.streamConnected?'Live aktif · '+(fresh===null?'memeriksa sumber…':fresh+' dari 2 kanal data baru saja terhubung'):'Koneksi live terputus · memeriksa ulang otomatis';
+  }
   if(expired)renderNews();
  }
  function liveConnectionState(connected){
@@ -219,12 +268,17 @@
  function setLiveNews(packet){
   if(!packet||!Array.isArray(packet.articles)||!Array.isArray(packet.headlines)||!Number.isSafeInteger(packet.revision))return;
   if(typeof packet.session==='string'&&packet.session!==state.session){state.session=packet.session;state.revision=0;}
+  updateHealth(packet.sources);
   if(packet.revision===0&&!packet.articles.length&&!packet.headlines.length)return;
   if(packet.revision<=state.revision&&state.all.length)return;
   const next=mergeResults(parseContent({articles:packet.articles}),parseTicker({headlines:packet.headlines}));
   if(!next.length&&state.all.length)return;
   if(state.revision>0){
-   for(const item of next)if(!state.knownIds.has(item.id))state.newUntil.set(item.id,Date.now()+45000);
+   let arrivals=0;
+   for(const item of next)if(!state.knownIds.has(item.id)){
+    state.newUntil.set(item.id,Date.now()+300000);arrivals++;
+   }
+   if(arrivals){state.arrivalCount+=arrivals;showArrivalAlert();}
   }
   state.knownIds=new Set(next.map(x=>x.id));
   state.all=next;
@@ -244,6 +298,7 @@
     state.lastHeartbeat=Date.now();
     liveConnectionState(true);
     liveClock(packet.at);
+    updateHealth(packet.sourceHealth);
     refreshVisibleAges();
    }catch{}
   });
@@ -304,11 +359,30 @@
   container.append(widget,script);host.replaceChildren(container);
  }
  function start(){
-  state.feeds=loadFeeds();renderFeedPills();currentClocks();
+  state.feeds=loadFeeds();renderFeedPills();updateSourceChoice();currentClocks();
   setInterval(currentClocks,60000);
   $('refresh').addEventListener('click',loadNews);
   $('news-search').addEventListener('input',ev=>{state.search=ev.target.value.trim();state.limit=13;renderNews()});
   $('news-sort').addEventListener('change',ev=>{state.sort=ev.target.value;renderNews()});
+  $('source-choices').addEventListener('click',ev=>{
+   const button=ev.target.closest('button[data-source]');
+   if(!button||!['Semua','Marney','Eksternal'].includes(button.dataset.source))return;
+   state.source=button.dataset.source;state.limit=13;updateSourceChoice();renderNews();
+  });
+  $('recent-only').addEventListener('click',()=>{
+   state.recentOnly=!state.recentOnly;state.limit=13;updateSourceChoice();renderNews();
+  });
+  $('news-alert').addEventListener('click',()=>{
+   state.arrivalCount=0;showArrivalAlert();
+   state.search='';$('news-search').value='';
+   state.selectedFeed='';renderFeedPills();
+   state.threshold=0;$('importance').value='0';$('importance-value').textContent='Semua';
+   state.source='Semua';state.recentOnly=false;updateSourceChoice();
+   setCategory('Semua');state.sort='latest';$('news-sort').value='latest';state.limit=13;
+   renderNews();
+   $('berita').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  });
+
   $('importance').addEventListener('input',ev=>{
    state.threshold=Number(ev.target.value)||0;
    $('importance-value').textContent=state.threshold?state.threshold+'+':'Semua';
