@@ -44,4 +44,4 @@ jobs:
           docker build --progress=plain -f warxau-fbs/Dockerfile.ihsg -t marketmarney-investing-calendar:ci .
       - name: Confirm build image contains new module
         run: |
-          docker run --rm --entrypoint node marketmarney-investing-calendar:ci -e "const cal=require('/opt/warxau-fbs/economic-calendar-investing.cjs'); if(typeof cal.injectInvestingCalendar!=='function') process.exit(1); console.log('MM_INVESTING_CALENDAR_BUILD_OK')"
+          docker run --rm --env NODE_OPTIONS='' --entrypoint node marketmarney-investing-calendar:ci -e "const cal=require('/opt/warxau-fbs/economic-calendar-investing.cjs'); if(typeof cal.injectInvestingCalendar!=='function') process.exit(1); console.log('MM_INVESTING_CALENDAR_BUILD_OK')"
