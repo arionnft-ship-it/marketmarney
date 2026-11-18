@@ -84,3 +84,42 @@ test('publisher outage retains last good news and does not broadcast fabricated 
  assert.equal(live.payload().headlines.length,0);
  assert.ok(live.payload().revision>=1);
 });
+
+
+test('per-source freshness becomes stale after failed checks rather than falsely staying connected',async()=>{
+ let nowMs=100000,fail=false;
+ const live=createTerminalLive({now:()=>nowMs,articleMs:15000,tickerMs:60000,
+  setIntervalFn:()=>({unref(){}}),clearIntervalFn:()=>{},
+  fetchImpl:async url=>{
+   if(fail)throw Error('upstream_outage');
+   return {ok:true,json:async()=>url.endsWith('/api/content')?
+    {articles:[{id:'a',title:'Published gold market analysis',cat:'EMAS',status:'published'}]}:
+    {headlines:[{id:'f',title:'Gold market headline',url:'https://www.actionforex.com/test/news',source:'ActionForex'}]}};
+  }});
+ await live.refresh();
+ assert.equal(live.payload().sources.marney.status,'fresh');
+ assert.equal(live.payload().sources.external.status,'fresh');
+ assert.equal(live.payload().sources.marney.ageSeconds,0);
+ assert.equal(live.payload().sources.marney.retrySeconds,15);
+ assert.equal(live.payload().sources.external.retrySeconds,60);
+ fail=true;nowMs+=47000;
+ await live.refresh();
+ assert.equal(live.payload().sources.marney.status,'stale');
+ assert.equal(live.payload().sources.external.status,'fresh');
+ assert.equal(live.payload().articles.length,1,'retain last valid article through temporary outage');
+ nowMs+=150000;await live.refresh();
+ assert.equal(live.payload().sources.marney.status,'stale');
+ assert.equal(live.payload().sources.external.status,'stale');
+ assert.equal(live.payload().headlines.length,1,'retain real publisher items and never fabricate');
+});
+test('source checks do not claim healthy when no successful response has arrived',async()=>{
+ let t=100000;
+ const live=createTerminalLive({now:()=>t,fetchImpl:async()=>{throw Error('offline')}});
+ assert.equal(live.payload().sources.marney.status,'checking');
+ assert.equal(live.payload().sources.external.status,'checking');
+ await live.refresh();
+ assert.equal(live.payload().sources.marney.status,'unavailable');
+ assert.equal(live.payload().sources.external.status,'unavailable');
+ assert.equal(live.payload().articles.length,0);
+ assert.equal(live.payload().headlines.length,0);
+});
