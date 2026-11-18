@@ -33,13 +33,13 @@ function createTerminalLive({fetchImpl=globalThis.fetch,now=Date.now,
  let lastSignature='',revision=0;
  function sourceHealth(){
   const t=now();
-  const one=(success,attempt,ttl)=>({
+  const one=(success,attempt,ttl,interval)=>({
    status:success?(t-success<=ttl?'fresh':'stale'):(attempt?'unavailable':'checking'),
    lastSuccess:success?new Date(success).toISOString():null,
    ageSeconds:success?Math.max(0,Math.floor((t-success)/1000)):null,
-   retrySeconds:attempt?Math.max(0,Math.ceil(((attempt+(ttl===articleMs*3?articleMs:tickerMs))-t)/1000)):0
+   retrySeconds:attempt?Math.max(0,Math.ceil((attempt+interval-t)/1000)):0
   });
-  return {marney:one(lastArticleSuccess,checkedArticles,articleMs*3),external:one(lastTickerSuccess,checkedTicker,tickerMs*3)};
+  return {marney:one(lastArticleSuccess,checkedArticles,articleMs*3,articleMs),external:one(lastTickerSuccess,checkedTicker,tickerMs*3,tickerMs)};
  }
  function owns(req){return String(req?.url||'').split('?')[0]===ENDPOINT}
  function payload(){
