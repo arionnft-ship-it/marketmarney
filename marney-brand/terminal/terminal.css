@@ -157,3 +157,39 @@ fieldset input{accent-color:var(--green)}
 @media(max-width:740px){#live-cadence{max-width:142px;font-size:9.5px}.topbar-right #last-sync{font-size:10px}}
 @media(max-width:390px){#live-cadence{max-width:114px}.topbar-left{gap:7px}}
 @media(prefers-reduced-motion:reduce){.news-item.newly-added{transition:none}}
+
+
+/* MarketMarney Terminal Refinement: two distinct source choices and fast live clarity. */
+.source-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:10px 2px 6px;border-top:1px solid #24343b}
+.source-choices{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.source-choice,.recent-choice{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 12px;border:1px solid #32414a;border-radius:9px;background:#18242b;color:#b7c4c9;font-size:11px;font-weight:720;white-space:nowrap;transition:background .16s,border-color .16s}
+.source-choice:hover,.recent-choice:hover{border-color:#669083;color:#f1faf8}
+.source-choice.active,.recent-choice.active{background:#214b3f;border-color:#3b9c76;color:#c0ffe1}
+.recent-choice:before{content:"◷";margin-right:6px;color:#68d8b2;font-size:14px;line-height:0}
+#importance{height:7px;min-height:7px;background:#2c3f45;border-radius:999px;appearance:none;-webkit-appearance:none;cursor:pointer;outline-offset:9px}
+#importance::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:17px;height:17px;background:#48d2a1;border:3px solid #e9fff6;border-radius:50%;box-shadow:0 0 0 3px #256049}
+#importance::-moz-range-thumb{width:13px;height:13px;background:#48d2a1;border:3px solid #e9fff6;border-radius:50%}
+.importance-label span{display:inline-flex;padding:2px 7px;border-radius:5px;background:#183f33;color:#8be4bc;font-weight:780}
+.create-feed{background:transparent!important;color:#a5ebd0!important;border-color:#40826e!important;box-shadow:none!important}
+.create-feed:hover{background:#1b3931!important;color:#ebfff5!important;border-color:#5ac89b!important}
+.news-alert{display:flex;align-items:center;gap:10px;width:100%;margin:3px 0 9px;border:1px solid #367d63;background:#152b24;color:#b5f6db;border-radius:10px;text-align:left;padding:11px 13px;font-size:11.5px;font-weight:680;cursor:pointer}
+.news-alert:hover{background:#1c4131}
+.news-alert strong{font-size:12px;flex:1}
+.news-alert>span:last-child{color:#e6ffef;font-size:11px;font-weight:760}
+.news-alert-dot{width:8px;height:8px;background:#5fe9b3;border-radius:50%;box-shadow:0 0 0 4px rgba(63,205,145,.13)}
+.news-item.newly-added{background:linear-gradient(90deg,#153c2d,#14271f 50%,transparent);border-left:3px solid #55d99d}
+.news-item.newly-added h3{color:#f2fff9}
+.news-new{font-weight:850}
+.news-update-foot{padding:14px 4px 1px;text-align:center;color:#748991;font-size:10.5px;border-top:1px solid #223238}
+.source-health{display:flex;flex-direction:column;gap:9px;margin:16px 0 3px;padding:11px 12px;border:1px solid #30423f;background:#0e1a1a;border-radius:10px}
+.source-health-line{display:flex;justify-content:space-between;align-items:center;gap:9px;font-size:10.5px}
+.source-health-line>span{display:flex;align-items:center;gap:8px;color:#abbbc0}
+.source-health-line strong{text-align:right;color:#e2f3ed;font-size:10px;font-variant-numeric:tabular-nums;font-weight:710}
+.health-dot{height:7px;width:7px;flex:none;border-radius:50%;background:#a6aeb4;box-shadow:0 0 0 3px rgba(166,174,180,.07)}
+.health-dot.fresh{background:#47d8a1;box-shadow:0 0 0 3px rgba(71,216,161,.09)}
+.health-dot.stale{background:#e8a04d;box-shadow:0 0 0 3px rgba(232,160,77,.1)}
+.health-dot.unavailable{background:#ed7070;box-shadow:0 0 0 3px rgba(237,112,112,.09)}
+.health-dot.checking{background:#8699a4}
+@media(max-width:740px){.source-toolbar{align-items:flex-start;gap:7px}.source-choices{max-width:100%;gap:4px}.source-choice,.recent-choice{font-size:10.5px;padding:6px 9px;min-height:32px}.source-health-line{gap:6px}.source-health-line strong{font-size:9.5px}}
+@media(max-width:390px){.source-toolbar{flex-direction:column;align-items:stretch}.source-choices{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.source-choice{flex:none}.recent-choice{align-self:flex-start}.filters{column-gap:9px}.importance-label{white-space:normal}}
+@media(prefers-reduced-motion:reduce){.source-choice,.recent-choice{transition:none}}
