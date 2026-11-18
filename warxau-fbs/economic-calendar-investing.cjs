@@ -12,16 +12,22 @@ function approvedInvestingUrl(raw){
   try{url=new URL(raw.trim());}catch{return null;}
   if(url.protocol!=='https:'||url.hostname!=='sslecal2.investing.com'||
      url.port||url.username||url.password||url.pathname!=='/'||url.hash||!url.search)return null;
-  // Require the standard parameters present in officially generated iframe URLs.
-  if(!url.searchParams.has('columns')||!url.searchParams.has('calType')||
-     !url.searchParams.has('timeZone')||!url.searchParams.has('lang'))return null;
+  // Require the exact user-requested defaults from the official Indonesian widget:
+  // GMT+7 Bangkok/Hanoi/Jakarta = 27; High Impact only = 3.
+  if(url.searchParams.get('timeZone')!=='27'||url.searchParams.get('importance')!=='3')return null;
+  if(!['week','day'].includes(url.searchParams.get('calType')))return null;
+  if(!/^\d+$/.test(url.searchParams.get('lang')||''))return null;
+  const countries=new Set((url.searchParams.get('countries')||'').split(','));
+  if(!['5','72','4','35'].every(id=>countries.has(id)))return null;
+  const columns=new Set((url.searchParams.get('columns')||'').split(','));
+  if(!['exc_currency','exc_importance','exc_actual','exc_forecast','exc_previous'].every(id=>columns.has(id)))return null;
   return url.href;
 }
 
 const STYLE=`<style id="${STYLE_ID}">
 body.mm-investing-calendar-on #app{background:#f7f8fc!important;color:#172334!important}
-body.mm-investing-calendar-on .mm85-shell{background:#f7f8fc!important;color:#172334!important;max-width:none!important;width:100%!important;box-sizing:border-box!important;border:0!important;box-shadow:none!important;padding:0!important}
-body.mm-investing-calendar-on .mm85-shell > :not(#mm-investing-calendar){display:none!important}
+body.mm-investing-calendar-on .mm88-desk{background:#f7f8fc!important;color:#172334!important;max-width:none!important;width:100%!important;box-sizing:border-box!important;border:0!important;box-shadow:none!important;padding:0!important}
+body.mm-investing-calendar-on .mm88-desk > :not(#mm-investing-calendar){display:none!important}
 body:not(.mm-investing-calendar-on) #mm-investing-calendar{display:none!important}
 body.mm-investing-calendar-on #mm-investing-calendar{display:block!important;box-sizing:border-box;width:min(100%,1180px);margin:18px auto 32px;padding:0 14px;font:inherit;color:#172334}
 .mm-investing-calendar-head{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:15px}
@@ -49,9 +55,11 @@ const CLIENT=String.raw`(function(){
 const EMBED_URL=__MM_IFRAME_URL__;
 const RELEASE='mm-investing-calendar-20261118-v1';
 function isCalendar(){
- const active=document.querySelector('.navbtn.active[data-page="Kalender Ekonomi"],.navbtn.is-active[data-page="Kalender Ekonomi"],[data-page="Kalender Ekonomi"][aria-current="page"]');
+ const active=document.querySelector('.navbtn.active,.navbtn.is-active');
+ const selected=!!active && /kalender\s+ekonomi/i.test((active.dataset&&active.dataset.page)||active.textContent||'');
  const label=document.getElementById('toplabel');
- return !!active || /^\/kalender-ekonomi(?:\/)?$/i.test(location.pathname) || !!(label&&/^kalender ekonomi$/i.test((label.textContent||'').trim()));
+ return selected || /^\/kalender-ekonomi(?:\/)?$/i.test(location.pathname) ||
+  !!(label&&/kalender\s+ekonomi\s*$/i.test((label.textContent||'').trim()));
 }
 function createCalendar(){
  const section=document.createElement('section');section.id='mm-investing-calendar';section.setAttribute('aria-label','Kalender Ekonomi Investing.com');
@@ -62,7 +70,7 @@ function createCalendar(){
 }
 let lastShell=null,pending=false;
 function mount(){
- const active=isCalendar();const shell=active?document.querySelector('.mm85-shell'):null;
+ const active=isCalendar();const shell=active?document.querySelector('section.mm88-desk'):null;
  document.body.classList.toggle('mm-investing-calendar-on',!!shell);
  if(!shell){lastShell=null;return;}
  if(shell===lastShell && shell.querySelector('#mm-investing-calendar'))return;
