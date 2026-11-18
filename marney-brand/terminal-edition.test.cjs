@@ -95,3 +95,31 @@ test('Terminal client uses one-second live push while retaining source-safe fall
  assert.match(html,/sumber 15–60 dtk/);
  assert.doesNotMatch(client,/setInterval\([^)]*fetch\(/);
 });
+
+
+test('Terminal refinement lets readers filter sources/recent headlines and see arrivals and true feed health',()=>{
+ const map=assets(),html=map.get('/terminal').body.toString();
+ const client=map.get('/assets/mm-terminal-v1.js').body.toString();
+ const css=map.get('/assets/mm-terminal-v1.css').body.toString();
+ new vm.Script(client,{filename:'terminal-refined.js'});
+ for(const id of ['source-choices','recent-only','news-alert','news-alert-label','stat-new',
+  'health-marney-dot','health-marney-text','health-external-dot','health-external-text','news-update-foot']){
+  assert.ok(html.includes('id="'+id+'"'),'missing accessible refinement control '+id);
+ }
+ for(const token of ['data-source="Semua"','data-source="Marney"','data-source="Eksternal"']){
+  assert.ok(html.includes(token),'missing source selection '+token);
+ }
+ for(const token of ['updateSourceChoice','updateHealth','showArrivalAlert',
+  'item.kind','state.recentOnly','recentlyPublished','sourceHealth','state.knownIds']){
+  assert.ok(client.includes(token),'missing functional refinement '+token);
+ }
+ assert.match(client,/addEventListener\('click',\(\)=>\{[\s\S]*state\.recentOnly/);
+ assert.match(client,/updateHealth\(packet\.sourceHealth\)/);
+ assert.match(client,/recentlyPublished\?'?TERBARU/);
+ for(const token of ['.source-toolbar','.source-choice','.recent-choice',
+  '.source-health','.health-dot.stale','.health-dot.unavailable','.news-new','.news-alert']){
+  assert.ok(css.includes(token),'missing CSS '+token);
+ }
+ assert.match(css,/@media\(max-width:390px\)/);
+ assert.doesNotMatch(client,/\/api\/admin|\/auth\/|Authorization:|Bearer /);
+});
