@@ -124,14 +124,14 @@ test('accepts pasted official iframe snippet, never passes its markup through',(
 
 test('mobile keeps the desktop calendar with all columns and accessible sideways scrolling',()=>{
  assert.match(STYLE,/min-width:900px/,'widget keeps wide desktop presentation');
- assert.match(STYLE,/@media\\(max-width:960px\\)/,'phone and tablet controls');
- assert.match(STYLE,/@media\\(max-width:720px\\)/,'phone layout adapts without hiding desktop columns');
+ assert.match(STYLE,/@media\(max-width:960px\)/,'phone and tablet controls');
+ assert.match(STYLE,/@media\(max-width:720px\)/,'phone layout adapts without hiding desktop columns');
  assert.match(STYLE,/scrollbar-width:thin/,'horizontal scroll is visible');
  assert.match(CLIENT,/mm-investing-calendar-mobile-nav/);
  assert.match(CLIENT,/mm-investing-calendar-left/);
  assert.match(CLIENT,/mm-investing-calendar-right/);
  assert.match(CLIENT,/role="region"/);
  assert.match(CLIENT,/tabindex="0"/);
- assert.match(CLIENT,/scrollBy\\(\\{left:direction\\*320,behavior:'smooth'\\}\\)/);
- assert.doesNotMatch(STYLE,/max-width:720px[\\s\\S]*display:none[^}]*iframe/,'iframe not hidden on mobile');
+ assert.match(CLIENT,/scrollBy\(\{left:direction\*320,behavior:'smooth'\}\)/);
+ assert.doesNotMatch(STYLE,/max-width:720px[\s\S]*display:none[^}]*iframe/,'iframe not hidden on mobile');
 });
