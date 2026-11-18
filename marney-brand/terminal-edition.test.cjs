@@ -115,7 +115,7 @@ test('Terminal refinement lets readers filter sources/recent headlines and see a
  }
  assert.match(client,/addEventListener\('click',\(\)=>\{[\s\S]*state\.recentOnly/);
  assert.match(client,/updateHealth\(packet\.sourceHealth\)/);
- assert.match(client,/recentlyPublished\?'?TERBARU/);
+ assert.ok(client.includes("justArrived?'BARU MASUK':'TERBARU'"));
  for(const token of ['.source-toolbar','.source-choice','.recent-choice',
   '.source-health','.health-dot.stale','.health-dot.unavailable','.news-new','.news-alert']){
   assert.ok(css.includes(token),'missing CSS '+token);
