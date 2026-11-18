@@ -95,7 +95,7 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
  assert.equal(classes.has('mm-investing-calendar-on'),true);
  assert.match(state.textContent,/Menghubungkan/);
  events.right();events.left();
- assert.deepEqual(scroll.calls,[{left:320,behavior:'smooth'},{left:-320,behavior:'smooth'}]);
+ assert.equal(JSON.stringify(scroll.calls),JSON.stringify([{left:320,behavior:'smooth'},{left:-320,behavior:'smooth'}]));
  events.mutation();assert.equal(mounted.length,1,'must not duplicate widget on mutation');
  events.timeout();assert.match(state.textContent,/belum merespons/);
  events.frame_load();assert.match(state.textContent,/Pemuatan iframe selesai/);
