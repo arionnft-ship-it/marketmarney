@@ -12,10 +12,10 @@ function approvedInvestingUrl(raw){
   // Never inject third-party HTML; only extract the src and verify its origin/options.
   const source=raw.trim();
   let candidate=source;
-  if(/^<iframe\\b/i.test(source)){
-    const tag=source.match(/^<iframe\\b[^>]*>/i);
+  if(/^<iframe\b/i.test(source)){
+    const tag=source.match(/^<iframe\b[^>]*>/i);
     if(!tag)return null;
-    const src=tag[0].match(/\\bsrc\\s*=\\s*(["'])(.*?)\\1/i);
+    const src=tag[0].match(/\bsrc\s*=\s*(["'])(.*?)\1/i);
     if(!src)return null;
     candidate=src[2].replace(/&amp;/gi,'&');
   }
