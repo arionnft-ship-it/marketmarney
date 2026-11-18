@@ -1,0 +1,33 @@
+name: Verify Investing Calendar Integration
+on:
+  push:
+    branches: [feature/investing-calendar-wib-20261118]
+    paths:
+      - .github/workflows/investing-calendar-tests.yml
+      - warxau-fbs/economic-calendar-investing.cjs
+      - warxau-fbs/economic-calendar-investing.test.cjs
+      - warxau-fbs/bootstrap.cjs
+      - warxau-fbs/Dockerfile.ihsg
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calendar-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify calendar widget code, URL safeguards and public page boundaries
+        run: |
+          set -euo pipefail
+          node --check warxau-fbs/economic-calendar-investing.cjs
+          node --check warxau-fbs/bootstrap.cjs
+          node --test warxau-fbs/economic-calendar-investing.test.cjs
+      - name: Verify existing Market Live and homepage compatibility
+        run: |
+          set -euo pipefail
+          node --test warxau-fbs/market-live-terminal.test.cjs
+          node --test warxau-fbs/news-ticker.test.cjs
