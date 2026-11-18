@@ -7,9 +7,20 @@ const SCRIPT_ID='mm-investing-calendar-script';
 const STYLE_ID='mm-investing-calendar-style';
 
 function approvedInvestingUrl(raw){
-  if(typeof raw!=='string'||raw.length>4096)return null;
+  if(typeof raw!=='string'||raw.length>8192)return null;
+  // Support both the generated iframe src and the complete official embed snippet.
+  // Never inject third-party HTML; only extract the src and verify its origin/options.
+  const source=raw.trim();
+  let candidate=source;
+  if(/^<iframe\\b/i.test(source)){
+    const tag=source.match(/^<iframe\\b[^>]*>/i);
+    if(!tag)return null;
+    const src=tag[0].match(/\\bsrc\\s*=\\s*(["'])(.*?)\\1/i);
+    if(!src)return null;
+    candidate=src[2].replace(/&amp;/gi,'&');
+  }
   let url;
-  try{url=new URL(raw.trim());}catch{return null;}
+  try{url=new URL(candidate);}catch{return null;}
   if(url.protocol!=='https:'||url.hostname!=='sslecal2.investing.com'||
      url.port||url.username||url.password||url.pathname!=='/'||url.hash||!url.search)return null;
   // Require the exact user-requested defaults from the official Indonesian widget:
