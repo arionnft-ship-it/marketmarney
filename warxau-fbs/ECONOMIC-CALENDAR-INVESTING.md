@@ -20,9 +20,13 @@ Di proyek Railway `MarketMarney` → layanan `marketmarney-web` → Environment 
 
 **Verifikasi 18 November 2026:** opsi zona waktu Jakarta `(GMT +7:00) Bangkok, Hanoi, Jakarta` memiliki nilai `timeZone=27`; filter dampak tinggi saja memiliki nilai `importance=3`. Negara utama: AS `5`, Zona Euro `72`, Inggris `4`, Jepang `35`. Modul otomatis menolak URL tanpa setelan ini, atau tanpa kolom Actual/Forecast/Previous, agar tidak menampilkan label WIB/High Impact untuk data yang salah.
 
-Modul bersifat opt-in: bila variabel kosong atau URL tidak berasal dari host widget resmi Investing.com, halaman lama tidak diubah. Setelah kode resmi ditempel ke variabel dan perubahan dirilis, buka menu Kalender Ekonomi untuk melihat widget di panel `section.mm88-desk` (menggantikan tampilan kalender TradingView di `#mm88Calendar`); halaman Market Live dan News tidak diubah. Widget memperbarui datanya langsung; tombol "Muat ulang" hanya cadangan.
+Modul bersifat opt-in: bila variabel kosong atau URL tidak berasal dari host widget resmi Investing.com, halaman lama tidak diubah. Setelah kode resmi ditempel ke variabel dan perubahan dirilis, buka menu Kalender Ekonomi untuk melihat widget di panel `section.mm88-desk` (menggantikan tampilan kalender TradingView di `#mm88Calendar`); halaman Market Live dan News tidak diubah. Widget memperbarui datanya langsung; tombol "Muat ulang" hanya cadangan. Bila iframe kosong, lambat, diblokir CSP, atau gagal dimuat, pengunjung dapat memakai tombol **Kalender sebelumnya** untuk kembali ke widget lama tanpa kehilangan navigasi. Persyaratan atribut iframe dari generator tetap harus ditaati.
 
 ## Pengujian dan rilis
 Jalankan `node --test warxau-fbs/economic-calendar-investing.test.cjs`. Setelah variabel diatur, tinjau secara visual pada desktop dan HP, pastikan jam NFP/CPI ditampilkan WIB, filter High Impact aktif, dan indikator Actual berubah mengikuti rilis. Periksa browser console bila ada hambatan iframe/CSP atau jaringan. Simpan atribusi Investing.com pada widget.
 
 Tidak ada scraping, penyimpanan ulang data pihak ketiga, atau pengubahan feed TradingView untuk grafik.
+## Bukti pengujian
+- GitHub Actions: https://github.com/arionnft-ship-it/marketmarney/actions/workflows/investing-calendar-tests.yml
+- Tes mencakup batas URL, deteksi parameter ganda, mount DOM `section.mm88-desk`, navigasi, status error, pengulangan, dan fallback kalender.
+- **Belum ada tes integrasi dengan iframe berlisensi** karena URL yang dihasilkan setelah persetujuan syarat penyedia belum tersedia. Jangan klaim kalender sudah aktif.
