@@ -92,7 +92,7 @@ test('mounts to observed mm88 desk, handles reload, errors and legacy fallback',
  assert.match(state.textContent,/Menghubungkan/);
  events.mutation();assert.equal(mounted.length,1,'must not duplicate widget on mutation');
  events.timeout();assert.match(state.textContent,/belum merespons/);
- events.frame_load();assert.match(state.textContent,/Investing.com/);
+ events.frame_load();assert.match(state.textContent,/Pemuatan iframe selesai/);
  iframe.src='';events.reload();assert.equal(iframe.src,GOOD);
  events.frame_error();assert.match(state.textContent,/Gagal memuat/);
  events.legacy();assert.equal(classes.has('mm-investing-calendar-fallback'),true);
