@@ -18,9 +18,9 @@ Di proyek Railway `MarketMarney` → layanan `marketmarney-web` → Environment 
 
 `MM_INVESTING_CALENDAR_URL=https://sslecal2.investing.com/?...parameter-resmi...`
 
-**Penting:** Jangan gunakan `timeZone=12` dari contoh/tes sebagai bukti WIB. Gunakan hasil resmi generator yang dipilih pada zona waktu Jakarta.
+**Verifikasi 18 November 2026:** opsi zona waktu Jakarta `(GMT +7:00) Bangkok, Hanoi, Jakarta` memiliki nilai `timeZone=27`; filter dampak tinggi saja memiliki nilai `importance=3`. Negara utama: AS `5`, Zona Euro `72`, Inggris `4`, Jepang `35`. Modul otomatis menolak URL tanpa setelan ini, atau tanpa kolom Actual/Forecast/Previous, agar tidak menampilkan label WIB/High Impact untuk data yang salah.
 
-Modul bersifat opt-in: bila variabel kosong atau URL tidak berasal dari host widget resmi Investing.com, halaman lama tidak diubah. Setelah kode ditempel dan versi ini di-deploy, buka menu Kalender Ekonomi untuk melihat widget; halaman Market Live dan News tidak diubah. Widget memperbarui datanya langsung; tombol "Muat ulang" hanya cadangan.
+Modul bersifat opt-in: bila variabel kosong atau URL tidak berasal dari host widget resmi Investing.com, halaman lama tidak diubah. Setelah kode resmi ditempel ke variabel dan perubahan dirilis, buka menu Kalender Ekonomi untuk melihat widget di panel `section.mm88-desk` (menggantikan tampilan kalender TradingView di `#mm88Calendar`); halaman Market Live dan News tidak diubah. Widget memperbarui datanya langsung; tombol "Muat ulang" hanya cadangan.
 
 ## Pengujian dan rilis
 Jalankan `node --test warxau-fbs/economic-calendar-investing.test.cjs`. Setelah variabel diatur, tinjau secara visual pada desktop dan HP, pastikan jam NFP/CPI ditampilkan WIB, filter High Impact aktif, dan indikator Actual berubah mengikuti rilis. Periksa browser console bila ada hambatan iframe/CSP atau jaringan. Simpan atribusi Investing.com pada widget.
