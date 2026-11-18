@@ -8,6 +8,7 @@ const {isCanonicalArticlePath,injectReadingWidthStyle}=require('./article-readin
 const {injectHashArticleFix}=require('./hash-article-fix.cjs');
 const {injectTokenCreatorNav}=require('./token-creator-nav.cjs');
 const {injectMarketTerminal}=require('./market-live-terminal.cjs');
+const {injectInvestingCalendar}=require('./economic-calendar-investing.cjs');
 const {injectTickerHtml,createMarketTicker}=require('./news-ticker.cjs');
 const marketTicker=createMarketTicker();
 const PORT=Number(process.env.PORT||8080);
@@ -115,7 +116,7 @@ function patchHomeCard(req, res) {
       html = transformHomeHtml(html);
       html = branding.optimizeHome(html);
     }
-    html=injectMarketTerminal(injectTokenCreatorNav(injectHashArticleFix(injectTickerHtml(injectReadingWidthStyle(html)))));
+    html=injectInvestingCalendar(injectMarketTerminal(injectTokenCreatorNav(injectHashArticleFix(injectTickerHtml(injectReadingWidthStyle(html))))));
     if (html !== raw) {
       res.removeHeader('etag'); res.removeHeader('content-md5'); res.removeHeader('transfer-encoding');
       res.setHeader('content-length', Buffer.byteLength(html));
