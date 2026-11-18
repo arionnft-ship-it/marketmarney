@@ -18,6 +18,8 @@ Di proyek Railway `MarketMarney` → layanan `marketmarney-web` → Environment 
 
 `MM_INVESTING_CALENDAR_URL=https://sslecal2.investing.com/?...parameter-resmi...`
 
+Variabel sekarang juga menerima **potongan `<iframe ...></iframe>` resmi lengkap** dari generator; program hanya mengambil `src`, tidak menyisipkan markup mentah, dan tetap memvalidasi negara, kolom, zona waktu, serta tingkat dampak. Jangan membuat sendiri URL contoh untuk produksi.
+
 **Verifikasi 18 November 2026:** opsi zona waktu Jakarta `(GMT +7:00) Bangkok, Hanoi, Jakarta` memiliki nilai `timeZone=27`; filter dampak tinggi saja memiliki nilai `importance=3`. Negara utama: AS `5`, Zona Euro `72`, Inggris `4`, Jepang `35`. Modul otomatis menolak URL tanpa setelan ini, atau tanpa kolom Actual/Forecast/Previous, agar tidak menampilkan label WIB/High Impact untuk data yang salah.
 
 Modul bersifat opt-in: bila variabel kosong atau URL tidak berasal dari host widget resmi Investing.com, halaman lama tidak diubah. Setelah kode resmi ditempel ke variabel dan perubahan dirilis, buka menu Kalender Ekonomi untuk melihat widget di panel `section.mm88-desk` (menggantikan tampilan kalender TradingView di `#mm88Calendar`); halaman Market Live dan News tidak diubah. Widget memperbarui datanya langsung; tombol "Muat ulang" hanya cadangan. Bila iframe kosong, lambat, diblokir CSP, atau gagal dimuat, pengunjung dapat memakai tombol **Kalender sebelumnya** untuk kembali ke widget lama tanpa kehilangan navigasi. Persyaratan atribut iframe dari generator tetap harus ditaati.
