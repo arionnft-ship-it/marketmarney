@@ -53,8 +53,16 @@ body.mm-investing-calendar-on #mm-investing-calendar{display:block!important;box
 .mm-investing-calendar-bar strong{font-size:12px;font-weight:800;color:#2f3b4d}
 .mm-investing-calendar-bar button{cursor:pointer;border:1px solid #dfe3eb;border-radius:9px;padding:7px 12px;background:#fff;font-size:12px;font-weight:700;color:#42526b}
 .mm-investing-calendar-bar button:hover,.mm-investing-calendar-bar button:focus-visible{border-color:#e58b1c;color:#a95b00;outline-offset:2px}
-.mm-investing-calendar-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;background:#fff}
-.mm-investing-calendar-scroll iframe{display:block;width:100%;min-width:650px;height:720px;border:0;background:#fff}
+.mm-investing-calendar-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#cbd5e1 #f8fafc;background:#fff}
+.mm-investing-calendar-scroll:focus-visible{outline:2px solid #d97706;outline-offset:-2px}
+.mm-investing-calendar-scroll::-webkit-scrollbar{height:8px}
+.mm-investing-calendar-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9px}
+.mm-investing-calendar-mobile-nav{display:none;padding:10px 14px;align-items:center;justify-content:space-between;gap:10px;background:#fafbfe;border-bottom:1px solid #edf0f4;color:#5e6879;font-size:12px;line-height:1.5}
+.mm-investing-calendar-mobile-nav span{max-width:44ch}
+.mm-investing-calendar-mobile-controls{display:flex;gap:7px;flex-shrink:0}
+.mm-investing-calendar-mobile-controls button{cursor:pointer;min-width:40px;min-height:40px;border-radius:9px;border:1px solid #dce3ed;background:#fff;color:#172334;font-size:18px;font-weight:700}
+.mm-investing-calendar-mobile-controls button:focus-visible{outline:2px solid #d97706;outline-offset:2px}
+.mm-investing-calendar-scroll iframe{display:block;width:100%;min-width:900px;height:720px;border:0;background:#fff}
 .mm-investing-calendar-foot{display:flex;justify-content:space-between;gap:8px 15px;flex-wrap:wrap;align-items:center;background:#fff;padding:13px 15px;border-top:1px solid #edf0f4;color:#667085;font-size:12px;line-height:1.6}
 .mm-investing-calendar-foot a{color:#bb6300;font-weight:750;text-decoration:none}
 .mm-investing-calendar-foot a:hover{text-decoration:underline}
@@ -63,7 +71,23 @@ body.mm-investing-calendar-on #mm-investing-calendar{display:block!important;box
 .mm-investing-calendar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
 .mm-investing-calendar-bar .mm-investing-calendar-back{color:#975003;border-color:#ffe0b1}
 body.mm-investing-calendar-fallback #mm-investing-calendar{display:none!important}
-@media(max-width:720px){body.mm-investing-calendar-on #mm-investing-calendar{padding:0 8px;margin:10px auto 22px}.mm-investing-calendar-scroll iframe{height:650px}.mm-investing-calendar-card{border-radius:12px}.mm-investing-calendar-head h1{font-size:22px}}
+@media(max-width:960px){.mm-investing-calendar-mobile-nav{display:flex}body.mm-investing-calendar-on #mm-investing-calendar{width:100%;max-width:100%;min-width:0}}
+@media(max-width:720px){
+ body.mm-investing-calendar-on #mm-investing-calendar{padding:0 10px;margin:14px auto 24px}
+ .mm-investing-calendar-head{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:14px}
+ .mm-investing-calendar-head h1{font-size:clamp(21px,5.8vw,29px)}
+ .mm-investing-calendar-badges{gap:6px}
+ .mm-investing-calendar-card{border-radius:14px}
+ .mm-investing-calendar-bar{padding:12px 13px}
+ .mm-investing-calendar-actions{width:100%;justify-content:flex-start}
+ .mm-investing-calendar-actions button{min-height:38px}
+ .mm-investing-calendar-scroll iframe{height:700px}
+ .mm-investing-calendar-mobile-nav{padding:10px 12px}
+ .mm-investing-calendar-foot{padding:12px 13px}
+ .mm-investing-calendar-note{padding:0 2px}
+}
+@media(max-width:380px){.mm-investing-calendar-mobile-nav span{font-size:11px}.mm-investing-calendar-mobile-controls button{min-width:38px;min-height:38px}}
+@media(prefers-reduced-motion:reduce){.mm-investing-calendar-scroll{scroll-behavior:auto}}
 </style>`;
 
 const CLIENT=String.raw`(function(){
@@ -79,9 +103,13 @@ function isCalendar(){
 }
 function createCalendar(){
  const section=document.createElement('section');section.id='mm-investing-calendar';section.setAttribute('aria-label','Kalender Ekonomi Investing.com');
- section.innerHTML='<div class="mm-investing-calendar-head"><div><h1>Kalender Ekonomi</h1><p>Pantau jadwal data ekonomi penting dan hasil rilis langsung.</p></div><div class="mm-investing-calendar-badges"><span>● Pembaruan otomatis</span><span>WIB · UTC+7</span><span>High Impact</span></div></div><div class="mm-investing-calendar-card"><div class="mm-investing-calendar-bar"><strong>KALENDER EKONOMI GLOBAL</strong><div class="mm-investing-calendar-actions"><button type="button" id="mm-investing-calendar-reload" aria-label="Muat ulang kalender">↻ Muat ulang</button><button type="button" class="mm-investing-calendar-back" id="mm-investing-calendar-legacy">Kalender sebelumnya</button></div></div><p class="mm-investing-calendar-state" id="mm-investing-calendar-state" role="status" aria-live="polite">Menghubungkan kalender Investing.com…</p><div class="mm-investing-calendar-scroll"><iframe id="mm-investing-calendar-frame" title="Kalender Ekonomi Investing.com, waktu WIB dan dampak tinggi" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="mm-investing-calendar-foot"><span>Data, jadwal, dan pembaruan disediakan Investing.com</span><a href="https://id.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer nofollow">Buka kalender lengkap di Investing.com ↗</a></div></div><p class="mm-investing-calendar-note">Tampilan pada ponsel dapat digeser ke samping. Filter dan zona waktu mengikuti konfigurasi widget resmi Investing.com; jadwal serta hasil rilis dapat berubah.</p>';
+ section.innerHTML='<div class="mm-investing-calendar-head"><div><h1>Kalender Ekonomi</h1><p>Pantau jadwal data ekonomi penting dan hasil rilis langsung.</p></div><div class="mm-investing-calendar-badges"><span>● Pembaruan otomatis</span><span>WIB · UTC+7</span><span>High Impact</span></div></div><div class="mm-investing-calendar-card"><div class="mm-investing-calendar-bar"><strong>KALENDER EKONOMI GLOBAL</strong><div class="mm-investing-calendar-actions"><button type="button" id="mm-investing-calendar-reload" aria-label="Muat ulang kalender">↻ Muat ulang</button><button type="button" class="mm-investing-calendar-back" id="mm-investing-calendar-legacy">Kalender sebelumnya</button></div></div><p class="mm-investing-calendar-state" id="mm-investing-calendar-state" role="status" aria-live="polite">Menghubungkan kalender Investing.com…</p><div class="mm-investing-calendar-mobile-nav"><span>Semua kolom sama seperti desktop. Geser tabel untuk melihat data lengkap.</span><div class="mm-investing-calendar-mobile-controls"><button type="button" id="mm-investing-calendar-left" aria-label="Geser kalender ke kiri">←</button><button type="button" id="mm-investing-calendar-right" aria-label="Geser kalender ke kanan">→</button></div></div><div class="mm-investing-calendar-scroll" role="region" aria-label="Tabel Kalender Ekonomi. Geser secara horizontal untuk melihat semua kolom" tabindex="0"><iframe id="mm-investing-calendar-frame" title="Kalender Ekonomi Investing.com, waktu WIB dan dampak tinggi" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="mm-investing-calendar-foot"><span>Data, jadwal, dan pembaruan disediakan Investing.com</span><a href="https://id.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer nofollow">Buka kalender lengkap di Investing.com ↗</a></div></div><p class="mm-investing-calendar-note">Tampilan pada ponsel dapat digeser ke samping. Filter dan zona waktu mengikuti konfigurasi widget resmi Investing.com; jadwal serta hasil rilis dapat berubah.</p>';
  const iframe=section.querySelector('iframe');
  const state=section.querySelector('#mm-investing-calendar-state');
+ const scroll=section.querySelector('.mm-investing-calendar-scroll');
+ const scrollByColumn=(direction)=>{if(scroll)scroll.scrollBy({left:direction*320,behavior:'smooth'});};
+ section.querySelector('#mm-investing-calendar-left').addEventListener('click',()=>scrollByColumn(-1));
+ section.querySelector('#mm-investing-calendar-right').addEventListener('click',()=>scrollByColumn(1));
  let loadTimeout=null;
  function setState(message){state.textContent=message;}
  function cancelTimer(){if(loadTimeout!==null){clearTimeout(loadTimeout);loadTimeout=null;}}
