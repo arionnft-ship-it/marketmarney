@@ -31,3 +31,17 @@ jobs:
           set -euo pipefail
           node --test warxau-fbs/market-live-terminal.test.cjs
           node --test warxau-fbs/news-ticker.test.cjs
+
+  full-image-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: calendar-safety
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the actual Railway Docker image without deploying
+        run: |
+          set -euo pipefail
+          docker build --progress=plain -f warxau-fbs/Dockerfile.ihsg -t marketmarney-investing-calendar:ci .
+      - name: Confirm build image contains new module
+        run: |
+          docker run --rm --entrypoint node marketmarney-investing-calendar:ci -e "const cal=require('/opt/warxau-fbs/economic-calendar-investing.cjs'); if(typeof cal.injectInvestingCalendar!=='function') process.exit(1); console.log('MM_INVESTING_CALENDAR_BUILD_OK')"
